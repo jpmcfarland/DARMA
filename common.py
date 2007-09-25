@@ -327,7 +327,7 @@ class DataStruct(object):
 
         return self.bin(-1,1)
 
-    def setshape(self, shape):
+    def reshape(self, shape):
 
         '''
            Set the shape of the image's data array to shape.
@@ -339,11 +339,8 @@ class DataStruct(object):
 
         if self.data is not None:
             if self.has_bitmask():
-                self.bmask.setshape(shape)
-            if len(shape) == 2:
-                shape = shape[::-1]
-            self.data.setshape(shape)
-            self.load()
+                self.bmask.reshape(shape)
+            self.data = self.data.reshape(shape[::-1])
 
     def swapaxes(self):
 
@@ -351,10 +348,10 @@ class DataStruct(object):
            Swap NAXIS1 and NAXIS2 inplace.
         '''
 
-        self.data.swapaxes(0,1)
-        if self.has_bitmask():
-            self.bmask.swapaxes(0,1)
-        self.load()
+        if self.data is not None:
+            if self.has_bitmask():
+                self.bmask.swapaxes(0,1)
+            self.data = self.data.swapaxes(0,1)
 
     def extract_region(self, x0, y0, x1, y1):
 
@@ -481,6 +478,8 @@ class DataStruct(object):
         if self.data is not None:
             if self.has_bitmask():
                 bmask = self.bmask.__getitem__(key)
+            else:
+                bmask = None
             key = _adjust_index(key)
             return self.__class__(data=self.data.__getitem__(key),
                                   bmask=bmask)
@@ -1204,7 +1203,7 @@ def _update_datamd5(filename, datamd5):
         raise DARMAError, '%s does not appear to be a valid MD5SUM.' % datamd5
 
     fitsfile = pyfits.open(filename, mode='update', memmap=1)
-    fitsfile[0].hdr.update('DATAMD5', datamd5, comment='MD5 checksum of all data regions')
+    fitsfile[0].header.update('DATAMD5', datamd5, comment='MD5 checksum of all data regions')
     fitsfile.close()
 
 def _adjust_index(key):
