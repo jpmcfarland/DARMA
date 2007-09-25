@@ -32,7 +32,7 @@ class cube(list):
        image or a pixelmap.
     '''
 
-    def __init__(self, filename=None, extension=0, image_list=None,
+    def __init__(self, image_list=None, filename=None, extension=0,
                  readonly=0, *args, **kwargs):
 
         '''
