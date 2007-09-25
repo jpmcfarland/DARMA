@@ -692,10 +692,11 @@ class image(DataStruct):
 
         sub_data = image(data=Array.add.reduce(self[x0:x1, :].data, 1) /
                                                              (x1-x0+1))
-        # XXX FIXME need a replacement for uniform_filter1d
-        #if smooth:
-        #    sub_data = image(data=Arrayfilters.uniform_filter1d(sub_data.data,
-        #                     smooth, mode='reflect'))
+        if smooth:
+            # XXX FIXME need a replacement for uniform_filter1d
+            #sub_data = image(data=Arrayfilters.uniform_filter1d(sub_data.data,
+            #                 smooth, mode='reflect'))
+            print 'WARNING - smoothing is not yet available!'
         sub_data.reshape((1,sub_data.ysize()))
         return self-sub_data
 
