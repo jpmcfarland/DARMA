@@ -26,8 +26,8 @@ class header(object):
 
     _IS_VERIFIED = False
 
-    def __init__(self, filename=None, extension=0, card_list=None, *args,
-                 **kwargs):
+    def __init__(self, filename=None, extension=0, card_list=None,
+                 option='silentfix', *args, **kwargs):
 
         '''
            Create a new header object.
@@ -40,6 +40,8 @@ class header(object):
            card_list: a list of header cards (80 character strings, NULL
                       terminated), a pyfits.CardList instance, or the name of
                       a text file containing the header cards
+              option: option used to verify the header (from PyFITS) should be
+                      one of fix, silentfix, ignore, warn, or exception
 
            NOTE: The header cards in the form: key = value / comment
         '''
@@ -47,6 +49,7 @@ class header(object):
         self.filename   = filename or None
         self.extension  = extension
         self._card_list = card_list
+        self.option     = option
         self._hdr       = None
 
         if self.filename is not None:
@@ -110,7 +113,7 @@ class header(object):
         else:
             if not isinstance(self._hdr, pyfits.Header):
                 raise DARMAError, '%s must be a %s instance!' % (self._hdr, pyfits.Header)
-        self.verify()
+        self.verify(option=self.option)
 
     def _get_header(self):
 
@@ -221,10 +224,13 @@ class header(object):
             naxis = hdr.ascard['NAXIS']
             naxisn = []
             for n in range(1,999):
-                try:
+                if hdr.get('NAXIS%d' % n) is not None:
                     naxisn.append(hdr.ascard['NAXIS%d' % n])
-                except:
+                else:
                     break
+            extend = hdr.get('EXTEND')
+            if extend is not None:
+                extend = hdr.ascard['EXTEND']
             # Load header into appropriate HDU.
             if hdr.get('SIMPLE') is not None:
                 hdu = pyfits.PrimaryHDU(header=hdr)
@@ -242,8 +248,13 @@ class header(object):
             n = 0
             for card in naxisn:
                 if n == 0:
-                    n=''
-                hdr.update(card.key, card.value, card.comment, after='NAXIS%s' % n)
+                    num = ''
+                else:
+                    num = n
+                hdr.update(card.key, card.value, card.comment, after='NAXIS%s' % num)
+                n += 1
+            if extend is not None:
+                hdr.update(extend.key, extend.value, extend.comment, after='NAXIS%s' % n)
             self._hdr = hdr
             self._IS_VERIFIED = True
 
