@@ -208,7 +208,7 @@ class cube(list):
                                      dtype=datatype)
         data = data.reshape(self.shape)
 
-        pyfits.writeto(filename=filename, data=data, hdr=hdr,
+        pyfits.writeto(filename=filename, data=data, header=hdr,
                            ext=extension, clobber=clobber)
 
         if update_datamd5:
