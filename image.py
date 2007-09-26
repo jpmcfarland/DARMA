@@ -204,10 +204,11 @@ class image(DataStruct):
 
         '''
             filename: The name of a FITS file
-                data: A data array (Python sequence, Array, etc.)
            extension: The FITS extension number
                plane: The plane in a 3D image stack
             readonly: Indicate that the FITS file is readonly
+              memmap: use memory mapping for data access (NOT IMPLEMENTED)
+                data: A data array (Python sequence, Array, etc.)
                bmask: A pixel mask of data with good pixels set to 0 and bad
                       pixels set to some non-zero value (opposite of pixelmap)
 
@@ -253,7 +254,8 @@ class image(DataStruct):
         if self._data is None:
             if self.filename is not None:
                 try:
-                    self._data = pyfits.getdata(self.filename, self.extension)
+                    #self._data = pyfits.getdata(self.filename, self.extension)
+                    self._data = pyfits.open(self.filename, memmap=self.memmap)[self.extension].data
                 except Exception, e:
                     raise DARMAError, 'Error loading image from %s: %s' % (self.filename, e)
         self._data = Array.asarray(self._data, dtype=self.datatype)
@@ -546,15 +548,16 @@ class image(DataStruct):
         else:
             raise DARMAError, 'Empty data array!'
 
-    def get_mean(self):
+    def get_mean(self, filter=True):
 
         '''
            Return the mean value of this image.
         '''
 
-        return mean(self.data, self.bmask.as_pixelmap('NonNumberMask').data)
+        return mean(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
+                    filter=filter)
 
-    def get_median(self, sorted=False):
+    def get_median(self, sorted=False, filter=True):
 
         '''
            Return the median value of this image.
@@ -563,39 +566,43 @@ class image(DataStruct):
         '''
 
         return median(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
-                      sorted=sorted)
+                      sorted=sorted, filter=filter)
 
-    def get_stdev(self):
+    def get_stdev(self, filter=True):
 
         '''
            Return the sample standard deviation value of this image.
         '''
 
-        return stdev(self.data, self.bmask.as_pixelmap('NonNumberMask').data)
+        return stdev(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
+                     filter=filter)
 
-    def get_rms(self):
+    def get_rms(self, filter=True):
 
         '''
            Return the rms (root mean square) value of this image.
         '''
 
-        return rms(self.data, self.bmask.as_pixelmap('NonNumberMask').data)
+        return rms(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
+                   filter=filter)
 
-    def get_min(self):
+    def get_min(self, filter=True):
 
         '''
            Return the minumum value of this image.
         '''
 
-        return min(self.data, self.bmask.as_pixelmap('NonNumberMask').data)
+        return min(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
+                   filter=filter)
 
-    def get_max(self):
+    def get_max(self, filter=True):
 
         '''
            Return the maximum value of this image.
         '''
 
-        return max(self.data, self.bmask.as_pixelmap('NonNumberMask').data)
+        return max(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
+                   filter=filter)
 
     def thresh_to_pixmap(self, lo_cut=None, hi_cut=None):
 
@@ -713,11 +720,9 @@ class image(DataStruct):
 
     def _apply_filter(self, filtername):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''Return a new image produced by applying a named filter'''
 #        result = image()
@@ -729,13 +734,14 @@ class image(DataStruct):
 #        result.pcheck('Error applying filter %s' % filtername)
 #        return result
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def filter_mean(self, xsize=3, ysize=3):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''Return a mean filtered image over a rectangular kernel
 #
@@ -754,13 +760,14 @@ class image(DataStruct):
 #        result.pcheck('Error applying filter')
 #        return result
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def filter_median(self, xsize=3, ysize=3):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''Do a median filtering over a rectangular area
 #
@@ -778,13 +785,14 @@ class image(DataStruct):
 #        result.pcheck('Error applying median filter')
 #        return result
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def filter_dx(self):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''First derivative in x, convolve with a kernel
 #        -1 0 1
@@ -793,13 +801,14 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('dx')
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def filter_dy(self):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''First derivative in y, convolve with a kernel
 #        -1 -1 -1
@@ -808,13 +817,14 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('dy')
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def filter_dx2(self):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''Second derivative in x, convolve with a kernel
 #        1 -2 1
@@ -823,13 +833,14 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('dx2')
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def filter_dy2(self):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''Second derivative in y, convolve with a kernel
 #         1  1  1
@@ -838,13 +849,14 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('dy2')
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def filter_contour1(self):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''Convolve with a kernel
 #         1  0 -1
@@ -853,13 +865,14 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('contour1')
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def filter_contour2(self):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''Convolve with a kernel
 #        -1  0  1
@@ -868,13 +881,14 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('contour2')
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def filter_contour3(self):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''Convolve with a kernel
 #        -1  2 -1
@@ -883,13 +897,14 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('contour3')
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def filter_contrast1(self):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''Convolve with a kernel
 #         1  1  1
@@ -897,6 +912,9 @@ class image(DataStruct):
 #         1  1  1
 #        '''
 #        return self._apply_filter('contrast1')
+
+        print 'WARNING - This method is not yet implemented!'
+        return None
 
     def hough_transform(self, threshold):
 
@@ -978,7 +996,8 @@ class image(DataStruct):
         #    raise DARMAError, 'Error thresholding'
         #return result
 
-        pass
+        print 'WARNING - This method is not yet implemented!'
+        return None
 
     ##################################################################
     #
@@ -1133,7 +1152,8 @@ class image(DataStruct):
         #                                        nwx, nwy, Threshold)
         #return result,qualityIndex
 
-        pass
+        print 'WARNING - This method is not yet implemented!'
+        return None, None
 
     def run_flattest(self, nwx, nwy):
 
@@ -1162,7 +1182,8 @@ class image(DataStruct):
         #qualityIndex = c_eclipse.image_flattest(self.p_ima,result.p_ima,nwx,nwy)
         #return result,qualityIndex
 
-        pass
+        print 'WARNING - This method is not yet implemented!'
+        return None, None
 
     def run_flatfittingtest(self,nwx,nwy,nfwx,nfwy):
 
@@ -1195,15 +1216,14 @@ class image(DataStruct):
         #                                        result.p_ima,nwx,nwy)
         #return result,qualityIndex
 
-        pass
+        print 'WARNING - This method is not yet implemented!'
+        return None, None
 
     def run_counttest(self,Threshold):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''Quality control tool  
 #
@@ -1224,13 +1244,14 @@ class image(DataStruct):
 #        qualityIndex = c_eclipse.image_count_threshold_withoutBPM(self.p_ima,result.p_ima,Threshold,sum)
 #        return qualityIndex
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def run_imsurfit(self,nwx,nwy):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''Tool for fitting surface  
 #
@@ -1263,13 +1284,14 @@ class image(DataStruct):
 #        imsurfit.p_ima = c_eclipse.image_surfit(self.p_ima,nwx,nwy)
 #        return imsurfit
 
+        print 'WARNING - This method is not yet implemented!'
+        return None
+
     def threshold(self, lv, hv, sl, sh):
 
-         '''
-            Unimplemented
-         '''
-
-         pass
+        '''
+           Unimplemented
+        '''
 
 #        '''
 #        This tool takes all pixels major than hl and assign them the value sh, then
@@ -1286,6 +1308,9 @@ class image(DataStruct):
 #        result = image()
 #        result.p_ima = c_eclipse.image_threshold(self.p_ima,lv, hv, sl, sh)
 #        return result
+
+        print 'WARNING - This method is not yet implemented!'
+        return None
 
 ##########################################################################
 #
