@@ -210,6 +210,9 @@ class header(object):
            Verify the card order and validity of card values in the current
            header.
 
+           option: option used to verify the header (from PyFITS) should be
+                   one of fix, silentfix, ignore, warn, or exception
+
            NOTE: As this is a dataless header, the BITPIX, NAXIS, and NAXISn
                  values are preserved from the original source, but are only
                  for informational purposes.  Once this header is paired with
@@ -245,14 +248,14 @@ class header(object):
             # Add changeable values back.
             hdr.update(bitpix.key, bitpix.value, bitpix.comment)
             hdr.update(naxis.key, naxis.value, naxis.comment)
-            n = 0
-            for card in naxisn:
-                if n == 0:
-                    num = ''
-                else:
-                    num = n
-                hdr.update(card.key, card.value, card.comment, after='NAXIS%s' % num)
-                n += 1
+            n = ''
+            if len(naxisn):
+                card = naxisn[0]
+                hdr.update(card.key, card.value, card.comment, after='NAXIS')
+                n = 1
+                for card in naxisn[1:]:
+                    hdr.update(card.key, card.value, card.comment, after='NAXIS%d' % n)
+                    n += 1
             if extend is not None:
                 hdr.update(extend.key, extend.value, extend.comment, after='NAXIS%s' % n)
             self._hdr = hdr
