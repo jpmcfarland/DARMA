@@ -176,11 +176,13 @@ class DataStruct(object):
         if self.data is None:
             return None
         else:
-            return self.__class__(data=self.data.copy(),
-                                  bmask=self.get_bitmask().copy())
+            bmask = self.get_bitmask()
+            if bmask is not None:
+                bmask = bmask.copy()
+            return self.__class__(data=self.data.copy(), bmask=bmask)
 
     def save(self, filename=None, hdr=None, datatype='float32', clobber=True,
-             update_datamd5=True):
+             update_datamd5=True, option='silentfix'):
 
         '''
            Save the data to a file.
@@ -189,6 +191,10 @@ class DataStruct(object):
                       hdr: image header (header object)
                  datatype: type of data output to the FITS file
            update_datamd5: update (or add) the DATAMD5 header keyword
+                   option: option used to verify the output (from PyFITS)
+                           should be one of fix, silentfix, ignore, warn, or
+                           exception
+
         '''
 
         if self.data is None:
@@ -213,11 +219,12 @@ class DataStruct(object):
 
         try:
             if self.datatype is datatype:
-                pyfits.writeto(filename, data=self.data, hdr=hdr,
-                               clobber=clobber, output_verify='fix')
+                pyfits.writeto(filename, data=self.data, header=hdr,
+                               clobber=clobber, output_verify=option)
             else:
                 pyfits.writeto(filename, data=self.data.astype(datatype),
-                               hdr=hdr, clobber=clobber, output_verify='fix')
+                               header=hdr, clobber=clobber,
+                               output_verify=option)
         except Exception, e:
             raise DARMAError, e
 
@@ -454,7 +461,7 @@ class DataStruct(object):
            Return the bitmask for this object if it exists
         '''
 
-        if self.has_bitmask():
+        if hasattr(self, 'bmask'):
             return self.bmask
         else:
             return None
