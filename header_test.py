@@ -57,7 +57,11 @@ class header_read_tests(unittest.TestCase):
 
         h2.new()
         h2['BKEY'] = 3
+        # Automatic verify will raise an error without this.
+        h2._IS_VERIFIED = True
         h2['CKEY'] = 4
+        # Automatic verify will raise an error without this.
+        h2._IS_VERIFIED = True
 
         h3 = h1.merge(h2)
         self.failUnlessEqual(h3['AKEY'], 1)
