@@ -6,10 +6,17 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, math, os
 
-import numpy as Array
-import numpy.random as Arrayrandom
-import numpy.fft as Arrayfft
-#import numpy.nd_image.filters as Arrayfilters
+# Transitionary import work-around to allow header to be imported even if
+# NumPy is not available.
+try:
+    import numpy as Array
+    import numpy.random as Arrayrandom
+    import numpy.fft as Arrayfft
+    #import numpy.nd_image.filters as Arrayfilters
+except ImportError,e:
+    if not os.environ.has_key('suppress'):
+        print 'WARNING - DARMA pixel functionality not possible: %s' % e
+    Array = Arrayrandom = Arrayfft = None
 
 FLOAT = 'float32'
 
