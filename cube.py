@@ -6,7 +6,7 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, os
 
-from common import Array, FLOAT
+from common import Array, FLOAT, INT, LONG
 from common import DARMAError, _datamd5, _update_datamd5
 from image import image
 from pixelmap import pixelmap
@@ -188,6 +188,9 @@ class cube(list):
                 raise DARMAError, 'No filename to save the file to!'
             else:
                 filename = self.filename
+        else:
+            if self.filename is None:
+                self.filename = filename
 
         if hasattr(hdr, 'hdr'):
             hdr = hdr.hdr
@@ -201,6 +204,7 @@ class cube(list):
         for img in self:
             if not img.data.flags.contiguous:
                 img.data = Array.ascontiguousarray(img.data)
+
         if self.datatype is datatype:
             data = Array.concatenate([img.data for img in self])
         else:
@@ -859,22 +863,22 @@ class cube(list):
     def __int__(self):
 
         '''
-           Integer datatype conversion.  Returns an int16 representation of the
-           cube.
+           Integer datatype conversion.  Returns an integet representation of
+           the cube.
         '''
 
         return self._return_image_loop_(self[0].__class__.astype, pixmap=None,
-                                        datatype='int16')
+                                        datatype=INT)
 
     def __long__(self):
 
         '''
-           Long datatype conversion.  Returns an int32 representation of the
-           cube.
+           Long datatype conversion.  Returns a long integer representation of
+           the cube.
         '''
 
         return self._return_image_loop_(self[0].__class__.astype, pixmap=None,
-                                        datatype='int32')
+                                        datatype=LONG)
 
     def __float__(self):
 

@@ -19,6 +19,8 @@ except ImportError,e:
     Array = Arrayrandom = Arrayfft = None
 
 FLOAT = 'float32'
+INT   = 'int32'
+LONG  = 'int64'
 
 class DARMAError(Exception):
 
@@ -215,6 +217,9 @@ class DataStruct(object):
                 raise DARMAError, 'No filename to save the file to!'
             else:
                 filename = self.filename
+        else:
+            if self.filename is None:
+                self.filename = filename
 
         if hasattr(hdr, 'hdr'):
             hdr = hdr.hdr
@@ -1026,7 +1031,7 @@ class DataStruct(object):
         '''
 
         if self.data is not None:
-            return self.__class__(data=self.data.__neg__(), 
+            return self.__class__(data=self.data.__neg__(),
                                   bmask=self.get_bitmask())
         else:
             return self
@@ -1081,11 +1086,11 @@ class DataStruct(object):
 
         '''
            Integer datatype conversion.  Return with the data converted to an
-           int16 representation.
+           integer representation.
         '''
 
         if self.data is not None:
-            return self.__class__(data=self.data.astype('int16'),
+            return self.__class__(data=self.data.astype(INT),
                                   bmask=self.get_bitmask())
         else:
             return self
@@ -1093,12 +1098,12 @@ class DataStruct(object):
     def __long__(self):
 
         '''
-           Long datatype conversion.  Return with the data converted to an
-           Int32 representation.
+           Long datatype conversion.  Return with the data converted to a long
+           integer representation.
         '''
 
         if self.data is not None:
-            return self.__class__(data=self.data.astype('int32'),
+            return self.__class__(data=self.data.astype(LONG),
                                   bmask=self.get_bitmask())
         else:
             return self
