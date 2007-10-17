@@ -190,6 +190,9 @@ class header(object):
                      with 2880 byte blocks (if False, write a text file)
         '''
 
+        if self.filename is None:
+            self.filename = filename
+
         linelen = self.item_size()
         blksize = self.block_size()
 
@@ -595,7 +598,10 @@ class header(object):
            Get a keyword value in its native datatype.
         '''
 
-        value = self.hdr.get(key, default=None)
+        if self.hdr is not None:
+            value = self.hdr.get(key, default=None)
+        else:
+            value = None
         if isinstance(value, pyfits.Undefined):
             return 'Undefined'
         else:
