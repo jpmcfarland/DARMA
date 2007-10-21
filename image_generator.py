@@ -6,7 +6,7 @@ __version__ = '@(#)$Revision$'
 import math
 
 from common import Array, Arrayrandom
-from common import DARMAError
+from common import DARMAError, _HAS_NUMPY
 from image import image
 
 class image_generator:
@@ -24,6 +24,10 @@ class image_generator:
            xsize -- the x dimension of the generated images
            ysize -- the y dimension of the generated images
         '''
+
+        # Allow DARMA to be imported even if NumPy is not available.
+        if not _HAS_NUMPY:
+            raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
 
         self.xsize = xsize
         self.ysize = ysize

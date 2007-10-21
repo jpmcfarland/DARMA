@@ -6,7 +6,7 @@ __version__ = '@(#)$Revision$'
 import pyfits, os
 
 from common import Array
-from common import DARMAError, DataStruct
+from common import DARMAError, _HAS_NUMPY, DataStruct
 
 class pixelmap(DataStruct):
 
@@ -31,6 +31,10 @@ class pixelmap(DataStruct):
            None.  If both filename and data are set, the pixelmap is created
            from self.data.
         '''
+
+        # Allow DARMA to be imported even if NumPy is not available.
+        if not _HAS_NUMPY:
+            raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
 
         self.filename  = filename or None
         self._data     = data

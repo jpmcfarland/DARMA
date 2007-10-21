@@ -7,7 +7,7 @@ __version__ = '@(#)$Revision$'
 import pyfits, os
 
 from common import Array, FLOAT, INT, LONG
-from common import DARMAError, _datamd5, _update_datamd5
+from common import DARMAError, _HAS_NUMPY, _datamd5, _update_datamd5
 from image import image
 from pixelmap import pixelmap
 
@@ -42,6 +42,10 @@ class cube(list):
                 plane: The plane in a 3D image stack
              readonly: Indicate that the FITS file is readonly
         '''
+
+        # Allow DARMA to be imported even if NumPy is not available.
+        if not _HAS_NUMPY:
+            raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
 
         self.image_list = image_list
         self.filename   = filename or None

@@ -7,7 +7,7 @@ import pyfits, math, os
 
 #from common import Array, Arrayfft, Arrayfilters
 from common import Array, Arrayfft
-from common import DARMAError, DataStruct, StatStruct, FLOAT
+from common import DARMAError, _HAS_NUMPY, DataStruct, StatStruct, FLOAT
 from pixelmap import pixelmap
 from bitmask import bitmask
 
@@ -220,6 +220,10 @@ class image(DataStruct):
                  is wasted, and if one is, that the mask stays up to date.
                  See the help for Bitmap for more information.
         '''
+
+        # Allow DARMA to be imported even if NumPy is not available.
+        if not _HAS_NUMPY:
+            raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
 
         self.filename  = filename
         self.extension = extension
@@ -1328,6 +1332,10 @@ def make_image(xsize, ysize, datatype=FLOAT):
 
        NOTE: Associated data array is zero initialized.
     """
+
+    # Allow DARMA to be imported even if NumPy is not available.
+    if not _HAS_NUMPY:
+        raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
 
     if not(xsize > 0 and ysize > 0):
         raise DARMAError, 'Invalid image dimesions'

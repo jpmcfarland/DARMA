@@ -7,7 +7,7 @@ __version__ = '@(#)$Revision$'
 import pyfits, os
 
 from common import Array
-from common import DARMAError, DataStruct, _adjust_index
+from common import DARMAError, _HAS_NUMPY, DataStruct, _adjust_index
 from pixelmap import pixelmap
 
 class bitmask(DataStruct):
@@ -43,6 +43,10 @@ class bitmask(DataStruct):
            If both self.filename and self.pmap are set, the bitmask is created
            from self.pmap.
         '''
+
+        # Allow DARMA to be imported even if NumPy is not available.
+        if not _HAS_NUMPY:
+            raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
 
         self.filename  = filename
         self.extension = extension
