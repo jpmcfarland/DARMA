@@ -418,7 +418,6 @@ class header(object):
         '''
 
         print self.card_list
-        print 'END'
 
     def new(self):
 
