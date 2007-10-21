@@ -10,14 +10,14 @@ from common import DARMAError
 class header(object):
 
     '''
-       The header object stores the information obtained from a FITS file
-       header, a text file containing header cards one per line, or an
-       existing PyFITS CardList.
+       A header object stores the information obtained from a FITS file
+       header, a text file containing header cards one per line, a list of
+       header cards, or an existing PyFITS CardList.
 
-       The header object also includes value and format validation through an
-       on-demand imlementation of the PyFITS output verification mechanism.
-       This guarantees that the header and its cards will always have the
-       proper form.  See:
+       The header object also includes value and format validation through
+       an on-demand implementation of the PyFITS output verification
+       mechanism.  This guarantees that the header and its cards will
+       always have the proper form.  See:
 
        http://archive.stsci.edu/fits/fits_standard/
 
@@ -33,15 +33,15 @@ class header(object):
            Create a new header object.
 
            If filename is not None, the header will be read from the
-           specified extension (0 is PrimaryHDU, 1 is first ImageHDU, 2 is
-           second ImageHDU, etc.).
+           specified extension (0 is PrimaryHDU, 1 is first ImageHDU, 2
+           is second ImageHDU, etc.).
 
             filename: name of a valid FITS file containing the header
            card_list: a list of header cards (80 character strings, NULL
-                      terminated), a pyfits.CardList instance, or the name of
-                      a text file containing the header cards
-              option: option used to verify the header (from PyFITS) should be
-                      one of fix, silentfix, ignore, warn, or exception
+                      terminated), a pyfits.CardList instance, or the name
+                      of a text file containing the header cards
+              option: option used to verify the header (from PyFITS) should
+                      be one of fix, silentfix, ignore, warn, or exception
 
            NOTE: The header cards in the form: key = value / comment
         '''
@@ -155,7 +155,7 @@ class header(object):
         '''
 
         if self.hdr is not None:
-            self._card_list = self.hdr.ascard
+            self._card_list = self.hdr.ascardlist()
         else:
             self._card_list = None
         return self._card_list
@@ -226,17 +226,17 @@ class header(object):
         if self._hdr is not None and not self._IS_VERIFIED:
             hdr = self._hdr
             # Save changeable values.
-            bitpix = hdr.ascard['BITPIX']
-            naxis = hdr.ascard['NAXIS']
+            bitpix = hdr.ascardlist()['BITPIX']
+            naxis = hdr.ascardlist()['NAXIS']
             naxisn = []
             for n in range(1,999):
                 if hdr.get('NAXIS%d' % n) is not None:
-                    naxisn.append(hdr.ascard['NAXIS%d' % n])
+                    naxisn.append(hdr.ascardlist()['NAXIS%d' % n])
                 else:
                     break
             extend = hdr.get('EXTEND')
             if extend is not None:
-                extend = hdr.ascard['EXTEND']
+                extend = hdr.ascardlist()['EXTEND']
             # Load header into appropriate HDU.
             if hdr.get('SIMPLE') is not None:
                 hdu = pyfits.PrimaryHDU(header=hdr)
@@ -244,6 +244,12 @@ class header(object):
                 hdu = pyfits.ImageHDU(header=hdr)
             else:
                 raise DARMAError, 'Invalid header!  No SIMPLE or XTENSION keywords.'
+            # Fix any bad keywords PyFITS won't prior to verification.
+            for card in hdu.header.ascardlist():
+                if card.key.count(' ') and not isinstance(card, pyfits._Hierarch):
+                    if option != 'silentfix':
+                        print 'WARNING -- renaming invalid key %s to %s' % (card.key, card.key.replace(' ', '_'))
+                    hdu.header.rename_key(card.key, card.key.replace(' ', '_'))
             # Verify header within the HDU and copy back.
             hdu.verify(option=option)
             hdr = hdu.header
@@ -318,7 +324,7 @@ class header(object):
         '''
 
         return 80
-        #return len(str(self.header.ascard[0]))
+        #return len(str(self.header.ascardlist()[0]))
 
     def block_size(self):
 
@@ -346,7 +352,7 @@ class header(object):
 
         return self.hdr.get_history()
 
-    def set_blank(self, value='', before=None, after=None):
+    def add_blank(self, value='', before=None, after=None):
 
         '''
            Add a blank card.
@@ -359,7 +365,7 @@ class header(object):
         self.hdr.add_blank(value=value, before=before, after=after)
         self._IS_VERIFIED = False
 
-    def set_comment(self, value, before=None, after=None):
+    def add_comment(self, value, before=None, after=None):
 
         '''
            Add a COMMENT card.
@@ -372,7 +378,7 @@ class header(object):
         self.hdr.add_comment(value=value, before=before, after=after)
         self._IS_VERIFIED = False
 
-    def set_history(self, value, before=None, after=None):
+    def add_history(self, value, before=None, after=None):
 
         '''
            Add a HISTORY card.
@@ -385,7 +391,7 @@ class header(object):
         self.hdr.add_history(value=value, before=before, after=after)
         self._IS_VERIFIED = False
 
-    def rename_key(self, oldkey, newkey, force=0):
+    def rename_key(self, oldkey, newkey, force=True):
 
         '''
            Rename a card's keyword in the header.
@@ -395,29 +401,24 @@ class header(object):
             force: if new key name already exist, force to have duplicate name.
         '''
 
-        self.hdr.rename_key(oldkey=oldkey, newkey=newkey, force=force)
-        self._IS_VERIFIED = False
+        if oldkey in ['COMMENT', 'HISTORY', '']:
+            raise DARMAError, 'Cannot rename %s key!' % oldkey
+        if newkey in ['COMMENT', 'HISTORY', '']:
+            raise DARMAError, 'Cannot rename %s key!' % newkey
+        try:
+            self.hdr.rename_key(oldkey, newkey, force=force)
+            self._IS_VERIFIED = False
+        except Exception, e:
+            raise DARMAError, 'Error renaming %s in header: %s' % (oldkey, e)
 
     def dump(self):
 
         '''
-           Dump the contents of the header as cards (header item objects).
-           Cards can be accessed individually as in a dictionary:
-
-           >>> hdr.dump()['BITPIX']          #get the entire card
-           BITPIX  =                   16 / number of bits per data pixel
-           >>> hdr.dump()['BITPIX'].key      #get just the card key
-           'BITPIX'
-           >>> hdr.dump()['BITPIX'].value    #get just the card value
-           16
-           >>> hdr.dump()['BITPIX'].comment  #get just the card comment
-           'number of bits per data pixel'
-
-           NOTE: The card_list attribute holds the same information this method
-                 returns.
+           Dump the contents of the header to the screen.
         '''
 
-        return self.card_list
+        print self.card_list
+        print 'END'
 
     def new(self):
 
@@ -490,53 +491,82 @@ class header(object):
             raise DARMAError, 'Error creating default header'
         return self
 
-    def add(self, key, val, comment=None):
+    def add(self, key, value, comment=None):
 
         '''
            Synonym for append().
         '''
 
-        self.append(key, val, comment)
+        self.append(key, value, comment)
 
-    def add_after(self, after_key, key, val, comment=None):
+    def add_after(self, after, key, value, comment=None):
 
         '''
            Add a new key-value-comment tuple after an existing key.
         '''
 
         try:
-            self.hdr.update(key, val, comment=comment, after=after_key)
-            self._IS_VERIFIED = False
+            if key == 'COMMENT':
+                result.add_comment(value, after=after)
+            elif key == 'HISTORY':
+                result.add_history(value, after=after)
+            elif key == '':
+                result.add_blank(value, after=after)
+            else:
+                self.update(key, value, comment=comment, after=after)
         except Exception, e:
-            raise DARMAError, 'Error adding %s to header: %s' % (`(key, val, comment)`, e)
+            raise DARMAError, 'Error adding %s to header: %s' % (`(key, value, comment)`, e)
 
-    def append(self, key, val, comment=None):
+    def append(self, key, value, comment=None):
 
         '''
-           Append a new key-value-comment tuple to the end of the header.  If
+           Append a new key-value-comment card to the end of the header.  If
            the key exists, it is overwritten.
         '''
 
         try:
-            if self.hdr.has_key(key):
-                del self.hdr[key]
-            self.hdr.update(key, val, comment=comment)
-            self._IS_VERIFIED = False
+            if key == 'COMMENT':
+                self.add_comment(value)
+            elif key == 'HISTORY':
+                self.add_history(value)
+            elif key == '':
+                self.add_blank(value)
+            else:
+                if self.has_key(key):
+                    del self[key]
+                self.update(key, value, comment=comment)
         except Exception, e:
-            raise DARMAError, 'Error adding %s to header: %s' % (`(key, val, comment)`, e)
+            raise DARMAError, 'Error adding %s to header: %s' % (`(key, value, comment)`, e)
 
-    def modify(self, key, val, comment=None):
+    def modify(self, key, value, comment=None):
 
         '''
            Modify the value and/or comment of an existing key.  If the key does
            not exist, it is appended to the end of the header.
+
+           Synonym for update without the before and after options.
         '''
 
         try:
-            self.hdr.update(key, val, comment=comment)
+            self.update(key, value, comment=comment)
+        except Exception, e:
+            raise DARMAError, 'Error updating %s in header: %s' % (`(key, value, comment)`, e)
+
+    def update(self, key, value, comment=None, before=None, after=None):
+
+        '''
+           Update a header keyword.  If the keyword doews not exists, it
+           will be appended.
+        '''
+
+        if key in ['COMMENT', 'HISTORY', '']:
+            raise DARMAError, 'Cannot update %s key!' % key
+        try:
+            self.hdr.update(key, value, comment=comment, before=before,
+                            after=after)
             self._IS_VERIFIED = False
         except Exception, e:
-            raise DARMAError, 'Error modifying %s in header: %s' % (`(key, val, comment)`, e)
+            raise DARMAError, 'Error updating %s in header: %s' % (`(key, value, comment)`, e)
 
     def copy(self):
 
@@ -548,9 +578,10 @@ class header(object):
         '''
 
         result = header()
-        result.hdr = self.hdr.copy()
-        if not result.hdr:
-            raise DARMAError, 'Error copying header!'
+        if self.hdr is not None:
+            result.hdr = self.hdr.copy()
+            if not result.hdr:
+                raise DARMAError, 'Error copying header!'
         return result
 
     def merge(self, other, clobber=True):
@@ -566,12 +597,34 @@ class header(object):
 
         result = self.copy()
         for card in other.card_list:
-            if not result.hdr.has_key(card.key) or clobber:
-                result.hdr.update(card.key, card.value, comment=card.comment)
-        self._IS_VERIFIED = False
+            if card.key == 'COMMENT':
+                result.add_comment(card.value)
+                result._IS_VERIFIED = True
+            elif card.key == 'HISTORY':
+                result.add_history(card.value)
+                result._IS_VERIFIED = True
+            elif card.key == '':
+                result.add_blank(card.value)
+                result._IS_VERIFIED = True
+            elif not result.hdr.has_key(card.key) or clobber:
+                result.update(card.key, card.value, comment=card.comment)
+                result._IS_VERIFIED = True
+        # Allow new header to be verified all at once.
+        result._IS_VERIFIED = False
         if not result.hdr:
             raise DARMAError, 'Error merging headers'
         return result
+
+    def merge_into_file(self, filename):
+
+        '''
+           Merge this header directly into a file containing another header.
+        '''
+
+        hdu = pyfits.open(filename, mode='update', memmap=1)
+        orig_hdr = header(card_list=hdu[0].header.ascardlist())
+        hdu[0].header = self.copy().merge(orig_hdr).hdr
+        hdu.close(output_verify=self.option)
 
     def get_valstr(self, key):
 
@@ -588,7 +641,7 @@ class header(object):
         '''
 
         try:
-            return self.hdr.ascard[key].comment
+            return self.card_list[key].comment
         except:
             return None
 
@@ -605,7 +658,20 @@ class header(object):
         if isinstance(value, pyfits.Undefined):
             return 'Undefined'
         else:
+            # Allow very long strings to be returned intact.
+            if type(value) == str and value.count('CONTINUE'):
+                while value.count('CONTINUE'):
+                    value = '%s%s' % (value[:value.find('CONTINUE')-3], value[value.find('CONTINUE')+11:])
+                value = value[1:-2]
             return value
+
+    def has_key(self, key):
+
+        '''
+           Return the evaluation of the existance of a keyword in the header.
+        '''
+
+        return self.hdr.has_key(key)
 
     def __len__(self):
 
@@ -626,18 +692,17 @@ class header(object):
     def __setitem__(self, key, value):
 
         '''
-           Add an item from val=value or val=(value, comment), overwriting if
+           Add an item from value=value or value=(value, comment), overwriting if
            it exists.
         '''
 
         comment = None
         if isinstance(value, tuple):
             value, comment = value
-        if self.get_value(key) == None:
+        if self.has_key(key):
             self.add(key, value, comment)
         else:
             self.modify(key, value, comment)
-        self._IS_VERIFIED = False
 
     def __delitem__(self, key):
 
