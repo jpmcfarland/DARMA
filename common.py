@@ -126,9 +126,7 @@ class DataStruct(object):
     def _get_data(self):
 
         '''
-           Attribute to store the data.
-
-           'getter' method.
+           data 'getter' method
         '''
 
         self.load()
@@ -137,7 +135,7 @@ class DataStruct(object):
     def _set_data(self, data):
 
         '''
-           'setter' method.
+           data 'setter' method
         '''
 
         self._data = data
@@ -145,12 +143,13 @@ class DataStruct(object):
     def _del_data(self):
 
         '''
-           'deleter' method.
+           data 'deleter' method
         '''
 
         del self._data
 
-    data = property(_get_data, _set_data, _del_data)
+    data = property(_get_data, _set_data, _del_data,
+                    'Attribute to store the data')
 
     def _set_shape_attribute(self):
 
