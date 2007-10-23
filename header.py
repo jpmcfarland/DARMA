@@ -118,9 +118,7 @@ class header(object):
     def _get_header(self):
 
         '''
-           Attribute to store the header.
-
-           'getter' method.
+           header 'getter' method
         '''
 
         self.load()
@@ -129,7 +127,7 @@ class header(object):
     def _set_header(self, hdr):
 
         '''
-           'setter' method.
+           header 'setter' method
         '''
 
         self._hdr = hdr
@@ -138,20 +136,19 @@ class header(object):
     def _del_header(self):
 
         '''
-           'deleter' method.
+           header 'deleter' method
         '''
 
         self._hdr = None
         self._IS_VERIFIED = False
 
-    hdr = property(_get_header, _set_header, _del_header)
+    hdr = property(_get_header, _set_header, _del_header,
+                   'Attribute to store the header')
 
     def _get_card_list(self):
 
         '''
-           Attrubute to store the card list from the current header.
-
-           'getter' method.
+           card_list t'getter' method
         '''
 
         if self.hdr is not None:
@@ -163,7 +160,7 @@ class header(object):
     def _set_card_list(self, card_list):
 
         '''
-           'setter' method.
+           card_list 'setter' method
         '''
 
         self._card_list = card_list
@@ -172,12 +169,13 @@ class header(object):
     def _del_card_list(self):
 
         '''
-           'deleter' method.
+           card_list 'deleter' method
         '''
 
         del self._card_list
 
-    card_list = property(_get_card_list, _set_card_list, _del_card_list)
+    card_list = property(_get_card_list, _set_card_list, _del_card_list,
+                         'Attribute to store the list of cards for the header')
 
     def save(self, filename, raw=True):
 
@@ -623,6 +621,10 @@ class header(object):
         hdu = pyfits.open(filename, mode='update', memmap=1)
         orig_hdr = header(card_list=hdu[0].header.ascardlist())
         hdu[0].header = self.copy().merge(orig_hdr).hdr
+        if hdu[0].header.get('ECLIPSE') == 1:
+            del hdu[0].header['ECLIPSE']
+        if hdu[0].header.get('ORIGIN') == 'eclipse':
+            del hdu[0].header['ORIGIN']
         hdu.close(output_verify=self.option)
 
     def get_valstr(self, key):
