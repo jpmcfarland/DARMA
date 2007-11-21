@@ -188,6 +188,11 @@ class DataStruct(object):
                 bmask = bmask.copy()
             return self.__class__(data=self.data.copy(), bmask=bmask)
 
+    # FIXME
+    # FIXME Rename save() to save_as() and create new save() method without
+    # FIXME any arguments.  This is the proper OO way to implement saving.
+    # FIXME
+
     def save(self, filename=None, hdr=None, datatype='float32', clobber=True,
              update_datamd5=True, option='silentfix'):
 
@@ -210,13 +215,13 @@ class DataStruct(object):
         if self.readonly and (filename is None or filename == self.filename):
             raise DARMAError, 'Saving read-only data'
 
-        if filename is None:
-            if self.filename is None:
-                raise DARMAError, 'No filename to save the file to!'
+        if not filename:
+            if not self.filename:
+                raise DARMAError, 'Neither filename (%s) nor self.filename (%s) contain a valid file name!' % (filename, self.filename)
             else:
                 filename = self.filename
         else:
-            if self.filename is None:
+            if not self.filename:
                 self.filename = filename
 
         if hasattr(hdr, 'hdr'):

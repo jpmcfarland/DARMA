@@ -187,13 +187,13 @@ class cube(list):
         if self.readonly and (filename is None or filename == self.filename):
             raise DARMAError, 'Saving read-only data'
 
-        if filename is None:
-            if self.filename is None:
-                raise DARMAError, 'No filename to save the file to!'
+        if not filename:
+            if not self.filename:
+                raise DARMAError, 'Neither filename (%s) nor self.filename (%s) contain a valid file name!' % (filename, self.filename)
             else:
                 filename = self.filename
         else:
-            if self.filename is None:
+            if not self.filename:
                 self.filename = filename
 
         if hasattr(hdr, 'hdr'):
