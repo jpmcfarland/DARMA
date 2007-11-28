@@ -5,6 +5,9 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, os
 
+if not hasattr(pyfits, '_Hierarch') and hasattr(pyfits, 'NP_pyfits') and hasattr(pyfits.NP_pyfits, '_Hierarch'):
+    pyfits._Hierarch = pyfits.NP_pyfits._Hierarch
+
 from common import DARMAError
 
 class header(object):
