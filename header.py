@@ -590,7 +590,7 @@ class header(object):
            Merge this header with another header
 
            Returns a new header combining the values of this header with those
-           of another header.  header cards (keyword objects) from other are
+           of another header.  Header cards (keyword objects) from other are
            added to self.  If a card.key already exists in self, it is not
            overwritten unless clobber is True.
         '''
@@ -615,15 +615,18 @@ class header(object):
             raise DARMAError, 'Error merging headers'
         return result
 
-    def merge_into_file(self, filename):
+    def merge_into_file(self, filename, clobber=True):
 
         '''
            Merge this header directly into a file containing another header.
+
+           Merge this header into the FITS file named filenames, overwriting
+           where necessary if clobber is true.
         '''
 
         hdu = pyfits.open(filename, mode='update', memmap=1)
         orig_hdr = header(card_list=hdu[0].header.ascardlist())
-        hdu[0].header = self.copy().merge(orig_hdr).hdr
+        hdu[0].header = self.copy().merge(orig_hdr, clobber=clobber).hdr
         if hdu[0].header.get('ECLIPSE') == 1:
             del hdu[0].header['ECLIPSE']
         if hdu[0].header.get('ORIGIN') == 'eclipse':
