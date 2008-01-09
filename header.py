@@ -620,17 +620,20 @@ class header(object):
         '''
            Merge this header directly into a file containing another header.
 
-           Merge this header into the FITS file named filenames, overwriting
+           Merge this header into the FITS file named filename, overwriting
            where necessary if clobber is true.
         '''
 
         hdu = pyfits.open(filename, mode='update', memmap=1)
         orig_hdr = header(card_list=hdu[0].header.ascardlist())
-        hdu[0].header = self.copy().merge(orig_hdr, clobber=clobber).hdr
-        if hdu[0].header.get('ECLIPSE') == 1:
-            del hdu[0].header['ECLIPSE']
-        if hdu[0].header.get('ORIGIN') == 'eclipse':
-            del hdu[0].header['ORIGIN']
+        new_hdr = self.merge(orig_hdr, clobber=clobber)
+        if new_hdr['ECLIPSE'] == 1:
+            del new_hdr['ECLIPSE']
+        if new_hdr['ORIGIN'] == 'eclipse':
+            del new_hdr['ORIGIN']
+        hdu[0].header = new_hdr.hdr
+        hdu[0].update_header()
+        self.hdr = hdu[0].header
         hdu.close(output_verify=self.option)
 
     def get_valstr(self, key):
