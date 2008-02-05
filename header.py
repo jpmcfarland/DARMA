@@ -580,6 +580,7 @@ class header(object):
         result = header()
         if self.hdr is not None:
             result.hdr = self.hdr.copy()
+            result.option = self.option
             if not result.hdr:
                 raise DARMAError, 'Error copying header!'
         return result
@@ -625,8 +626,8 @@ class header(object):
         '''
 
         hdu = pyfits.open(filename, mode='update', memmap=1)
-        orig_hdr = header(card_list=hdu[0].header.ascardlist())
-        new_hdr = self.merge(orig_hdr, clobber=clobber)
+        orig_hdr = header(card_list=hdu[0].header.ascardlist(), option=self.option)
+        new_hdr = orig_hdr.merge(self, clobber=clobber)
         if new_hdr['ECLIPSE'] == 1:
             del new_hdr['ECLIPSE']
         if new_hdr['ORIGIN'] == 'eclipse':
