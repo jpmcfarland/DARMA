@@ -608,7 +608,11 @@ class header(object):
                 result.add_blank(card.value)
                 result._IS_VERIFIED = True
             elif not result.hdr.has_key(card.key) or clobber:
-                result.update(card.key, card.value, comment=card.comment)
+                if isinstance(card, pyfits._Hierarch):
+                    key = 'HIERARCH '+card.key
+                else:
+                    key = card.key
+                result.update(key, card.value, comment=card.comment)
                 result._IS_VERIFIED = True
         # Allow new header to be verified all at once.
         result._IS_VERIFIED = False
