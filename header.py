@@ -631,11 +631,18 @@ class header(object):
 
         hdu = pyfits.open(filename, mode='update', memmap=1)
         orig_hdr = header(card_list=hdu[0].header.ascardlist(), option=self.option)
-        new_hdr = orig_hdr.merge(self, clobber=clobber)
+        self_hdr = self.copy()
+        naxis_keys = ['NAXIS%d' % val for val in range(1, self_hdr['NAXIS']+1)]
+        ignored_keys =  ['SIMPLE', 'BITPIX', 'NAXIS'] + naxis_keys
+        for key in ignored_keys:
+            del self_hdr.hdr[key]
+        new_hdr = orig_hdr.merge(self_hdr, clobber=clobber)
+        del self_hdr
         if new_hdr['ECLIPSE'] == 1:
             del new_hdr['ECLIPSE']
         if new_hdr['ORIGIN'] == 'eclipse':
             del new_hdr['ORIGIN']
+
         hdu[0].header = new_hdr.hdr
         hdu[0].update_header()
         self.hdr = hdu[0].header
@@ -715,9 +722,9 @@ class header(object):
         if isinstance(value, tuple):
             value, comment = value
         if self.has_key(key):
-            self.add(key, value, comment)
-        else:
             self.modify(key, value, comment)
+        else:
+            self.add(key, value, comment)
 
     def __delitem__(self, key):
 
