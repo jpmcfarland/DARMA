@@ -524,17 +524,21 @@ class header(object):
            the key exists, it is overwritten.
         '''
 
+        # PyFITS does not consider terminal history, comment, or blank cards
+        # when appending and will always add a new keyword before them.  Use
+        # the numeric index to override this.
+        last_key = len(self.card_list)-1
         try:
             if key == 'COMMENT':
-                self.add_comment(value)
+                self.add_comment(value, after=last_key)
             elif key == 'HISTORY':
-                self.add_history(value)
+                self.add_history(value, after=last_key)
             elif key == '':
-                self.add_blank(value)
+                self.add_blank(value, after=last_key)
             else:
                 if self.has_key(key):
                     del self[key]
-                self.update(key, value, comment=comment)
+                self.update(key, value, comment=comment, after=last_key)
         except Exception, e:
             raise DARMAError, 'Error adding %s to header: %s' % (`(key, value, comment)`, e)
 
@@ -597,23 +601,27 @@ class header(object):
         '''
 
         result = self.copy()
+        # Temporary keyword to act as a marker for the last keyword.  Do not
+        # remove as the add_blank method requires this to work properly.
+        result.append('_DUMMY_', '')
         for card in other.card_list:
             if card.key == 'COMMENT':
-                result.add_comment(card.value)
+                result.add_comment(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
             elif card.key == 'HISTORY':
-                result.add_history(card.value)
+                result.add_history(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
             elif card.key == '':
-                result.add_blank(card.value)
+                result.add_blank(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
             elif not result.hdr.has_key(card.key) or clobber:
                 if isinstance(card, pyfits._Hierarch):
                     key = 'HIERARCH '+card.key
                 else:
                     key = card.key
-                result.update(key, card.value, comment=card.comment)
+                result.update(key, card.value, comment=card.comment, before='_DUMMY_')
                 result._IS_VERIFIED = True
+        del result['_DUMMY_']
         # Allow new header to be verified all at once.
         result._IS_VERIFIED = False
         if not result.hdr:
