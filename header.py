@@ -621,7 +621,16 @@ class header(object):
                     key = card.key
                 result.update(key, card.value, comment=card.comment, before='_DUMMY_')
                 result._IS_VERIFIED = True
+        # Remove temporary keyword.
         del result['_DUMMY_']
+        # Make sure unnecessary extension keywords are removed.  This is a
+        # primary header, not an extension.
+        ext_keys = ['EXTEND', 'XTENSION', 'EXTNAME', 'EXTVER', 'PCOUNT',
+                    'GCOUNT']
+        for key in ext_keys:
+            if result[key] is not None:
+                del result[key]
+                result._IS_VERIFIED = True
         # Allow new header to be verified all at once.
         result._IS_VERIFIED = False
         if not result.hdr:
