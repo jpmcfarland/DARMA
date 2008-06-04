@@ -629,7 +629,12 @@ class header(object):
                     'GCOUNT']
         for key in ext_keys:
             if result[key] is not None:
-                del result[key]
+                if key == 'EXTNAME':
+                    result.rename_key('EXTNAME', '_EXTNAME')
+                if key == 'EXTVER':
+                    result.rename_key('EXTVER', '_EXTVER')
+                else:
+                    del result[key]
                 result._IS_VERIFIED = True
         # Allow new header to be verified all at once.
         result._IS_VERIFIED = False
