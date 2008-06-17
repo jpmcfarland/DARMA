@@ -1352,3 +1352,36 @@ def _adjust_index(key):
             key0 -= 1
         return key0
 
+def fold_string(string, num=80, char='', newline='\n'):
+
+    '''
+       Fold the given string string at num characters if len(string) > num.
+       If char is specified, prefer splitting after nearest previous
+       occurrance of char.  The newline character can also be specified.
+
+          string: any string to be split
+             num: number of characters to split at
+            char: prefer to split after specific character in string
+         newline: newline character
+    '''
+
+    output = ''
+    buffer = ''
+    for c in string:
+        if len(buffer)+1 < num:
+            buffer += c
+        else:
+            buffer += c
+            if char and char in buffer:
+                index = buffer.rfind(char)
+                output += '%s%s' % (buffer[:index+1], newline)
+                buffer = buffer[index+1:]
+            else:
+                output += '%s%s' % (buffer, newline)
+                buffer = ''
+    if len(buffer):
+        output += buffer
+    if output.endswith(newline):
+        output = output[:-len(newline)]
+    return output
+
