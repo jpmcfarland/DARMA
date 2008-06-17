@@ -8,7 +8,7 @@ import pyfits, os
 if not hasattr(pyfits, '_Hierarch') and hasattr(pyfits, 'NP_pyfits') and hasattr(pyfits.NP_pyfits, '_Hierarch'):
     pyfits._Hierarch = pyfits.NP_pyfits._Hierarch
 
-from common import DARMAError
+from common import DARMAError, fold_string
 
 class header(object):
 
@@ -55,9 +55,8 @@ class header(object):
         self.option     = option
         self._hdr       = None
 
-        if self.filename is not None:
-            if not os.path.exists(self.filename):
-                raise DARMAError, 'Filename: %s not found!' % self.filename
+        # Load header, verify header, and populate header attributes.
+        self.load_header()
 
     def load(self):
 
@@ -95,7 +94,7 @@ class header(object):
             if card_list is not None:
                 if type(card_list) == str:
                     fd = file(card_list, 'r')
-                    card_list = [line.strip('\n') for line in fd.readlines()]
+                    card_list = [line.strip('\n') for line in fd.readlines() if not line.startswith('END')]
                     fd.close()
                 if type(card_list) == list:
                     header_cards = pyfits.CardList()
@@ -117,6 +116,18 @@ class header(object):
             if not isinstance(self._hdr, pyfits.Header):
                 raise DARMAError, '%s must be a %s instance!' % (self._hdr, pyfits.Header)
         self.verify(option=self.option)
+
+        if self._hdr is not None:
+            allowed_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
+            for card in self._hdr.ascardlist():
+                if card.key not in ['COMMENT', 'HISTORY', ''] and not hasattr(self, card.key):
+                    attr = card.key.replace('-', '_')
+                    for char in attr.upper():
+                        if char not in allowed_chars:
+                            attr = attr.replace(char, '_')
+                    if isinstance(card, pyfits._Hierarch):
+                        attr = 'HIERARCH_%s' % attr
+                    setattr(self, attr, card)
 
     def _get_header(self):
 
@@ -151,7 +162,7 @@ class header(object):
     def _get_card_list(self):
 
         '''
-           card_list t'getter' method
+           card_list 'getter' method
         '''
 
         if self.hdr is not None:
@@ -248,9 +259,10 @@ class header(object):
             # Fix any bad keywords PyFITS won't prior to verification.
             for card in hdu.header.ascardlist():
                 if card.key.count(' ') and not isinstance(card, pyfits._Hierarch):
+                    new_key = card.key.replace(' ', '_')
                     if option != 'silentfix':
-                        print 'WARNING -- renaming invalid key %s to %s' % (card.key, card.key.replace(' ', '_'))
-                    hdu.header.rename_key(card.key, card.key.replace(' ', '_'))
+                        print 'WARNING -- renaming invalid key %s to %s' % (card.key, new_key)
+                    hdu.header.rename_key(card.key, new_key)
             # Verify header within the HDU and copy back.
             hdu.verify(option=option)
             hdr = hdu.header
@@ -358,12 +370,16 @@ class header(object):
         '''
            Add a blank card.
 
-            value: Text to be added.
+            value: Text to be added (folds at 70 characters)
            before: keyword to place blank before
             after: keyword to place blank after
         '''
 
-        self.hdr.add_blank(value=value, before=before, after=after)
+        values = fold_string(value, num=70).split('\n')
+        if after:
+            values.reverse()
+        for value in values:
+            self.hdr.add_blank(value='  '+value, before=before, after=after)
         self._IS_VERIFIED = False
 
     def add_comment(self, value, before=None, after=None):
@@ -371,12 +387,16 @@ class header(object):
         '''
            Add a COMMENT card.
 
-            value: comment text to be added.
+            value: comment text to be added (folds at 70 characters)
            before: keyword to place blank before
             after: keyword to place blank after
         '''
 
-        self.hdr.add_comment(value=value, before=before, after=after)
+        values = fold_string(value, num=70).split('\n')
+        if after:
+            values.reverse()
+        for value in values:
+            self.hdr.add_comment(value='  '+value, before=before, after=after)
         self._IS_VERIFIED = False
 
     def add_history(self, value, before=None, after=None):
@@ -384,12 +404,16 @@ class header(object):
         '''
            Add a HISTORY card.
 
-            value: history text to be added.
+            value: history text to be added (folds at 70 characters)
            before: keyword to place blank before
             after: keyword to place blank after
         '''
 
-        self.hdr.add_history(value=value, before=before, after=after)
+        values = fold_string(value, num=70).split('\n')
+        if after:
+            values.reverse()
+        for value in values:
+            self.hdr.add_history(value='  '+value, before=before, after=after)
         self._IS_VERIFIED = False
 
     def rename_key(self, oldkey, newkey, force=True):
@@ -740,13 +764,40 @@ class header(object):
            it exists.
         '''
 
+        # Check if incoming key is nonstandard (i.e., should be HIERARCH).
+        allowed_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ '
+        standard = True
+        for char in key.upper():
+            if char not in allowed_chars:
+                standard = False
+                break
+        if (key.count(' ') or len(key) > 8 or not standard) and \
+           not key.upper().startswith('HIERARCH'):
+            key = 'HIERARCH %s' % key
+
         comment = None
         if isinstance(value, tuple):
             value, comment = value
-        if self.has_key(key):
+        if key == 'COMMENT':
+            self.add_comment(value)
+        elif key == 'HISTORY':
+            self.add_history(value)
+        elif key == '':
+            self.add_blank(value)
+        elif self.has_key(key):
             self.modify(key, value, comment)
         else:
             self.add(key, value, comment)
+
+        card = self.card_list[key]
+        if card.key not in ['COMMENT', 'HISTORY', '']:
+            attr = card.key.replace('-', '_').replace(' ', '_')
+            for char in attr.upper():
+                if char not in allowed_chars:
+                    attr = attr.replace(char, '_')
+            if isinstance(card, pyfits._Hierarch):
+                attr = 'HIERARCH_%s' % attr
+            setattr(self, attr, card)
 
     def __delitem__(self, key):
 
@@ -756,4 +807,7 @@ class header(object):
 
         self.hdr.__delitem__(key)
         self._IS_VERIFIED = False
+
+        if hasattr(self, key):
+            delattr(self, key)
 
