@@ -811,3 +811,23 @@ class header(object):
         if hasattr(self, key):
             delattr(self, key)
 
+#-----------------------------------------------------------------------
+
+def create_headers(filename):
+
+    '''
+       The sole purpose of this factory function is to create a list of
+       headers from the headers in the FITS file filename.  If the file is
+       single-extension, this is a list of one header.  If the file is
+       multi-extension, this is a list of one primary header and N
+       extension headers, where N is the number of extensions.
+
+       filename: name of a valid FITS file, single- or multi-extension
+    '''
+
+    hdus = pyfits.open(filename)
+    headers = [header(card_list=hdu.header.ascardlist()) for hdu in hdus]
+    hdus.close()
+
+    return headers
+
