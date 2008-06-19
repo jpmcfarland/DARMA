@@ -370,16 +370,16 @@ class header(object):
         '''
            Add a blank card.
 
-            value: Text to be added (folds at 70 characters)
+            value: Text to be added (folds at 72 characters)
            before: keyword to place blank before
             after: keyword to place blank after
         '''
 
-        values = fold_string(value, num=70).split('\n')
+        values = fold_string(value, num=72).split('\n')
         if after:
             values.reverse()
         for value in values:
-            self.hdr.add_blank(value='  '+value, before=before, after=after)
+            self.hdr.add_blank(value=value, before=before, after=after)
         self._IS_VERIFIED = False
 
     def add_comment(self, value, before=None, after=None):
@@ -387,16 +387,16 @@ class header(object):
         '''
            Add a COMMENT card.
 
-            value: comment text to be added (folds at 70 characters)
+            value: comment text to be added (folds at 72 characters)
            before: keyword to place blank before
             after: keyword to place blank after
         '''
 
-        values = fold_string(value, num=70).split('\n')
+        values = fold_string(value, num=72).split('\n')
         if after:
             values.reverse()
         for value in values:
-            self.hdr.add_comment(value='  '+value, before=before, after=after)
+            self.hdr.add_comment(value=value, before=before, after=after)
         self._IS_VERIFIED = False
 
     def add_history(self, value, before=None, after=None):
@@ -404,16 +404,16 @@ class header(object):
         '''
            Add a HISTORY card.
 
-            value: history text to be added (folds at 70 characters)
+            value: history text to be added (folds at 72 characters)
            before: keyword to place blank before
             after: keyword to place blank after
         '''
 
-        values = fold_string(value, num=70).split('\n')
+        values = fold_string(value, num=72).split('\n')
         if after:
             values.reverse()
         for value in values:
-            self.hdr.add_history(value='  '+value, before=before, after=after)
+            self.hdr.add_history(value=value, before=before, after=after)
         self._IS_VERIFIED = False
 
     def rename_key(self, oldkey, newkey, force=True):
