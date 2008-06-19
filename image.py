@@ -1321,13 +1321,14 @@ class image(DataStruct):
 # Functions generating images
 #
 
-def make_image(xsize, ysize, datatype=FLOAT):
+def make_image(xsize, ysize, datatype=FLOAT, value=None):
 
     """
        Generate a new image.
 
        xsize   : the X dimension of the image
        ysize   : the Y dimension of the image
+       value   : optional value to initialize pixel values to
        datatype: type of the image pixel data
 
        NOTE: Associated data array is zero initialized.
@@ -1341,7 +1342,10 @@ def make_image(xsize, ysize, datatype=FLOAT):
         raise DARMAError, 'Invalid image dimesions'
 
     # PyFITS Array axes are reversed.
-    return image(data=Array.zeros((ysize, xsize), dtype=datatype))
+    ima = image(data=Array.zeros((ysize, xsize), dtype=datatype))
+    if value is not None:
+        ima.data.fill(value)
+    return ima
 
 def fft(real, imaginary=None, direction=-1):
 
