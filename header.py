@@ -739,7 +739,7 @@ class header(object):
            Return the evaluation of the existance of a keyword in the header.
         '''
 
-        return self.hdr.has_key(key)
+        return self.hdr.has_key(key) is 1
 
     def __len__(self):
 
@@ -810,6 +810,15 @@ class header(object):
 
         if hasattr(self, key):
             delattr(self, key)
+
+    def __contains__(self, key):
+
+        '''
+           Returns existence of keyword key in header.
+           x.__contains__(y) <==> y in x
+        '''
+
+        return self.has_key(key)
 
 #-----------------------------------------------------------------------
 
