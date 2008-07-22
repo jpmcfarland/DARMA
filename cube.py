@@ -31,16 +31,17 @@ class cube(DataStruct):
     '''
 
     def __init__(self, filename=None, extension=0, data=None, image_list=None, 
-                 index=0, readonly=0, *args, **kwargs):
+                 index=0, readonly=0, memmap=1, *args, **kwargs):
 
         '''
              filename: The name of a FITS file the cube can be loaded from
             extension: A FITS extension number
-                 data: a 3-dim numeric Python array (i.e., NumPy array)
+                 data: A 3-dim numeric Python array (i.e., NumPy array)
            image_list: A list of images or pixelmaps
-                index: which cube to take if data is 4-dimensional (e.g., a
+                index: Which cube to take if data is 4-dimensional (e.g., a
                        radio cube with polarization)
              readonly: Indicate that the FITS file is readonly
+               memmap: Use memory mapping
         '''
 
         # Allow DARMA to be imported even if NumPy is not available.
@@ -53,6 +54,7 @@ class cube(DataStruct):
         self.image_list = image_list
         self.index      = index
         self.readonly   = readonly
+        self.memmap     = memmap
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
@@ -80,17 +82,19 @@ class cube(DataStruct):
             image_list = self.image_list
             index      = self.index
             readonly   = self.readonly
+            memmap     = self.memmap
 
             if filename is not None:
                 try:
-                    _data = pyfits.getdata(filename, extension)
+                    #_data = pyfits.getdata(filename, extension)
+                    _data = pyfits.open(filename, memmap=memmap)[extension].data
                 except Exception,e:
                     raise DARMAError, 'Unable to load data from %s : %s' % (filename, e)
             elif data:
                 _data = data
                 del data
             elif image_list:
-                _data = Array.concatenate([ima.data for ima in image_list]).reshape(len(image_list), ima.shape[0], ima.shape[1])
+                _data = Array.concatenate([ima.data for ima in image_list]).reshape(len(image_list), ima.data.shape[0], ima.data.shape[1])
 
             shape = _data.shape
             if len(shape) == 1:
