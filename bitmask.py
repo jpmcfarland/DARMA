@@ -99,9 +99,6 @@ class bitmask(DataStruct):
         self.pmap = None
         self.map_type = None
 
-        self._set_shape_attribute()
-        self._set_datatype_attribute()
-
     def clean_bitmask(self):
 
         '''

@@ -12,6 +12,7 @@ try:
     import numpy as Array
     import numpy.random as Arrayrandom
     import numpy.fft as Arrayfft
+    # FIXME
     #import numpy.nd_image.filters as Arrayfilters
 except:
     Array = Arrayrandom = Arrayfft = None
@@ -151,28 +152,42 @@ class DataStruct(object):
     data = property(_get_data, _set_data, _del_data,
                     'Attribute to store the data')
 
-    def _set_shape_attribute(self):
+    def _get_shape(self):
 
         '''
-           Set the shape attribute to a tuple of (xsize, ysize).
-        '''
-
-        if self._data is not None:
-            # PyFITS Array axes are reversed.
-            self.shape = self._data.shape[::-1]
-        else:
-            self.shape = (0,)
-
-    def _set_datatype_attribute(self):
-
-        '''
-           Set the datatype of self.data.
         '''
 
         if self._data is not None:
-            self.datatype = self._data.dtype.name
-        else:
-            self.datatype = None
+            return self._data.shape[::-1]
+        return(0,)
+
+    shape = property(_get_shape)
+
+    def _get_datatype(self):
+
+        '''
+        '''
+
+        if self._data is not None:
+            self._datatype = self._data.dtype.name
+            return self._datatype
+        return None
+
+    def _set_datatype(self, datatype):
+
+        '''
+        '''
+
+        self._datatype = datatype
+
+    def _del_datatype(self):
+
+        '''
+        '''
+
+        del self._datatype
+
+    datatype = property(_get_datatype, _set_datatype, _del_datatype)
 
     def copy(self):
 
@@ -521,6 +536,15 @@ class DataStruct(object):
             self.data.__setitem__(key, value.data)
         else:
             raise DARMAError, 'Cannot set item.  Data array does not exist!'
+
+    def __contains__(self, value):
+
+        '''
+           Return existence of value in self.
+           x.__contains__(y) <==> y in x
+        '''
+
+        return value in self.data
 
     #def __repr__(self):
 

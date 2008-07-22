@@ -77,9 +77,6 @@ class pixelmap(DataStruct):
         if self._data is not None and len(self._data.shape) == 3:
             self._data = self._data[self.plane]
 
-        self._set_shape_attribute()
-        self._set_datatype_attribute()
-
     def dump_pixelmap(self, filename):
 
         '''

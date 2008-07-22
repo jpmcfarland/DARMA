@@ -275,9 +275,6 @@ class image(DataStruct):
         if self.bmask is None:
             self.bmask = bitmask()
 
-        self._set_shape_attribute()
-        self._set_datatype_attribute()
-
     def as_pixelmap(self):
 
         '''
