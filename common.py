@@ -421,7 +421,10 @@ class DataStruct(object):
         size             = self.size()
         item_size        = self.itemsize()
         data_size        = size * item_size
-        has_nonnumbers   = self.has_nonnumbers()
+        if hasattr(self, 'bmask'):
+            has_nonnumbers = self.has_nonnumbers()
+        else:
+            has_nonnumbers = 'N/A'
         if self.has_bitmask():
             bitmask_size = self.bmask.size * self.bmask.itemsize
         else:
