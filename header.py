@@ -822,7 +822,7 @@ class header(object):
 
 #-----------------------------------------------------------------------
 
-def create_headers(filename):
+def get_headers(filename):
 
     '''
        The sole purpose of this factory function is to create a list of
