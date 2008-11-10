@@ -166,9 +166,9 @@ class header(object):
         '''
 
         if self.hdr is not None:
-            self._card_list = self.hdr.ascardlist()
+            self._card_list = self.hdr.ascardlist() or []
         else:
-            self._card_list = None
+            self._card_list = []
         return self._card_list
 
     def _set_card_list(self, card_list):
@@ -237,6 +237,18 @@ class header(object):
 
         if self._hdr is not None and not self._IS_VERIFIED:
             hdr = self._hdr
+            # Add cards required for PyFITS verification (they will be
+            # removed later as necessary).
+            ADDED_SIMPLE, ADDED_BITPIX, ADDED_NAXIS = False, False, False
+            if hdr.get('SIMPLE') is None:
+                hdr.update('SIMPLE', True)
+                ADDED_SIMPLE = True
+            if hdr.get('BITPIX') is None:
+                hdr.update('BITPIX', 8)
+                ADDED_BITPIX = True
+            if hdr.get('NAXIS') is None:
+                hdr.update('NAXIS', 0)
+                ADDED_NAXIS = True
             # Save changeable values.
             bitpix = hdr.ascardlist()['BITPIX']
             naxis = hdr.ascardlist()['NAXIS']
@@ -267,9 +279,17 @@ class header(object):
             hdu.verify(option=option)
             hdr = hdu.header
             del hdu
-            # Add changeable values back.
-            hdr.update(bitpix.key, bitpix.value, bitpix.comment)
-            hdr.update(naxis.key, naxis.value, naxis.comment)
+            # Remove temporary cards and add changeable values back.
+            if ADDED_SIMPLE:
+                hdr.__delitem__('SIMPLE')
+            if ADDED_BITPIX:
+                hdr.__delitem__('BITPIX')
+            else:
+                hdr.update(bitpix.key, bitpix.value, bitpix.comment)
+            if ADDED_NAXIS:
+                hdr.__delitem__('NAXIS')
+            else:
+                hdr.update(naxis.key, naxis.value, naxis.comment)
             n = ''
             if len(naxisn):
                 card = naxisn[0]
@@ -337,7 +357,7 @@ class header(object):
         '''
 
         return 80
-        #return len(str(self.header.ascardlist()[0]))
+        #return self.card_list[0].length
 
     def block_size(self):
 
@@ -819,6 +839,32 @@ class header(object):
         '''
 
         return self.has_key(key)
+
+    def __repr__(self):
+
+        repr_list = []
+        for card in self.card_list:
+            if card.key != '' and card.value != '' and card.comment != '':
+                    repr_list.append(card.__repr__())
+        if len(repr_list):
+            repr_list.append('END')
+
+        return_str = str(self.__class__)+'\n'
+        if len(repr_list) > 23:
+            for repr in repr_list[:10]:
+                return_str += repr+'\n'
+            return_str += '.\n.\n.\n'
+            for repr in repr_list[-10:]:
+                return_str += repr+'\n'
+        else:
+            for repr in repr_list:
+                return_str += repr+'\n'
+
+        return return_str[:-1]
+
+    def __str__(self):
+
+        return self.hdr.__str__()
 
 #-----------------------------------------------------------------------
 
