@@ -843,8 +843,9 @@ class header(object):
     def __repr__(self):
 
         repr_list = []
+
         for card in self.card_list:
-            if card.key != '' and card.value != '' and card.comment != '':
+            if card.key != '' and card.value != '':
                     repr_list.append(card.__repr__())
         if len(repr_list):
             repr_list.append('END')
