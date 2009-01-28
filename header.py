@@ -186,7 +186,7 @@ class header(object):
            card_list 'deleter' method
         '''
 
-        del self._card_list
+        self._card_list = []
 
     card_list = property(_get_card_list, _set_card_list, _del_card_list,
                          'Attribute to store the list of cards for the header')
@@ -211,10 +211,10 @@ class header(object):
         mode = {True : 'wb', False :  'w'}
         crlf = {True :   '', False : '\n'}
         fd = file(filename, mode[raw])
-        cardlist = ['%s%s' % (str(card), crlf[raw]) for card in self.card_list]
+        cardlist = ['%s%s' % (str(card), crlf[raw]) for card in self]
         cardlist.append('END%s%s' % (' '*(linelen-3), crlf[raw]))
         if raw:
-            while len(cardlist)*linelen%blksize:
+            while len(cardlist)*linelen % blksize:
                 cardlist.append(' '*linelen)
         fd.writelines(cardlist)
         fd.close()
@@ -312,7 +312,7 @@ class header(object):
         from eclipse import header as e_header
         e_hdr = e_header.header().new()
         del e_header
-        for card in self.card_list:
+        for card in self:
             if card.value is True:
                 value = 'T'
             elif card.value is False:
@@ -648,7 +648,7 @@ class header(object):
         # Temporary keyword to act as a marker for the last keyword.  Do not
         # remove as the add_blank method requires this to work properly.
         result.append('_DUMMY_', '')
-        for card in other.card_list:
+        for card in other:
             if card.key == 'COMMENT':
                 result.add_comment(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
@@ -843,9 +843,13 @@ class header(object):
 
     def __repr__(self):
 
+        '''
+           x.__repr__() <==> repr(x)
+        '''
+
         repr_list = []
 
-        for card in self.card_list:
+        for card in self:
             if card.key != '' and card.value != '':
                     repr_list.append(card.__repr__())
         if len(repr_list):
@@ -866,7 +870,65 @@ class header(object):
 
     def __str__(self):
 
+        '''
+           x.__str__() <==> str(x)
+        '''
+
         return self.hdr.__str__()
+
+    def __iter__(self):
+
+        '''
+           x.__iter__() <==> iter(x)
+
+           Iterate over the cards in this header, not just the keywords.
+           Use iterkeys() to iterate over the keywords.
+        '''
+
+        return self.card_list.__iter__()
+
+    def iteritems(self):
+
+        '''
+           H.iteritems() -> an iterator over the (keyword, value, comment)
+           items of H
+        '''
+
+        return iter([(card.key, card.value, card.comment) for card in self])
+
+    def iterkeys(self):
+
+        '''
+           H.iterkeys() -> an iterator over the keywords of H
+
+           Synonym for iterkeywords()
+        '''
+
+        return self.iterkeywords()
+
+    def iterkeywords(self):
+
+        '''
+           H.iterkeywords() -> an iterator over the keywords of H
+        '''
+
+        return iter(self.card_list.keys())
+
+    def itervalues(self):
+
+        '''
+           H.itervalues() -> an iterator over the values of H
+        '''
+
+        return iter([card.value for card in self])
+
+    def itercomments(self):
+
+        '''
+           H.itercomments() -> an iterator over the comments of H
+        '''
+
+        return iter([card.comment for card in self])
 
     def get_all_headers(self):
 
