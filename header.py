@@ -689,7 +689,8 @@ class header(object):
     def merge_into_file(self, filename, clobber=True):
 
         '''
-           Merge this header directly into a file containing another header.
+           Merge this header directly into the primary header of an existing
+           file.
 
            Merge this header into the FITS file named filename, overwriting
            where necessary if clobber is true.
@@ -867,6 +868,26 @@ class header(object):
 
         return self.hdr.__str__()
 
+    def get_all_headers(self):
+
+        '''
+           The sole purpose of this method is to call the factory function
+           get_headers that creates a list of headers from the headers in
+           file that the current header is loaded from (self.filename).  If
+           the file is single-extension or the filename is no specified,
+           this is a list of one header, a
+           copy of the current header.  If the file is multi-extension,
+           this is a list of one primary header and N extension headers,
+           where N is the number of extensions.
+        '''
+
+        if self.filename is None:
+            return [self.copy()]
+        if not os.path.exists(self.filename):
+            raise DARMAError, 'File not found: %s' % self.filename
+
+        return get_headers(self.filename)
+
 #-----------------------------------------------------------------------
 
 def get_headers(filename):
@@ -881,7 +902,7 @@ def get_headers(filename):
        filename: name of a valid FITS file, single- or multi-extension
     '''
 
-    hdus = pyfits.open(filename)
+    hdus = pyfits.open(filename, memmap=1)
     headers = [header(card_list=hdu.header.ascardlist()) for hdu in hdus]
     hdus.close()
 
