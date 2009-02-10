@@ -237,17 +237,26 @@ class header(object):
 
         if self._hdr is not None and not self._IS_VERIFIED:
             hdr = self._hdr
+            # Primary header keywords.
+            simple, extend = hdr.get('SIMPLE'), hdr.get('EXTEND')
+            # Extension header keywords.
+            xtension = hdr.get('XTENSION')
+            # Common keywords.
+            bitpix, naxis = hdr.get('BITPIX'), hdr.get('NAXIS')
+            # Cards to be added back if needed.
+            if extend is not None:
+                extend = hdr.ascardlist()['EXTEND']
             # Add cards required for PyFITS verification (they will be
             # removed later as necessary).
             ADDED_SIMPLE, ADDED_BITPIX, ADDED_NAXIS = False, False, False
-            if hdr.get('SIMPLE') is None:
-                hdr.update('SIMPLE', True)
+            if simple is None and xtension is None:
+                hdr.update('SIMPLE', True, 'conforms to FITS standard')
                 ADDED_SIMPLE = True
-            if hdr.get('BITPIX') is None:
-                hdr.update('BITPIX', 8)
+            if bitpix is None:
+                hdr.update('BITPIX', 8, 'array data type')
                 ADDED_BITPIX = True
-            if hdr.get('NAXIS') is None:
-                hdr.update('NAXIS', 0)
+            if naxis is None:
+                hdr.update('NAXIS', 0, 'number of array dimensions')
                 ADDED_NAXIS = True
             # Save changeable values.
             bitpix = hdr.ascardlist()['BITPIX']
@@ -258,13 +267,10 @@ class header(object):
                     naxisn.append(hdr.ascardlist()['NAXIS%d' % n])
                 else:
                     break
-            extend = hdr.get('EXTEND')
-            if extend is not None:
-                extend = hdr.ascardlist()['EXTEND']
             # Load header into appropriate HDU.
-            if hdr.get('SIMPLE') is not None:
+            if simple is not None:
                 hdu = pyfits.PrimaryHDU(header=hdr)
-            elif hdr.get('XTENSION') is not None:
+            elif xtension is not None:
                 hdu = pyfits.ImageHDU(header=hdr)
             else:
                 raise DARMAError, 'Invalid header!  No SIMPLE or XTENSION keywords.'
