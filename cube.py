@@ -31,7 +31,8 @@ class cube(DataStruct):
     '''
 
     def __init__(self, filename=None, extension=0, data=None, image_list=None, 
-                 index=0, readonly=0, memmap=1, *args, **kwargs):
+                 index=0, readonly=0, memmap=1, datatype=FLOAT, *args,
+                 **kwargs):
 
         '''
              filename: The name of a FITS file the cube can be loaded from
@@ -55,6 +56,7 @@ class cube(DataStruct):
         self.index      = index
         self.readonly   = readonly
         self.memmap     = memmap
+        self._datatype  = datatype
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
@@ -73,6 +75,8 @@ class cube(DataStruct):
         '''
            Load the images from a file, data or from the given image_list.
         '''
+
+        #FIXME Add datatype conversion here.
 
         if self._data is None:
 
