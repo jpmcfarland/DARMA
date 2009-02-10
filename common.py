@@ -18,7 +18,7 @@ except:
     Array = Arrayrandom = Arrayfft = None
     _HAS_NUMPY = False
 
-FLOAT = 'float32'
+FLOAT = 'float64'
 INT   = 'int32'
 LONG  = 'int64'
 
@@ -170,8 +170,7 @@ class DataStruct(object):
 
         if self._data is not None:
             self._datatype = self._data.dtype.name
-            return self._datatype
-        return None
+        return self._datatype
 
     def _set_datatype(self, datatype):
 
@@ -185,7 +184,7 @@ class DataStruct(object):
         '''
         '''
 
-        del self._datatype
+        self._datatype = None
 
     datatype = property(_get_datatype, _set_datatype, _del_datatype)
 
@@ -459,6 +458,7 @@ class DataStruct(object):
         if self.data is not None:
             return self.data.shape[0] # PyFITS Array axes are reversed.
 
+    # FIXME make size a property or similar
     def size(self):
 
         '''
