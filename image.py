@@ -231,7 +231,7 @@ class image(DataStruct):
         self.readonly  = readonly
         self.memmap    = memmap
         self._data     = data
-        self.datatype  = datatype
+        self._datatype = datatype
         self.bmask     = bmask
 
         if self.filename is not None:
@@ -262,10 +262,10 @@ class image(DataStruct):
                     self._data = pyfits.open(self.filename, memmap=self.memmap)[self.extension].data
                 except Exception, e:
                     raise DARMAError, 'Error loading image from %s: %s' % (self.filename, e)
-        self._data = Array.asarray(self._data, dtype=self.datatype)
+        self._data = Array.asarray(self._data, dtype=self._datatype)
         if not self._data.flags.contiguous:
             self._data = Array.ascontiguousarray(self._data,
-                                                 dtype=self.datatype)
+                                                 dtype=self._datatype)
             if self.bmask is not None:
                 self.bmask.data = Array.ascontiguousarray(self.bmask.data)
 
@@ -689,24 +689,69 @@ class image(DataStruct):
         del wide
         return tall
 
-    def subtract_oscan_rows(self, x0, x1, smooth=0):
+    def subtract_oscan_rows(self, x0, x1, zone=None, smooth=0):
 
         '''
            Subtract mean of overscan rows.
 
            x0, x1: start and end column of overscan region
+           zone: a tuple defining the zone to subtract mean from in
+                 (x0, y0, x1, y1) form
            smooth: size of rectangular box smoothing function
         '''
 
-        sub_data = image(data=Array.add.reduce(self[x0:x1, :].data, 1) /
-                                                             (x1-x0+1))
+        # Take overscan region.
+        if zone is not None:
+            y0, y1 = zone[1], zone[3]
+            oscan_image = self[x0:x1, y0:y1]
+        else:
+            oscan_image = self[x0:x1, :]
+        # Average along the X-axis.
+        oscan_data = Array.add.reduce(oscan_image.data, 1) / (x1-x0+1)
         if smooth:
-            # XXX FIXME need a replacement for uniform_filter1d
-            #sub_data = image(data=Arrayfilters.uniform_filter1d(sub_data.data,
-            #                 smooth, mode='reflect'))
-            print 'WARNING - smoothing is not yet available!'
-        sub_data.reshape((1,sub_data.ysize()))
-        return self-sub_data
+            oscan_data = uniform_filter1d(oscan_data, smooth)
+        # Prepare 1-D overscan image for subtraction.
+        oscan_image = image(data=oscan_data)
+        oscan_image.reshape((1, oscan_image.size()))
+        if zone is not None:
+            x0, y0, x1, y1 = zone
+            sub_image = self[x0:x1, y0:y1]-oscan_image
+            self[x0:x1, y0:y1] = sub_image
+            return self
+        self -= oscan_image
+        return self
+
+    def subtract_oscan_columns(self, y0, y1, zone, smooth=0):
+
+        '''
+           Subtract mean of overscan columns.
+
+           y0, y1: start and end row of overscan region
+           zone: a tuple defining the zone to subtract mean from in
+                 (x0, y0, x1, y1) form
+           smooth: size of rectangular box smoothing function
+        '''
+
+        # Take overscan region.
+        if zone is not None:
+            x0, x1 = zone[0], zone[2]
+            oscan_image = self[x0:x1, y0:y1]
+        else:
+            oscan_image = self[:,y0:y1]
+        # Average along the X-axis.
+        oscan_data = Array.add.reduce(oscan_image.data, 0) / (y1-y0+1)
+        if smooth:
+            oscan_data = uniform_filter1d(oscan_data, smooth)
+        # Prepare 1-D overscan image for subtraction.
+        oscan_image = image(data=oscan_data)
+        oscan_image.reshape((oscan_image.size(), 1))
+        if zone is not None:
+            x0, y0, x1, y1 = zone
+            sub_image = self[x0:x1, y0:y1]-oscan_image
+            self[x0:x1, y0:y1] = sub_image
+            return self
+        self -= oscan_image
+        return self
 
 #    filters = {'mean3':    [1.0]*9,
 #               'mean5':    [1.0]*25,
@@ -1339,7 +1384,7 @@ def make_image(xsize, ysize, datatype=FLOAT, value=None):
         raise DARMAError, 'Invalid image dimesions'
 
     # PyFITS Array axes are reversed.
-    ima = image(data=Array.zeros((ysize, xsize), dtype=datatype))
+    ima = image(data=Array.zeros((ysize, xsize), dtype=datatype), datatype=datatype)
     if value is not None:
         ima.data.fill(value)
     return ima
@@ -1545,4 +1590,57 @@ def filter_nonnumbers(data, nanmask=None, filter=False):
         return data
     else:
         return data.compress(mask)
+
+def uniform_filter1d(array, filter_size, mode=None, copy=False):
+
+    '''
+       Filter data in a one dimmensional array, in place, averaging over
+       2*filtersize+1.
+
+               array: input Array object
+         filter_size: filter box = 2*filter_size+1
+                mode: mode of the endpoints treatment
+                copy: modify and return a copy of array
+
+       The only current endpoint treatment modes are "reflect" and None.
+       Only one dimensional arrays are supported at this time.
+    '''
+
+    #modes = ['nearest', 'wrap', 'reflect', 'constant']
+    modes = ['reflect']
+
+    if len(array.shape) != 1:
+        raise DARMAError, 'uniform_filter1d only supports arrays of one dimension!'
+
+    if copy:
+        copy = array.copy()
+    else:
+        copy = array
+
+    if mode in modes:
+
+        buffer = Array.empty(shape=(copy.size+2*filter_size,), dtype=copy.dtype)
+
+        # Treat boundries by reflecting the endpoints.
+        if mode == 'reflect':
+            buffer[:filter_size]             = copy[filter_size:0:-1]
+            buffer[filter_size:-filter_size] = copy
+            buffer[-filter_size:]            = copy[-2:-(filter_size+2):-1]
+
+        for i in xrange(copy.size):
+            # buffer.size = copy.size+2*filter_size
+            copy[i] = buffer[i:i+2*filter_size+1].mean()
+
+    else:
+
+        buffer = Array.empty(shape=copy.shape, dtype=copy.dtype)
+
+        # Don't treat boundries at all.  Shrink smoothing box at ends.
+        for i in xrange(copy.size):
+            minj = Array.max([0, i-filter_size])
+            maxj = Array.min([copy.size-1, i+filter_size])+1
+            buffer[i] = copy[[j for j in xrange(minj, maxj)]].mean()
+        copy = buffer
+
+    return copy
 
