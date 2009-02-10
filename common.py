@@ -163,6 +163,30 @@ class DataStruct(object):
 
     shape = property(_get_shape)
 
+    def _get_size(self):
+
+        '''
+           The total number of elements in the data array.
+        '''
+
+        if self._data is not None:
+            return self._data.size
+        return 0
+
+    size = property(_get_size)
+
+    def _get_itemsize(self):
+
+        '''
+           Return the item size (in bytes) of self.data.
+        '''
+
+        if self._data is not None:
+            return self._data.itemsize
+        return 0
+
+    itemsize = property(_get_itemsize)
+
     def _get_datatype(self):
 
         '''
@@ -417,8 +441,8 @@ class DataStruct(object):
         '''
 
         # Acquire attributes.
-        size             = self.size()
-        item_size        = self.itemsize()
+        size             = self.size
+        item_size        = self.itemsize
         data_size        = size * item_size
         if hasattr(self, 'bmask'):
             has_nonnumbers = self.has_nonnumbers()
@@ -458,25 +482,6 @@ class DataStruct(object):
         if self.data is not None:
             return self.data.shape[0] # PyFITS Array axes are reversed.
 
-    # FIXME make size a property or similar
-    def size(self):
-
-        '''
-           The total number of elements in the data array.
-        '''
-
-        if self.data is not None:
-            return self.data.size
-
-    def itemsize(self):
-
-        '''
-           Return the item size (in bytes) of self.data.
-        '''
-
-        if self.data is not None:
-            return self.data.itemsize
-
     def has_bitmask(self):
 
         '''
@@ -506,7 +511,7 @@ class DataStruct(object):
            x.__len__() <==> len(self)
         '''
 
-        return self.size()
+        return self.size
 
     def __getitem__(self, key):
 
