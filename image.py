@@ -55,7 +55,7 @@ class image(DataStruct):
        slice, coordinate tuple, or single coordinate, an image containing the
        requested data is returned.  This means that accessing one data element
        is possible, but a one element image is returned.  To get the value of
-       that one element, it is a simple matter to acces the data Array
+       that one element, it is a simple matter to access the data Array
        directly:
 
        > number = img[x,y].data[()]
@@ -310,7 +310,7 @@ class image(DataStruct):
             return 0
         else:
             pdata = self.bmask.as_pixelmap(map_type).data
-            return self.size() - pdata.nonzero()[0].shape[0]
+            return self.size - pdata.nonzero()[0].shape[0]
 
     def map_nonnumbers(self):
 
@@ -712,7 +712,7 @@ class image(DataStruct):
             oscan_data = uniform_filter1d(oscan_data, smooth)
         # Prepare 1-D overscan image for subtraction.
         oscan_image = image(data=oscan_data)
-        oscan_image.reshape((1, oscan_image.size()))
+        oscan_image.reshape((1, oscan_image.size))
         if zone is not None:
             x0, y0, x1, y1 = zone
             sub_image = self[x0:x1, y0:y1]-oscan_image
@@ -744,7 +744,7 @@ class image(DataStruct):
             oscan_data = uniform_filter1d(oscan_data, smooth)
         # Prepare 1-D overscan image for subtraction.
         oscan_image = image(data=oscan_data)
-        oscan_image.reshape((oscan_image.size(), 1))
+        oscan_image.reshape((oscan_image.size, 1))
         if zone is not None:
             x0, y0, x1, y1 = zone
             sub_image = self[x0:x1, y0:y1]-oscan_image
