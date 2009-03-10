@@ -191,16 +191,23 @@ class header(object):
     card_list = property(_get_card_list, _set_card_list, _del_card_list,
                          'Attribute to store the list of cards for the header')
 
-    def save(self, filename, raw=True):
+    def save(self, filename, raw=True, mode='clobber'):
 
         '''
            Save header to a text file.  The contents of filename will be
-           overwritten.
+           overwritten if mode='clobber'.
 
            filename: mandatory name of the file to be written
                 raw: write file as a raw, FITS-compatible file in binary mode
                      with 2880 byte blocks (if False, write a text file)
+               mode: clobber (default) overwrites the file and append appends
+                     a new header onto the existing file
         '''
+
+        modes = ['clobber', 'append']
+
+        if mode not in modes:
+            raise DARMAError, 'mode \'%s\' not supported!  Use one of %s instead.' % (mode, modes)
 
         if self.filename is None:
             self.filename = filename
@@ -208,7 +215,10 @@ class header(object):
         linelen = self.item_size()
         blksize = self.block_size()
 
-        mode = {True : 'wb', False :  'w'}
+        if mode == 'clobber':
+            mode = {True : 'wb', False :  'w'}
+        if mode == 'append':
+            mode = {True : 'ab', False :  'a'}
         crlf = {True :   '', False : '\n'}
         fd = file(filename, mode[raw])
         cardlist = ['%s%s' % (str(card), crlf[raw]) for card in self]
@@ -251,6 +261,7 @@ class header(object):
             ADDED_SIMPLE, ADDED_BITPIX, ADDED_NAXIS = False, False, False
             if simple is None and xtension is None:
                 hdr.update('SIMPLE', True, 'conforms to FITS standard')
+                simple = hdr.get('SIMPLE')
                 ADDED_SIMPLE = True
             if bitpix is None:
                 hdr.update('BITPIX', 8, 'array data type')
