@@ -94,12 +94,35 @@ class header(object):
             if card_list is not None:
                 if type(card_list) == str:
                     fd = file(card_list, 'r')
-                    card_list = [line.strip('\n') for line in fd.readlines() if not line.startswith('END')]
+                    length = self.item_size()
+                    # ASCII file.
+                    if fd.read(length+1)[-1] == '\n':
+                        fd.seek(0)
+                        card_list = [line.strip('\n') for line in fd.readlines()]
+                    # Raw FITS file.
+                    else:
+                        fd.seek(0)
+                        card_list = []
+                        card = fd.read(length)
+                        while card:
+                            card_list.append(card)
+                            card = fd.read(length)
                     fd.close()
                 if type(card_list) == list:
+                    indexes = [0]
+                    if self.extension != 0:
+                        for i in xrange(len(card_list)):
+                            if card_list[i].startswith('END'):
+                                indexes.append(i+1)
+                            i += 1
                     header_cards = pyfits.CardList()
-                    for card in card_list:
-                        header_cards.append(pyfits.Card().fromstring(card))
+                    if self.extension > len(indexes)-2:
+                        raise DARMAError, 'extension %d is not in card_list!' % self.extension
+                    for card in card_list[indexes[self.extension]:]:
+                        if not card.startswith('END'):
+                            header_cards.append(pyfits.Card().fromstring(card))
+                        else:
+                            break
                 elif type(card_list) == pyfits.CardList:
                     header_cards = card_list
                 else:
