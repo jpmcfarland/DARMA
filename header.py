@@ -754,6 +754,12 @@ class header(object):
         hdu[0].update_header()
         self.hdr = hdu[0].header
         hdu.close(output_verify=self.option)
+        # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
+        # Under certain circumstances the signal handler is redefined to
+        # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
+        # handler to its original state, which is omitted in PyFits.
+        import signal
+        signal.signal(signal.SIGINT,signal.SIG_DFL)
 
     def get_valstr(self, key):
 
