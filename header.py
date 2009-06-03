@@ -1016,3 +1016,43 @@ def get_headers(filename):
 
     return headers
 
+def update_header_in_file(filename, keywords, values, comments=[None]):
+
+    '''
+       This is a utility function to update the header of a file "in place".
+
+       When the FITS file is very large, rewriting the whole thing to update
+       some header items is very inefficient.  This function updates the
+       header directly in the file.  If there is appropriate space for new
+       header items, this occurs with the minimum of disk I/O.
+
+         filename: name of FITS file containing the header to update
+         keywords: matched list of header keywords
+           values: matched list of values
+         comments: matched list of comments (optional)
+
+       This function assumes the primary header will be updated and that any
+       existing keyword values will be overwritten.
+    '''
+
+    if len(keywords) != len(values):
+        raise DARMAError, 'Input keywords and values lists of different length!'
+    if len(comments) == 1 and len(keywords) != 1:
+        comments = comments*len(keywords)
+    if len(comments) != len(keywords):
+        raise DARMAError, 'Input comments list of wrong length!'
+
+    hdus = pyfits.open(filename, mode='update', memmap=1)
+
+    for key, val, com in zip(keywords, values, comments):
+        hdus[0].header.update(key, val, com)
+
+    hdus.close(output_verify='fix')
+
+    # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
+    # Under certain circumstances the signal handler is redefined to
+    # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
+    # handler to its original state, which is omitted in PyFits.
+    import signal
+    signal.signal(signal.SIGINT,signal.SIG_DFL)
+
