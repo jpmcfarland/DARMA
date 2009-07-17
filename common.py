@@ -427,6 +427,9 @@ class DataStruct(object):
            (x1-x0)+1 x (y1-y0)+1
         '''
 
+        if x0 < 1 or y0 < 1 or x1 > self.xsize() or y1 > self.ysize():
+            raise DARMAError, 'Cannot extract region %s: region not contained completely within the %s!' % (`(x0, y0, x1, y1)`, self.__class__.__name__)
+
         return self[x0:x1, y0:y1]
 
     ########################################################################
