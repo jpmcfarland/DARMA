@@ -982,11 +982,10 @@ class header(object):
            The sole purpose of this method is to call the factory function
            get_headers that creates a list of headers from the headers in
            file that the current header is loaded from (self.filename).  If
-           the file is single-extension or the filename is no specified,
-           this is a list of one header, a
-           copy of the current header.  If the file is multi-extension,
-           this is a list of one primary header and N extension headers,
-           where N is the number of extensions.
+           the file is single-extension or the filename is not specified,
+           this is a list of one header, a copy of the current header.  If
+           the file is multi-extension, this is a list of one primary header
+           and N extension headers, where N is the number of extensions.
         '''
 
         if self.filename is None:
