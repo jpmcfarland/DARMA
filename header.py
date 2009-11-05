@@ -95,19 +95,14 @@ class header(object):
                 if type(card_list) == str:
                     fd = file(card_list, 'r')
                     length = self.item_size()
+                    lines = fd.read()
+                    fd.close()
                     # ASCII file.
-                    if fd.read(length+1)[-1] == '\n':
-                        fd.seek(0)
-                        card_list = [line.strip('\n') for line in fd.readlines()]
+                    if '\n' in lines:
+                        card_list = [line.strip('\n') for line in lines.split('\n')]
                     # Raw FITS file.
                     else:
-                        fd.seek(0)
-                        card_list = []
-                        card = fd.read(length)
-                        while card:
-                            card_list.append(card)
-                            card = fd.read(length)
-                    fd.close()
+                        card_list = [lines[n:n+length] for n in xrange(0, len(lines), length)]
                 if type(card_list) == list:
                     indexes = [0]
                     if self.extension != 0:
@@ -116,7 +111,7 @@ class header(object):
                                 indexes.append(i+1)
                             i += 1
                     header_cards = pyfits.CardList()
-                    if self.extension > len(indexes)-2:
+                    if self.extension > len(indexes)-1:
                         raise DARMAError, 'extension %d is not in card_list!' % self.extension
                     for card in card_list[indexes[self.extension]:]:
                         if not card.startswith('END'):
@@ -296,7 +291,7 @@ class header(object):
             bitpix = hdr.ascardlist()['BITPIX']
             naxis = hdr.ascardlist()['NAXIS']
             naxisn = []
-            for n in range(1,999):
+            for n in xrange(1,999):
                 if hdr.get('NAXIS%d' % n) is not None:
                     naxisn.append(hdr.ascardlist()['NAXIS%d' % n])
                 else:
@@ -304,8 +299,12 @@ class header(object):
             # Load header into appropriate HDU.
             if simple is not None:
                 hdu = pyfits.PrimaryHDU(header=hdr)
-            elif xtension is not None:
+            elif xtension == 'IMAGE':
                 hdu = pyfits.ImageHDU(header=hdr)
+            elif xtension == 'BINTABLE':
+                hdu = pyfits.BinTableHDU(header=hdr)
+            elif xtension == 'TABLE':
+                hdu = pyfits.TableHDU(header=hdr)
             else:
                 raise DARMAError, 'Invalid header!  No SIMPLE or XTENSION keywords.'
             # Fix any bad keywords PyFITS won't prior to verification.
@@ -626,6 +625,42 @@ class header(object):
         except Exception, e:
             raise DARMAError, 'Error adding %s to header: %s' % (`(key, value, comment)`, e)
 
+    def fromstring(self, cardstring):
+
+        '''
+           Append a new standard card from a 80 character card string
+           overwriting when the same named card.key exists:
+
+           'SIMPLE  =                    T / conforms to FITS standard...'
+
+           A standard card has the form of no more than 8 capital letters,
+           numbers, or underscores, a padding of spaces, = at the 9th column,
+           a space followed by a value, a ' / ', then the comment.  A standard
+           card string will have exactly 80 columns.
+
+           An attempt is made to standardize the cardstring by padding
+           appropriately and truncating the comment when necessary.  No
+           attempt is made to correct the key and value beyond capitalizing
+           the key.
+        '''
+
+        key, value, comment = '', '', ''
+        index = cardstring.find('=')
+        if index == -1:
+            raise DARMAError, 'ERROR -- Incorrectly formatted cardstring: no \'=\' !'
+        key, valuecomment = cardstring[:index], cardstring[index+1:]
+        index = valuecomment.find('/')
+        if index != -1:
+            value, comment = valuecomment[:index], valuecomment[index+1:]
+        else:
+            value, comment = valuecomment, ''
+        card = pyfits.Card().fromstring('%-8s= %20s / %-47s' % (key.strip().upper(), value.strip(), comment.strip()[:47]))
+        card.verify(option=self.option)
+        if card.key in self:
+            del self[card.key]
+        self.card_list.append(card)
+        self._IS_VERIFIED = False
+
     def modify(self, key, value, comment=None):
 
         '''
@@ -739,7 +774,7 @@ class header(object):
         hdu = pyfits.open(filename, mode='update', memmap=1)
         orig_hdr = header(card_list=hdu[0].header.ascardlist(), option=self.option)
         self_hdr = self.copy()
-        naxis_keys = ['NAXIS%d' % val for val in range(1, self_hdr['NAXIS']+1)]
+        naxis_keys = ['NAXIS%d' % val for val in xrange(1, self_hdr['NAXIS']+1)]
         ignored_keys =  ['SIMPLE', 'BITPIX', 'NAXIS'] + naxis_keys
         for key in ignored_keys:
             del self_hdr.hdr[key]
@@ -899,7 +934,7 @@ class header(object):
             if card.key != '' and card.value != '':
                     repr_list.append(card.__repr__())
         if len(repr_list):
-            repr_list.append('END')
+            repr_list.append('END%s' % (' '*(self.item_size()-3)))
 
         return_str = str(self.__class__)+'\n'
         if len(repr_list) > 23:
@@ -920,7 +955,9 @@ class header(object):
            x.__str__() <==> str(x)
         '''
 
-        return self.hdr.__str__()
+        string  = self.hdr.__str__()
+        string += '\nEND%s' % (' '*(self.item_size()-3))
+        return string
 
     def __iter__(self):
 
