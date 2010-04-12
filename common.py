@@ -157,8 +157,8 @@ class DataStruct(object):
         '''
         '''
 
-        if self._data is not None:
-            return self._data.shape[::-1]
+        if self.data is not None:
+            return self.data.shape[::-1]
         return(0,)
 
     shape = property(_get_shape)
@@ -169,8 +169,8 @@ class DataStruct(object):
            The total number of elements in the data array.
         '''
 
-        if self._data is not None:
-            return self._data.size
+        if self.data is not None:
+            return self.data.size
         return 0
 
     size = property(_get_size)
@@ -181,8 +181,8 @@ class DataStruct(object):
            Return the item size (in bytes) of self.data.
         '''
 
-        if self._data is not None:
-            return self._data.itemsize
+        if self.data is not None:
+            return self.data.itemsize
         return 0
 
     itemsize = property(_get_itemsize)
@@ -192,8 +192,8 @@ class DataStruct(object):
         '''
         '''
 
-        if self._data is not None:
-            self._datatype = self._data.dtype.name
+        if self.data is not None:
+            self._datatype = self.data.dtype.name
         return self._datatype
 
     def _set_datatype(self, datatype):
