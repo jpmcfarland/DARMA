@@ -18,7 +18,7 @@ except:
     Array = Arrayrandom = Arrayfft = None
     _HAS_NUMPY = False
 
-FLOAT = 'float64'
+FLOAT = 'float32'
 INT   = 'int32'
 LONG  = 'int64'
 
