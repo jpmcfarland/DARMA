@@ -199,7 +199,7 @@ class image(DataStruct):
     '''
 
     def __init__(self, filename=None, extension=0, plane=0, readonly=0,
-                 memmap=1, data=None, datatype=FLOAT, bmask=None, *args,
+                 memmap=1, data=None, datatype=None, bmask=None, *args,
                  **kwargs):
 
         '''
@@ -329,7 +329,7 @@ class image(DataStruct):
     # Statistics
     #
 
-    def stat(self, domedian=True, filter=True):
+    def stat(self, domedian=True, filter=False):
 
         '''
            Compute the statistics.
@@ -347,7 +347,7 @@ class image(DataStruct):
                                    domedian=domedian, filter=filter)
 
     def stat_opts(self, pixmap=None, pixrange=None, zone=None, domedian=True,
-                  filter=True):
+                  filter=False):
 
         '''
            Compute the statistics, using a pixmap and/or a pixrange and/or a
@@ -370,7 +370,7 @@ class image(DataStruct):
                                    domedian=domedian, filter=filter)
 
     def iter_stat(self, max_iter=5, threshold=5.0, domedian=True,
-                  filter=True):
+                  filter=False):
 
         '''
            Compute the statistics iteratively.
@@ -398,7 +398,7 @@ class image(DataStruct):
                                    domedian=domedian, filter=filter)
 
     def iter_stat_opts(self, pixmap=None, pixrange=None, zone=None, max_iter=5,
-                       threshold=5.0, domedian=True, filter=True):
+                       threshold=5.0, domedian=True, filter=False):
 
         '''
            Compute the statistics iteratively, using a pixmap and/or a pixrange
@@ -437,10 +437,7 @@ class image(DataStruct):
             img = self.extract_region(zone[0], zone[1], zone[2], zone[3])
         else:
             img = self
-        if img.datatype != 'float64':
-            _data = img.data.astype('float64')
-        else:
-            _data = img.data.copy()
+        _data = img.data.ravel()
         if filter and not img.bmask.has_pixelmap(map_type):
             pmap = pixelmap(data=Array.isfinite(img.data))
             img.bmask.add_pixelmap(pmap=pmap, map_type=map_type)
@@ -451,20 +448,20 @@ class image(DataStruct):
             _mask = None
         if _mask is not None:
             _mask = _mask.ravel()
-        _data = _data.ravel()
         # Get the data from the pixelmap (pmap) and put it into _pmap
         if pixmap is not None:
             if zone is not None:
                 _pmap = pixmap.extract_region(zone[0], zone[1], zone[2],
                                              zone[3]).data
             else:
-                _pmap = pixmap.data.copy()
+                _pmap = pixmap.data
             _pmap = _pmap.ravel()
             # Merge _pmap with any existing mask
             if _mask is not None:
                 _mask &= _pmap
             else:
                 _mask = _pmap
+            del _pmap
         # Mask pixels out of range
         if pixrange is not None:
             _masklo = _data > pixrange[0]
@@ -477,17 +474,17 @@ class image(DataStruct):
         # Remove the invalid pixels.
         if _mask is not None and not _mask.all():
             _data = _data.compress(_mask)
-        # Sort only for the median.
-        if domedian:
-            _data.sort()
         # Start the main statistics loop.
         n = _data.size*1.0
         if n:
             # Compute base statistics.
-            sum_val   = _data.sum()
+            sum_val   = _data.sum(dtype='float64')
             mean_val  = sum_val/n
-            stdev_val =  math.sqrt(((_data**2).sum()-((sum_val**2)/n))/(n-1.0))
+            stdev_val =  math.sqrt(((_data**2).sum(dtype='float64')-((sum_val**2)/n))/(n-1.0))
+            # Copy and sort only for the median.
             if domedian:
+                _data = _data.copy()
+                _data.sort()
                 median_val = median(_data, sorted=True)
             else:
                 median_val = 0.0
@@ -498,18 +495,15 @@ class image(DataStruct):
                 iter = 0
                 # Iteration loop
                 while not convergence and max_iter:
-                    # try _mask = (_data < median_val+threshold*stdev_val) & (_data > median_val-threshold*stdev_val)
-                    _mask1 = _data < median_val+threshold*stdev_val
-                    _mask2 = _data > median_val-threshold*stdev_val
-                    _mask  = _mask1 & _mask2
+                    _mask = Array.abs(_data-median_val) < threshold*stdev_val
                     # Don't apply mask or recalculate statistics if there is
                     # nothing to be masked.
                     if not _mask.all():
                         _data      = _data.compress(_mask)
                         n          = _data.size*1.0
-                        sum_val    = _data.sum()
+                        sum_val    = _data.sum(dtype='float64')
                         new_mean   = sum_val/n
-                        new_stdev  =  math.sqrt(((_data**2).sum()-((sum_val**2)/n))/(n-1.0))
+                        new_stdev  =  math.sqrt(((_data**2).sum(dtype='float64')-((sum_val**2)/n))/(n-1.0))
                         median_val = median(_data, sorted=True)
                         if ((abs(new_mean/mean_val   - 1)<0.01 and
                              abs(new_stdev/stdev_val - 1)<0.01)):
@@ -520,22 +514,24 @@ class image(DataStruct):
                         convergence = 1
                     max_iter -= 1
                     iter     += 1
+            mean_val = float(mean_val)
+            median_val = float(median_val)
             # Find the min/max statistics.
-            min_val = _data.min()
-            max_val = _data.max()
-            min_y = Array.argmax(Array.maximum.reduce(Array.equal(self.data, min_val), axis=1))
-            min_x = Array.argmax(Array.equal(self.data[min_y], min_val))
-            max_y = Array.argmax(Array.maximum.reduce(Array.equal(self.data, max_val), axis=1))
-            max_x = Array.argmax(Array.equal(self.data[max_y], max_val))
+            min_val = float(_data.min())
+            max_val = float(_data.max())
+            min_y = int(Array.argmax(Array.maximum.reduce(Array.equal(self.data, min_val), axis=1)))
+            min_x = int(Array.argmax(Array.equal(self.data[min_y], min_val)))
+            max_y = int(Array.argmax(Array.maximum.reduce(Array.equal(self.data, max_val), axis=1)))
+            max_x = int(Array.argmax(Array.equal(self.data[max_y], max_val)))
             # Add the 1 pixel offset for FITS convention
             min_y += 1
             min_x += 1
             max_y += 1
             max_x += 1
             # Compute the energies.
-            energy_val  = (_data**2).sum()
-            flux_val    = sum_val
-            absflux_val = Array.absolute(_data).sum()
+            energy_val  = float((_data**2).sum(dtype='float64'))
+            flux_val    = float(sum_val)
+            absflux_val = float(Array.absolute(_data).sum(dtype='float64'))
             # Create the StatStruct.
             stat_tuple = (min_val, max_val, mean_val, median_val, stdev_val, energy_val, flux_val, absflux_val, min_x, min_y, max_x, max_y, int(n))
             stats = StatStruct(stat_tuple)
@@ -549,7 +545,7 @@ class image(DataStruct):
         else:
             raise DARMAError, 'Empty data array!'
 
-    def get_mean(self, filter=True):
+    def get_mean(self, filter=False):
 
         '''
            Return the mean value of this image.
@@ -558,7 +554,7 @@ class image(DataStruct):
         return mean(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
                     filter=filter)
 
-    def get_median(self, sorted=False, filter=True):
+    def get_median(self, sorted=False, filter=False):
 
         '''
            Return the median value of this image.
@@ -569,7 +565,7 @@ class image(DataStruct):
         return median(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
                       sorted=sorted, filter=filter)
 
-    def get_stdev(self, filter=True):
+    def get_stdev(self, filter=False):
 
         '''
            Return the sample standard deviation value of this image.
@@ -578,7 +574,7 @@ class image(DataStruct):
         return stdev(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
                      filter=filter)
 
-    def get_rms(self, filter=True):
+    def get_rms(self, filter=False):
 
         '''
            Return the rms (root mean square) value of this image.
@@ -587,7 +583,7 @@ class image(DataStruct):
         return rms(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
                    filter=filter)
 
-    def get_min(self, filter=True):
+    def get_min(self, filter=False):
 
         '''
            Return the minumum value of this image.
@@ -596,7 +592,7 @@ class image(DataStruct):
         return min(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
                    filter=filter)
 
-    def get_max(self, filter=True):
+    def get_max(self, filter=False):
 
         '''
            Return the maximum value of this image.
@@ -1065,7 +1061,7 @@ class image(DataStruct):
         '''
 
         if (pixmap is None) and (pixrange is None) and (zone is None):
-            mean  = self.get_mean(filter=True)
+            mean  = self.get_mean(filter=False)
         else:
             stats = self.stat_opts(pixmap, pixrange, zone, domedian=0)
             mean  = stats.avg_pix
@@ -1088,7 +1084,7 @@ class image(DataStruct):
         '''
 
         if (pixmap is None) and (pixrange is None) and (zone is None):
-            median = self.get_median(filter=True)
+            median = self.get_median(filter=False)
         else:
             stats  = self.stat_opts(pixmap, pixrange, zone, domedian=1)
             median = stats.median
@@ -1431,18 +1427,10 @@ def mean(data, nanmask=None, filter=False):
         filter: filter out non-numbers (NaN, Inf, etc.)
     '''
 
-    # XXX use buitlin function?
-
-    if data.dtype.name != 'float64':
-        _data = data.astype('float64')
-    else:
-        _data = data
-
-    _data = filter_nonnumbers(data=_data, nanmask=nanmask, filter=filter)
-    n = _data.size*1.0
-    if n:
-        #return _data.sum()/n
-        return _data.mean()
+    # Return a ravel()ed array.
+    _data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
+    if _data.size:
+        return _data.mean(dtype='float64')
     else:
         raise DARMAError, 'Empty data array!'
 
@@ -1460,17 +1448,12 @@ def median(data, nanmask=None, sorted=False, filter=False):
 
     # XXX use buitlin function?
 
-    if data.dtype.name != 'float64':
-        _data = data.astype('float64')
-    elif not sorted:
-        _data = data.copy()
-    else:
-        _data = data
-
-    _data = filter_nonnumbers(data=_data, nanmask=nanmask, filter=filter)
+    # Return a ravel()ed array.
+    _data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
     n = _data.size
     if n:
         if not sorted:
+            _data = _data.copy()
             _data.sort()
         if n % 2:
             return  _data[n/2]
@@ -1491,19 +1474,12 @@ def stdev(data, nanmask=None, filter=False):
         filter: filter out non-numbers (NaN, Inf, etc.)
     '''
 
-    # XXX use buitlin function?
-
-    if data.dtype.name != 'float64':
-        _data = data.astype('float64')
-    else:
-        _data = data
-
-    _data = filter_nonnumbers(data=_data, nanmask=nanmask, filter=filter)
+    # Return a ravel()ed array.
+    _data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
     n = _data.size*1.0
     if n:
-        sum_val  = _data.sum()
-        mean_val = sum_val/n
-        return math.sqrt(((_data**2).sum()-((sum_val**2)/n))/(n-1.0))
+        sum_val = _data.sum(dtype='float64')
+        return math.sqrt(((_data**2).sum(dtype='float64')-((sum_val**2)/n))/(n-1.0))
     else:
         raise DARMAError, 'Empty data array!'
 
@@ -1519,15 +1495,11 @@ def rms(data, nanmask=None, filter=False):
         filter: filter out non-numbers (NaN, Inf, etc.)
     '''
 
-    if data.dtype.name != 'float64':
-        _data = data.astype('float64')
-    else:
-        _data = data
-
-    _data = filter_nonnumbers(data=_data, nanmask=nanmask, filter=filter)
+    # Return a ravel()ed array.
+    _data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
     n = _data.size*1.0
     if n:
-        return math.sqrt((_data**2).sum()/n)
+        return math.sqrt((_data**2).sum(dtype='float64')/n)
     else:
         raise DARMAError, 'Empty data array!'
 
@@ -1542,6 +1514,7 @@ def min(data, nanmask=None, filter=False):
         filter: filter out non-numbers (NaN, Inf, etc.)
     '''
 
+    # Return a ravel()ed array.
     data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
     n = data.size
     if n:
@@ -1560,6 +1533,7 @@ def max(data, nanmask=None, filter=False):
         filter: filter out non-numbers (NaN, Inf, etc.)
     '''
 
+    # Return a ravel()ed array.
     data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
     n = data.size
     if n:
@@ -1578,18 +1552,18 @@ def filter_nonnumbers(data, nanmask=None, filter=False):
         filter: filter out non-numbers (NaN, Inf, etc.)
     '''
 
-    data = data.ravel()
+    _data = data.ravel()
     if filter and nanmask is None:
-        mask = Array.isfinite(data)
+        mask = Array.isfinite(_data)
     elif nanmask is not None:
         mask = nanmask
     else:
-        return data
+        return _data
     mask = mask.ravel()
     if mask.all():
-        return data
+        return _data
     else:
-        return data.compress(mask)
+        return _data.compress(mask)
 
 def uniform_filter1d(array, filter_size, mode=None, copy=False):
 
@@ -1629,7 +1603,7 @@ def uniform_filter1d(array, filter_size, mode=None, copy=False):
 
         for i in xrange(copy.size):
             # buffer.size = copy.size+2*filter_size
-            copy[i] = buffer[i:i+2*filter_size+1].mean()
+            copy[i] = buffer[i:i+2*filter_size+1].mean(dtype='float64')
 
     else:
 
@@ -1639,7 +1613,7 @@ def uniform_filter1d(array, filter_size, mode=None, copy=False):
         for i in xrange(copy.size):
             minj = Array.max([0, i-filter_size])
             maxj = Array.min([copy.size-1, i+filter_size])+1
-            buffer[i] = copy[[j for j in xrange(minj, maxj)]].mean()
+            buffer[i] = copy[[j for j in xrange(minj, maxj)]].mean(dtype='float64')
         copy = buffer
 
     return copy
