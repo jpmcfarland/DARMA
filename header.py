@@ -125,7 +125,12 @@ class header(object):
                 self._hdr = pyfits.Header(cards=header_cards)
             elif self.filename is not None:
                 try:
-                    self._hdr = pyfits.getheader(self.filename, self.extension)
+                    hdu = pyfits.open(self.filename)[self.extension]
+                    if hasattr(hdu, '_header'):
+                        self._hdr = hdu._header
+                    else:
+                        self._hdr = hdu.header
+                    del(hdu)
                 except Exception, e:
                     raise DARMAError, 'Error loading header from %s: %s' % (self.filename, e)
             else:
