@@ -799,7 +799,7 @@ class header(object):
         # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
         # handler to its original state, which is omitted in PyFits.
         import signal
-        signal.signal(signal.SIGINT,signal.SIG_DFL)
+        signal.signal(signal.SIGINT,signal.default_int_handler)
 
     def get_valstr(self, key):
 
@@ -1095,5 +1095,5 @@ def update_header_in_file(filename, keywords, values, comments=[None]):
     # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
     # handler to its original state, which is omitted in PyFits.
     import signal
-    signal.signal(signal.SIGINT,signal.SIG_DFL)
+    signal.signal(signal.SIGINT,signal.default_int_handler)
 
