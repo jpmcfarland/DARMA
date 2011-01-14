@@ -5,9 +5,6 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, os
 
-if not hasattr(pyfits, '_Hierarch') and hasattr(pyfits, 'NP_pyfits') and hasattr(pyfits.NP_pyfits, '_Hierarch'):
-    pyfits._Hierarch = pyfits.NP_pyfits._Hierarch
-
 from common import DARMAError, fold_string
 
 class header(object):
@@ -148,7 +145,7 @@ class header(object):
                     for char in attr.upper():
                         if char not in allowed_chars:
                             attr = attr.replace(char, '_')
-                    if isinstance(card, pyfits._Hierarch):
+                    if isinstance(card, pyfits.core._Hierarch):
                         attr = 'HIERARCH_%s' % attr
                     setattr(self, attr, card)
 
@@ -314,7 +311,7 @@ class header(object):
                 raise DARMAError, 'Invalid header!  No SIMPLE or XTENSION keywords.'
             # Fix any bad keywords PyFITS won't prior to verification.
             for card in hdu.header.ascardlist():
-                if card.key.count(' ') and not isinstance(card, pyfits._Hierarch):
+                if card.key.count(' ') and not isinstance(card, pyfits.core._Hierarch):
                     new_key = card.key.replace(' ', '_')
                     if option != 'silentfix':
                         print 'WARNING -- renaming invalid key %s to %s' % (card.key, new_key)
@@ -739,7 +736,7 @@ class header(object):
                 result.add_blank(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
             elif not result.hdr.has_key(card.key) or clobber:
-                if isinstance(card, pyfits._Hierarch):
+                if isinstance(card, pyfits.core._Hierarch):
                     key = 'HIERARCH '+card.key
                 else:
                     key = card.key
@@ -902,7 +899,7 @@ class header(object):
             for char in attr.upper():
                 if char not in allowed_chars:
                     attr = attr.replace(char, '_')
-            if isinstance(card, pyfits._Hierarch):
+            if isinstance(card, pyfits.core._Hierarch):
                 attr = 'HIERARCH_%s' % attr
             setattr(self, attr, card)
 
