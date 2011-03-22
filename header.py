@@ -5,7 +5,7 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, os
 
-from common import DARMAError, fold_string
+from common import DARMAError, fold_string, pyfits_open
 
 class header(object):
 
@@ -122,7 +122,7 @@ class header(object):
                 self._hdr = pyfits.Header(cards=header_cards)
             elif self.filename is not None:
                 try:
-                    hdu = pyfits.open(self.filename)[self.extension]
+                    hdu = pyfits_open(self.filename)[self.extension]
                     if hasattr(hdu, '_header'):
                         self._hdr = hdu._header
                     else:
@@ -773,7 +773,7 @@ class header(object):
            where necessary if clobber is true.
         '''
 
-        hdu = pyfits.open(filename, mode='update', memmap=1)
+        hdu = pyfits_open(filename, mode='update', memmap=1)
         orig_hdr = header(card_list=hdu[0].header.ascardlist(), option=self.option)
         self_hdr = self.copy()
         naxis_keys = ['NAXIS%d' % val for val in xrange(1, self_hdr['NAXIS']+1)]
@@ -843,7 +843,7 @@ class header(object):
            Return the evaluation of the existance of a keyword in the header.
         '''
 
-        return self.hdr.has_key(key) is 1
+        return self.hdr.has_key(key)
 
     def __len__(self):
 
@@ -1036,6 +1036,18 @@ class header(object):
 
 #-----------------------------------------------------------------------
 
+def getval(filename, key, ext=0):
+
+    '''
+       Get a keyword value from an extension.
+
+         filename: filename to get the keyword value from
+              key: keyword string
+              ext: extension number
+    '''
+
+    return pyfits.getval(filename=filename, key=key, ext=ext)
+
 def get_headers(filename):
 
     '''
@@ -1048,7 +1060,7 @@ def get_headers(filename):
        filename: name of a valid FITS file, single- or multi-extension
     '''
 
-    hdus = pyfits.open(filename, memmap=1)
+    hdus = pyfits_open(filename, memmap=1)
     headers = [header(card_list=hdu.header.ascardlist()) for hdu in hdus]
     hdus.close()
 
@@ -1080,7 +1092,7 @@ def update_header_in_file(filename, keywords, values, comments=[None]):
     if len(comments) != len(keywords):
         raise DARMAError, 'Input comments list of wrong length!'
 
-    hdus = pyfits.open(filename, mode='update', memmap=1)
+    hdus = pyfits_open(filename, mode='update', memmap=1)
 
     for key, val, com in zip(keywords, values, comments):
         hdus[0].header.update(key, val, com)
