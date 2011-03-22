@@ -22,6 +22,15 @@ FLOAT = 'float32'
 INT   = 'int32'
 LONG  = 'int64'
 
+def pyfits_open(*kw, **kwargs):
+
+    '''
+       Wrapper around pyfits.open() method to allow arbitrary extra
+       arguments common to all open commands, e.g., ignore_missing_end.
+    '''
+
+    return pyfits.open(ignore_missing_end=True, *kw, **kwargs)
+
 class DARMAError(Exception):
 
     pass
@@ -1220,7 +1229,7 @@ def _datamd5(filename, regions=None, buffer_blocks=32):
     if not os.path.exists(filename):
         raise DARMAError, 'No FITS file (%s) to calcualte MD5SUM from!' % filename
 
-    fitsfile = pyfits.open(filename, mode='readonly', memmap=1)
+    fitsfile = pyfits_open(filename, mode='readonly', memmap=1)
     md5sum   = md5.md5()
 
     block  = 2880
@@ -1259,7 +1268,7 @@ def _update_datamd5(filename, datamd5):
     if len(datamd5) != 32:
         raise DARMAError, '%s does not appear to be a valid MD5SUM.' % datamd5
 
-    fitsfile = pyfits.open(filename, mode='update', memmap=1)
+    fitsfile = pyfits_open(filename, mode='update', memmap=1)
     fitsfile[0].header.update('DATAMD5', datamd5, comment='MD5 checksum of all data regions')
     fitsfile.close()
     # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
