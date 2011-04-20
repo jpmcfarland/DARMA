@@ -6,7 +6,7 @@ __version__ = '@(#)$Revision$'
 import pyfits, math, os
 
 #from common import Array, Arrayfft, Arrayfilters
-from common import Array, Arrayfft
+from common import Array, Arrayfft, pyfits_open
 from common import DARMAError, _HAS_NUMPY, DataStruct, StatStruct, FLOAT
 from pixelmap import pixelmap
 from bitmask import bitmask
@@ -259,7 +259,7 @@ class image(DataStruct):
             if self.filename is not None:
                 try:
                     #self._data = pyfits.getdata(self.filename, self.extension)
-                    self._data = pyfits.open(self.filename, memmap=self.memmap)[self.extension].data
+                    self._data = pyfits_open(self.filename, memmap=self.memmap)[self.extension].data
                 except Exception, e:
                     raise DARMAError, 'Error loading image from %s: %s' % (self.filename, e)
         self._data = Array.asarray(self._data, dtype=self._datatype)

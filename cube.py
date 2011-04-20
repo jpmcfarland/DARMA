@@ -6,7 +6,7 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, os
 
-from common import DataStruct, Array, FLOAT, INT, LONG
+from common import DataStruct, Array, FLOAT, INT, LONG, pyfits_open
 from common import DARMAError, _HAS_NUMPY, _datamd5, _update_datamd5
 from image import image
 from pixelmap import pixelmap
@@ -91,7 +91,7 @@ class cube(DataStruct):
             if filename is not None:
                 try:
                     #_data = pyfits.getdata(filename, extension)
-                    _data = pyfits.open(filename, memmap=memmap)[extension].data
+                    _data = pyfits_open(filename, memmap=memmap)[extension].data
                 except Exception,e:
                     raise DARMAError, 'Unable to load data from %s : %s' % (filename, e)
             elif data:

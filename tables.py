@@ -6,7 +6,7 @@ __version__ = '@(#)$Revision$'
 import pyfits, math, os
 
 from common import Array
-from common import DARMAError, _HAS_NUMPY
+from common import DARMAError, _HAS_NUMPY, pyfits_open
 from header import header
 
 datatypes = {
@@ -83,7 +83,7 @@ class columns(object):
         if self.table is None:
             if self.filename is not None:
                 try:
-                    self.hdus = pyfits.open(self.filename, memmap=self.memmap)
+                    self.hdus = pyfits_open(self.filename, memmap=self.memmap)
                     self.table = self.hdus[self._name]
                     self.header = header(card_list=self.table.header.ascardlist())
                 except Exception, e:
@@ -339,7 +339,7 @@ class tables(list):
         if self._tables == []:
             if self.filename is not None:
                 try:
-                    hdus = pyfits.open(self.filename, memmap=self.memmap)
+                    hdus = pyfits_open(self.filename, memmap=self.memmap)
                     if self.table_ids:
                         hdu_names = [hdu.name for hdu in hdus][1:]
                         table_names = [id for id in self.table_ids if id in hdu_names]
