@@ -1044,9 +1044,39 @@ def getval(filename, key, ext=0):
          filename: filename to get the keyword value from
               key: keyword string
               ext: extension number
+
+       Note: If ext=1 and key exists in ext=0, the first value will be
+             returned.  If ext > 1, only that extension will be searched.
     '''
 
-    return pyfits.getval(filename=filename, key=key, ext=ext)
+    if ext > 1:
+        return pyfits.getval(filename=filename, key=key, ext=ext)
+    fd = file(filename, 'rb')
+    END = False
+    while not END:
+        if ext >= 0:
+            block = fd.read(2880)
+            if ext != 0:
+                if 'END' in block:
+                    ext -= 1
+            if ext == 0:
+                for i in xrange(0,2880,80):
+                    if ext >= 0:
+                        cardstr = block[i:i+80]
+                        if cardstr.startswith(key):
+                            card = pyfits.Card().fromstring(cardstr)
+                            if key.endswith(card.key):
+                                fd.close()
+                                return card.value
+                        if cardstr.startswith('END'):
+                            ext -= 1
+                    else:
+                        END = True
+                        break
+        else:
+            END = True
+    fd.close()
+    return None
 
 def get_headers(filename):
 
