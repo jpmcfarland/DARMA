@@ -211,17 +211,21 @@ class header(object):
     card_list = property(_get_card_list, _set_card_list, _del_card_list,
                          'Attribute to store the list of cards for the header')
 
-    def save(self, filename, raw=True, mode='clobber'):
+    def save(self, filename, raw=True, mode='clobber', dataless=False):
 
         '''
            Save header to a text file.  The contents of filename will be
            overwritten if mode='clobber'.
 
            filename: mandatory name of the file to be written
-                raw: write file as a raw, FITS-compatible file in binary mode
-                     with 2880 byte blocks (if False, write a text file)
-               mode: clobber (default) overwrites the file and append appends
-                     a new header onto the existing file
+                raw: write file as a raw, FITS-compatible file in binary
+                     mode with 2880 byte blocks (if False, write a text
+                     file)
+               mode: clobber (default) overwrites the file and append
+                     appends a new header onto the existing file
+           dataless: if true, remove NAXISn from output and set BITPIX
+                     to 8 and NAXIS to 0 (prevents data size warnings
+                     when loading this dataless header from file)
         '''
 
         modes = ['clobber', 'append']
@@ -229,23 +233,35 @@ class header(object):
         if mode not in modes:
             raise DARMAError, 'mode \'%s\' not supported!  Use one of %s instead.' % (mode, modes)
 
-        if self.filename is None:
-            self.filename = filename
+        hdr = self.copy()
+        if hdr.filename is None:
+            hdr.filename = filename
 
-        linelen = self.item_size()
-        blksize = self.block_size()
+        linelen = hdr.item_size()
+        blksize = hdr.block_size()
 
         if mode == 'clobber':
             mode = {True : 'wb', False :  'w'}
         if mode == 'append':
             mode = {True : 'ab', False :  'a'}
         crlf = {True :   '', False : '\n'}
-        fd = file(filename, mode[raw])
-        cardlist = ['%s%s' % (str(card), crlf[raw]) for card in self]
+
+        if dataless:
+            for n in xrange(1,100):
+                key = 'NAXIS%d' % n
+                if key in hdr:
+                    del hdr[key]
+                else:
+                    break
+            hdr['BITPIX'] = 8
+            hdr['NAXIS'] = 0
+
+        cardlist = ['%s%s' % (str(card), crlf[raw]) for card in hdr]
         cardlist.append('END%s%s' % (' '*(linelen-3), crlf[raw]))
         if raw:
             while len(cardlist)*linelen % blksize:
                 cardlist.append(' '*linelen)
+        fd = file(filename, mode[raw])
         fd.writelines(cardlist)
         fd.close()
 
