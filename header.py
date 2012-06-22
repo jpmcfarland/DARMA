@@ -55,6 +55,13 @@ class header(object):
         # Load header, verify header, and populate header attributes.
         self.load_header()
 
+        if option == 'silentfix' and self.hdr is not None:
+            for k in self.hdr.keys():
+                try:
+                    v = self.hdr[k]
+                except ValueError, e:
+                    del self.hdr[k]
+
     def load(self):
 
         '''
