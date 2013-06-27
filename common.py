@@ -350,7 +350,7 @@ class DataStruct(object):
         if x_bin == 0 or y_bin == 0:
             raise DARMAError, 'Unsupported binning factor(s): (%s, %s)' % (str(xbin), str(ybin))
 
-        if x_bin != 1 and y_bin != 1:
+        if x_bin != 1 or y_bin != 1:
             xindex  = 1
             yindex  = 1
             # PyFITS Array axes are reversed.
