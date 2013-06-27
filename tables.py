@@ -101,7 +101,7 @@ class columns(object):
            that column's name requested.
         '''
 
-        if object.__getattribute__(self, name) == name:
+        if object.__getattribute__(self, name) in [name, name.replace('_', ' ')]:
             return self.table.data.field(name)
         else:
             return object.__getattribute__(self, name)
@@ -116,8 +116,9 @@ class columns(object):
         '''
 
         if self.table is not None:
+            attrname = name.replace(' ', '_')
             if name in self.names:
-                return getattr(self, name)
+                return getattr(self, attrname)
 
     def __setattr__(self, name, value):
 
@@ -127,11 +128,12 @@ class columns(object):
            For a column name, this sets the data of one column if
            that column's name requested.
         '''
-        if hasattr(self, name) and object.__getattribute__(self, name) == name:
+        attrname = name.replace(' ', '_')
+        if hasattr(self, attrname) and object.__getattribute__(self, attrname) == name:
             self.table.data.field(name)[:] = value
             self.table.update()
         else:
-            object.__setattr__(self, name, value)
+            object.__setattr__(self, attrname, value)
 
     def __setitem__(self, name, value):
 
@@ -142,11 +144,12 @@ class columns(object):
         '''
 
         if self.table is not None:
-            if hasattr(self, name):
-                self.__setattr__(name, value)
+            attrname = name.replace(' ', '_')
+            if hasattr(self, attrname):
+                self.__setattr__(attrname, value)
             else:
                 self.table.column.add_col(pyfits.Column(name, fits_format[value.dtype.name], array=value))
-                setattr(self, name, name)
+                setattr(self, attrname, name)
 
     def __delattr__(self, name):
 
@@ -278,6 +281,16 @@ class columns(object):
 
         return name in self.names
 
+    def __iter__(self):
+
+        '''
+           x.__iter__() <==> iter(x)
+
+           Iterate over column names.
+        '''
+
+        return iter(self.table.columns.names)
+
 class tables(list):
 
     '''
@@ -364,8 +377,9 @@ class tables(list):
 
             for cols in self._tables:
                 self._dict[cols.name] = cols
-                if not hasattr(self, cols.name):
-                    setattr(self, cols.name, cols)
+                attrname = cols.name.replace(' ', '_')
+                if not hasattr(self, attrname):
+                    setattr(self, attrname, cols)
 
     def _get_tables(self):
 
@@ -443,8 +457,9 @@ class tables(list):
         if name not in self.names:
             self.names.append(name)
         self._dict[name] = value
-        if not hasattr(self, name):
-            setattr(self, name, value)
+        attrname = name.replace(' ', '_')
+        if not hasattr(self, attrname):
+            setattr(self, attrname, value)
 
     def __delitem__(self, name):
 
@@ -489,6 +504,16 @@ class tables(list):
         '''
 
         return name in self.names
+
+    def __iter__(self):
+
+        '''
+           x.__iter__() <==> iter(x)
+
+           Iterate over column names.
+        '''
+
+        return iter(self.names)
 
     def info(self):
 
