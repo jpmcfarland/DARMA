@@ -199,8 +199,8 @@ class image(DataStruct):
     '''
 
     def __init__(self, filename=None, extension=0, plane=0, readonly=0,
-                 memmap=1, data=None, datatype=None, bmask=None, *args,
-                 **kwargs):
+                 memmap=1, data=None, datatype=None, bmask=None, bit=0,
+                 *args, **kwargs):
 
         '''
             filename: The name of a FITS file
@@ -209,8 +209,10 @@ class image(DataStruct):
             readonly: Indicate that the FITS file is readonly
               memmap: use memory mapping for data access (NOT IMPLEMENTED)
                 data: A data array (Python sequence, Array, etc.)
-               bmask: A pixel mask of data with good pixels set to 0 and bad
+            datatype: datatype of internal representation
+               bmask: A bitmask of data with good pixels set to 0 and bad
                       pixels set to some non-zero value (opposite of pixelmap)
+                 bit: value of the non-number bit in bitmask
 
            If both filename and data are set, the image is created from data.
 
@@ -218,12 +220,12 @@ class image(DataStruct):
                  whenever a method requiring masking is called on this image.
                  This guarantees that if no such method is called, no memory
                  is wasted, and if one is, that the mask stays up to date.
-                 See the help for Bitmap for more information.
+                 See the help for bitmask for more information.
         '''
 
-        # Allow DARMA to be imported even if NumPy is not available.
-        if not _HAS_NUMPY:
-            raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
+        DataStruct.__init__(self, *args, **kwargs)
+        self.log('image constructor', 'verbose')
+        self.log('image constructor: filename=%s, extension=%s, plane=%s, readonly=%s, memmap=%s, data=%s, datatype=%s, bmask=%s, bit=%s, args=%s, kwargs=%s' % (filename, extension, plane, readonly, memmap, data, datatype, bmask, bit, args, kwargs), 'debug')
 
         self.filename  = filename
         self.extension = extension
@@ -233,6 +235,7 @@ class image(DataStruct):
         self._data     = data
         self._datatype = datatype
         self.bmask     = bmask
+        self.bit       = bit
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
@@ -246,6 +249,7 @@ class image(DataStruct):
            THIS SHOULD ONLY BE CALLED BY THE 'getter' METHOD.
         '''
 
+        self.log('image load', 'verbose')
         return self.load_image()
 
     def load_image(self):
@@ -255,25 +259,41 @@ class image(DataStruct):
            is no data and no filename, the image data is set to None.
         '''
 
+        log = self.log
+        log('image load_image', 'verbose')
+        filename  = self.filename
+        extension = self.extension
+        plane     = self.plane
+        readonly  = self.readonly
+        memmap    = self.memmap
+        datatype  = self._datatype
+        bit       = self.bit
+
         if self._data is None:
-            if self.filename is not None:
+            if filename is not None:
                 try:
-                    #self._data = pyfits.getdata(self.filename, self.extension)
-                    self._data = pyfits_open(self.filename, memmap=self.memmap)[self.extension].data
+                    log('image load_image from file: filename=%s, memmap=%s, extension=%s' % (filename, memmap, extension), 'debug')
+                    #self._data = pyfits.getdata(filename, extension)
+                    self._data = pyfits_open(filename, memmap=memmap)[extension].data
                 except Exception, e:
-                    raise DARMAError, 'Error loading image from %s: %s' % (self.filename, e)
-        self._data = Array.asarray(self._data, dtype=self._datatype)
+                    raise DARMAError, 'Error loading image from %s: %s' % (filename, e)
+        else:
+            log('image load_image from data array: data=%s, dtype=%s' % (self._data, datatype), 'debug')
+            self._data = Array.asanyarray(self._data, dtype=datatype)
         if not self._data.flags.contiguous:
-            self._data = Array.ascontiguousarray(self._data,
-                                                 dtype=self._datatype)
+            log('image load_image make contiguous', 'debug')
+            self._data = Array.ascontiguousarray(self._data, dtype=datatype)
             if self.bmask is not None:
+                log('image load_image make contiguous bmask', 'debug')
                 self.bmask.data = Array.ascontiguousarray(self.bmask.data)
 
         if self._data is not None and len(self._data.shape) == 3:
-            self._data = self._data[self.plane]
+            log('image load_image select plane %s' % plane, 'debug')
+            self._data = self._data[plane]
 
         if self.bmask is None:
-            self.bmask = bitmask()
+            log('image load_image initialize bmask', 'debug')
+            self.bmask = bitmask(conserve=True, datatype='bool')
 
     def as_pixelmap(self):
 
@@ -290,11 +310,13 @@ class image(DataStruct):
            Determine if non-numbers (NaN, Inf, etc.) exist in the data.
         '''
 
-        map_type = 'NonNumberMap'
-        if not self.bmask.has_pixelmap(map_type):
+        self.log('image has_nonnumbers', 'verbose')
+        bit = self.bit
+        if not self.bmask.has_bit(bit=bit):
+            self.log('image has_nonnumbers constructing bmask', 'debug')
             pmap = pixelmap(data=Array.isfinite(self.data))
-            self.bmask.add_pixelmap(pmap=pmap, map_type=map_type)
-        return self.bmask.has_pixelmap(map_type)
+            self.bmask.add_pixelmap(pmap=pmap, bit=bit)
+        return self.bmask.has_bit(bit=bit)
 
     def count_nonnumbers(self):
 
@@ -302,14 +324,17 @@ class image(DataStruct):
            Return the number of nonnumbers in the image.
         '''
 
-        map_type = 'NonNumberMap'
-        if not self.bmask.has_pixelmap(map_type):
-            pmap = pixelmap(data=Array.isfinite(self.data))
-            self.bmask.add_pixelmap(pmap=pmap, map_type=map_type)
-        if not self.bmask.has_pixelmap(map_type):
+        self.log('image count_nonnumbers', 'verbose')
+        bit = self.bit
+        #if not self.bmask.has_bit(bit=bit):
+        #    pmap = pixelmap(data=Array.isfinite(self.data))
+        #    self.bmask.add_pixelmap(pmap=pmap, bit=bit)
+        #if not self.bmask.has_bit(bit=bit):
+        if not self.has_nonnumbers():
             return 0
         else:
-            pdata = self.bmask.as_pixelmap(map_type).data
+            self.log('image count_nonnumbers found nonnumbers', 'debug')
+            pdata = self.bmask.as_pixelmap(mask=2**bit).data
             return self.size - pdata.nonzero()[0].shape[0]
 
     def map_nonnumbers(self):
@@ -318,11 +343,13 @@ class image(DataStruct):
            Return a pixelmap with nonnumbers in the image marked as bad.
         '''
 
-        map_type = 'NonNumberMap'
-        if not self.bmask.has_pixelmap(map_type):
+        self.log('image map_nonnumbers', 'verbose')
+        bit = self.bit
+        if not self.bmask.has_bit(bit=bit):
+            self.log('image map_nonnumbers constructing bmask', 'debug')
             pmap = pixelmap(data=Array.isfinite(self.data))
-            self.bmask.add_pixelmap(pmap=pmap, map_type=map_type)
-        return self.bmask.as_pixelmap(map_type)
+            self.bmask.add_pixelmap(pmap=pmap, bit=bit)
+        return self.bmask.as_pixelmap(mask=1<<bit)
 
     ################################################################
     #
@@ -429,7 +456,7 @@ class image(DataStruct):
         # self/img and pixmap/pmap are image and pixelmap objects, respectively
         # _data, _mask, and _pmap are Arrays
 
-        map_type = 'NonNumberMap'
+        bit = self.bit
         # Determine the valid pixels.
         #
         # Get the data from the image (self->img) and put it in _data
@@ -438,12 +465,12 @@ class image(DataStruct):
         else:
             img = self
         _data = img.data.ravel()
-        if filter and not img.bmask.has_pixelmap(map_type):
+        if filter and not img.bmask.has_bit(bit=bit):
             pmap = pixelmap(data=Array.isfinite(img.data))
-            img.bmask.add_pixelmap(pmap=pmap, map_type=map_type)
-            _mask = img.bmask.as_pixelmap(map_type).data
-        elif filter and img.bmask.has_pixelmap(map_type):
-            _mask = img.bmask.as_pixelmap(map_type).data
+            img.bmask.add_pixelmap(pmap=pmap, bit=bit)
+            _mask = img.bmask.as_pixelmap(mask=2**bit).data
+        elif filter and img.bmask.has_bit(bit=bit):
+            _mask = img.bmask.as_pixelmap(mask=2**bit).data
         else:
             _mask = None
         if _mask is not None:
@@ -551,7 +578,7 @@ class image(DataStruct):
            Return the mean value of this image.
         '''
 
-        return mean(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
+        return mean(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                     filter=filter)
 
     def get_median(self, sorted=False, filter=False):
@@ -562,7 +589,7 @@ class image(DataStruct):
            sorted: is the data already sorted
         '''
 
-        return median(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
+        return median(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                       sorted=sorted, filter=filter)
 
     def get_stdev(self, filter=False):
@@ -571,7 +598,7 @@ class image(DataStruct):
            Return the sample standard deviation value of this image.
         '''
 
-        return stdev(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
+        return stdev(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                      filter=filter)
 
     def get_rms(self, filter=False):
@@ -580,7 +607,7 @@ class image(DataStruct):
            Return the rms (root mean square) value of this image.
         '''
 
-        return rms(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
+        return rms(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                    filter=filter)
 
     def get_min(self, filter=False):
@@ -589,7 +616,7 @@ class image(DataStruct):
            Return the minumum value of this image.
         '''
 
-        return min(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
+        return min(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                    filter=filter)
 
     def get_max(self, filter=False):
@@ -598,7 +625,7 @@ class image(DataStruct):
            Return the maximum value of this image.
         '''
 
-        return max(self.data, self.bmask.as_pixelmap('NonNumberMask').data,
+        return max(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                    filter=filter)
 
     def thresh_to_pixmap(self, lo_cut=None, hi_cut=None):
@@ -618,14 +645,14 @@ class image(DataStruct):
         else:
             maskhi = self.as_pixelmap()
             maskhi.set_val(1)
-        map_type = 'NonNumberMap'
-        if not self.bmask.has_pixelmap(map_type):
+        bit = self.bit
+        if not self.bmask.has_bit(bit=bit):
             pmap = pixelmap(data=Array.isfinite(self.data))
-            self.bmask.add_pixelmap(pmap=pmap, map_type=map_type)
-        if not self.bmask.has_pixelmap(map_type):
+            self.bmask.add_pixelmap(pmap=pmap, bit=bit)
+        if not self.bmask.has_bit(bit=bit):
             return pixelmap(data=masklo & maskhi)
         else:
-            data=masklo & maskhi & self.bmask.as_pixelmap(map_type).data
+            data = masklo & maskhi & self.bmask.as_pixelmap(mask=2**bit).data
             return pixelmap(data=data)
 
     #################################################################
