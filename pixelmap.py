@@ -5,8 +5,8 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, os
 
-from common import Array
-from common import DARMAError, _HAS_NUMPY, DataStruct
+from common import Array, pyfits_open
+from common import DARMAError, DataStruct, get_tmpbase
 
 class pixelmap(DataStruct):
 
@@ -19,28 +19,28 @@ class pixelmap(DataStruct):
     '''
 
     def __init__(self, filename=None, data=None, extension=0, plane=0,
-                 readonly=0, *args, **kwargs):
+                 readonly=0, memmap=1, *args, **kwargs):
 
         '''
             filename: The name of a FITS file
                 data: A data array (Python sequence, Array, etc.)
            extension: The extension (default 0)
             readonly: Indicate that the FITS file is readonly
+              memmap: use memory mapping for data access (NOT IMPLEMENTED)
 
            If there is no filename and no data, the pixelmap data is set to
            None.  If both filename and data are set, the pixelmap is created
            from self.data.
         '''
 
-        # Allow DARMA to be imported even if NumPy is not available.
-        if not _HAS_NUMPY:
-            raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
+        DataStruct.__init__(self, *args, **kwargs)
 
         self.filename  = filename or None
         self._data     = data
         self.extension = extension
         self.plane     = plane
         self.readonly  = readonly
+        self.memmap    = memmap
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
@@ -65,12 +65,12 @@ class pixelmap(DataStruct):
         if self._data is None:
             if self.filename is not None:
                 try:
-                    self._data = pyfits.getdata(self.filename,
-                                          self.extension).astype('bool')
+                    #self._data = pyfits.getdata(self.filename, self.extension).astype('bool')
+                    self._data = pyfits_open(self.filename, memmap=self.memmap)[self.extension].data.astype('bool')
                 except Exception, e:
                     raise DARMAError, 'Error loading pixelmap from %s: %s' % (self.filename, e)
         else:
-            self._data = Array.asarray(self._data, dtype='bool')
+            self._data = Array.asanyarray(self._data, dtype='bool')
             if not self._data.flags.contiguous:
                 self._data = Array.ascontiguousarray(self._data, dtype='bool')
 
@@ -112,6 +112,19 @@ class pixelmap(DataStruct):
 
         from image import image
         return image(data=self.data)
+
+    def as_eclipse_pixelmap(self):
+
+        '''
+           Return an Eclipse pixelmap object based on this pixelmap.
+        '''
+
+        tmpname = get_tmpbase(dir='/tmp', prefix='pixelmap', suffix='fits')
+        self.save(filename=tmpname, update_datamd5=False)
+        from eclipse import pixelmap as e_pixelmap
+        e_pmap = e_pixelmap.pixelmap(tmpname)
+
+        return e_pmap
 
     def set_val(self, value=0):
 
