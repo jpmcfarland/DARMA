@@ -18,9 +18,23 @@ except:
     Array = Arrayrandom = Arrayfft = None
     _HAS_NUMPY = False
 
+# default data types
 FLOAT = 'float32'
 INT   = 'int32'
 LONG  = 'int64'
+
+# log levels
+NONE    = 0
+NORMAL  = 1 << 0
+VERBOSE = 1 << 1
+DEBUG   = 1 << 2
+
+loglevel = {
+            'none'    : NONE,
+            'normal'  : NORMAL,
+            'verbose' : NORMAL+VERBOSE,
+            'debug'   : NORMAL+VERBOSE+DEBUG
+           }
 
 def pyfits_open(*kw, **kwargs):
 
@@ -111,6 +125,8 @@ class DataStruct(object):
        methods (mainly arithmetic).
     '''
 
+    verbose = NONE
+
     def __init__(self, *args, **kwargs):
 
         '''
@@ -120,7 +136,26 @@ class DataStruct(object):
            of inherited classes.
         '''
 
-        pass
+        # Allow DARMA to be imported even if NumPy is not available.
+        if not _HAS_NUMPY:
+            raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
+        if 'verbose' in kwargs:
+            self.verbose = kwargs['verbose']
+        self.log('DataStruct constructor', 'debug')
+
+    def log(self, msg, level='normal'):
+
+        '''
+           Print a log statement
+
+               msg: message to print
+             level: level of log entry ('normal', 'verbose', 'debug')
+        '''
+
+        verbose = self.verbose
+        if verbose in loglevel and level in loglevel:
+            if loglevel[verbose] & loglevel[level]:
+                print msg
 
     def load(self):
 
@@ -131,6 +166,7 @@ class DataStruct(object):
            THIS SHOULD ONLY BE CALLED BY THE 'getter' METHOD.
         '''
 
+        self.log('DataStruct data loader', 'debug')
         self._data = None
 
     def _get_data(self):
@@ -139,6 +175,7 @@ class DataStruct(object):
            data 'getter' method
         '''
 
+        self.log('DataStruct data getter', 'debug')
         self.load()
         return self._data
 
@@ -148,6 +185,8 @@ class DataStruct(object):
            data 'setter' method
         '''
 
+        self.log('DataStruct data setter', 'debug')
+        #FIXME this does not appear to work as expected
         self._data = data
 
     def _del_data(self):
@@ -156,7 +195,9 @@ class DataStruct(object):
            data 'deleter' method
         '''
 
-        del self._data
+        self.log('DataStruct data deleter', 'debug')
+        del(self._data)
+        self._data = None
 
     data = property(_get_data, _set_data, _del_data,
                     'Attribute to store the data')
@@ -166,6 +207,7 @@ class DataStruct(object):
         '''
         '''
 
+        self.log('DataStruct shape getter', 'debug')
         if self.data is not None:
             return self.data.shape[::-1]
         return(0,)
@@ -178,6 +220,7 @@ class DataStruct(object):
            The total number of elements in the data array.
         '''
 
+        self.log('DataStruct size getter', 'debug')
         if self.data is not None:
             return self.data.size
         return 0
@@ -190,6 +233,7 @@ class DataStruct(object):
            Return the item size (in bytes) of self.data.
         '''
 
+        self.log('DataStruct itemsize getter', 'debug')
         if self.data is not None:
             return self.data.itemsize
         return 0
@@ -201,6 +245,7 @@ class DataStruct(object):
         '''
         '''
 
+        self.log('DataStruct datatype getter', 'debug')
         if self.data is not None:
             self._datatype = self.data.dtype.name
         return self._datatype
@@ -210,6 +255,7 @@ class DataStruct(object):
         '''
         '''
 
+        self.log('DataStruct datatype setter', 'debug')
         self._datatype = datatype
 
     def _del_datatype(self):
@@ -217,22 +263,39 @@ class DataStruct(object):
         '''
         '''
 
+        self.log('DataStruct datatype deleter', 'debug')
         self._datatype = None
 
     datatype = property(_get_datatype, _set_datatype, _del_datatype)
 
-    def copy(self):
+    def __del__(self):
+
+        '''
+           Cleanup data array before destruction
+        '''
+
+        self.log('DataStruct data __del__', 'debug')
+        del(self.data)
+
+    def copy(self, datatype=None):
 
         '''
            Copy the data to a new object.
+
+           datatype: return a copy of the specified datatype
         '''
 
+        self.log('DataStruct copy', 'verbose')
         if self.data is None:
             return None
         else:
             bmask = self.get_bitmask()
             if bmask is not None:
+                self.log('DataStruct copy bmask', 'debug')
                 bmask = bmask.copy()
+            if datatype:
+                if Array.dtype(datatype) != Array.dtype(self.datatype):
+                    return self.__class__(data=self.data.copy(), bmask=bmask, datatype=datatype)
             return self.__class__(data=self.data.copy(), bmask=bmask)
 
     # FIXME
@@ -256,6 +319,7 @@ class DataStruct(object):
 
         '''
 
+        self.log('DataStruct save', 'verbose')
         if self.data is None:
             raise DARMAError, 'No data to save!'
 
@@ -277,13 +341,16 @@ class DataStruct(object):
             hdr = None
 
         if not self.data.flags.contiguous:
+            self.log('DataStruct save: make contiguous', 'debug')
             self.data = Array.ascontiguousarray(self.data)
 
         try:
             if self.datatype is datatype:
+                self.log('DataStruct save: pyfits.writeto', 'debug')
                 pyfits.writeto(filename, data=self.data, header=hdr,
                                clobber=clobber, output_verify=option)
             else:
+                self.log('DataStruct save: pyfits.writeto astype(%s)' % datatype, 'debug')
                 pyfits.writeto(filename, data=self.data.astype(datatype),
                                header=hdr, clobber=clobber,
                                output_verify=option)
@@ -291,6 +358,7 @@ class DataStruct(object):
             raise DARMAError, e
 
         if update_datamd5:
+            self.log('DataStruct save: update datamd5', 'debug')
             _update_datamd5(filename, _datamd5(filename))
 
     def display(self, viewer='skycat', filename=None):
@@ -305,34 +373,42 @@ class DataStruct(object):
                  method.
         '''
 
+        self.log('DataStruct display', 'verbose')
         if filename is None:
+            self.log('DataStruct display: saving to temp file', 'debug')
             import tempfile
             if self.filename is None:
                 base_name = 'None'
             else:
                 base_name = self.filename.split('/')[-1]
             filename = tempfile.gettempdir() + '/' + '%s' % base_name
-            del tempfile
+            del(tempfile)
         elif os.path.exists(filename):
             raise DARMAError, 'Cowardly refusing to overwrite existing file.  Use a differnt filename.'
 
+        self.log('DataStruct display: saving file', 'debug')
         self.save(filename, update_datamd5=False)
 
         if not os.path.exists(filename):
             raise DARMAError, 'Could not find file %s' % self.filename
 
+        self.log('DataStruct display: launching viewer', 'verbose')
         os.system('%s %s' % (viewer, filename))
+        self.log('DataStruct display: removing file', 'debug')
         os.remove(filename)
 
-    def bin(self, xbin=2, ybin=2):
+    def bin(self, xbin=2, ybin=2, datatype=None, old=False):
 
         '''
            Return with a binned version of the data.  Negative binning factors
            are allowed.  If a negative binning factor is used, this has the
            effect of reversing the axis.
 
-           xbin: X-axis binning factor (int)
-           ybin: Y-axis binning factor (int)
+               xbin: X-axis binning factor (int)
+               ybin: Y-axis binning factor (int)
+           datatype: use an alternate datatype for the binning (e.g., to
+                     reduce rounding error)
+                old: use older, much slower binning algorithm
 
            Note: If the binning factor is not a factor of the length of the
                  axis, the last axis_len % Nbin elements of the data will be
@@ -344,6 +420,7 @@ class DataStruct(object):
                  data dynamic range, it will be truncated.
         '''
 
+        self.log('DataStruct bin', 'verbose')
         x_bin = abs(int(xbin))
         y_bin = abs(int(ybin))
 
@@ -351,31 +428,60 @@ class DataStruct(object):
             raise DARMAError, 'Unsupported binning factor(s): (%s, %s)' % (str(xbin), str(ybin))
 
         if x_bin != 1 or y_bin != 1:
-            xindex  = 1
-            yindex  = 1
-            # PyFITS Array axes are reversed.
-            # XXX bitmask support should probably be included here for
-            #     completeness
-            halfbin = self.__class__(data=Array.zeros(shape=(self.ysize(),
-                                     self.xsize()/x_bin), dtype=self.datatype))
-            fullbin = self.__class__(data=Array.zeros(shape=(self.ysize()/y_bin,
-                                     self.xsize()/x_bin), dtype=self.datatype))
+            if old:
+                xindex  = 1
+                yindex  = 1
+                # PyFITS Array axes are reversed.
+                # XXX bitmask support should probably be included here for
+                #     completeness
+                if datatype:
+                    dtype = datatype
+                    data = self.copy(datatype=dtype)
+                else:
+                    dtype = self.datatype
+                    data = self
+                halfbin = data.__class__(data=Array.zeros(shape=(data.ysize(),
+                                         data.xsize()/x_bin), dtype=dtype))
+                fullbin = data.__class__(data=Array.zeros(shape=(data.ysize()/y_bin,
+                                         data.xsize()/x_bin), dtype=dtype))
 
-            for i in range(1, fullbin.xsize()+1):
-                for j in range(x_bin):
-                    halfbin[i, :] += self[xindex, :]
-                    xindex += 1
-            for i in range(1, fullbin.ysize()+1):
-                for j in range(y_bin):
-                    fullbin[:, i] += halfbin[:, yindex]
-                    yindex += 1
-            del halfbin
+                self.log('DataStruct bin: starting halfbin', 'debug')
+                for i in range(1, fullbin.xsize()+1):
+                    for j in range(x_bin):
+                        halfbin[i, :] += data[xindex, :]
+                        xindex += 1
+                self.log('DataStruct bin: starting fullbin', 'debug')
+                for i in range(1, fullbin.ysize()+1):
+                    for j in range(y_bin):
+                        fullbin[:, i] += halfbin[:, yindex]
+                        yindex += 1
+                fullbin = data.__class__(data=fullbin.data, datatype=self.datatype)
+                del(halfbin)
+            else:
+                # PyFITS Array axes are reversed.
+                # XXX bitmask support should probably be included here for
+                #     completeness
+                shape = (self.ysize()/y_bin, self.xsize()/x_bin)
+                if datatype:
+                    data = self.data.astype(datatype)
+                else:
+                    data = self.data
+                self.log('DataStruct bin: starting halfbin', 'debug')
+                half = Array.add.reduceat(data, Array.arange(data.shape[0])[::y_bin], axis=0)
+                self.log('DataStruct bin: starting fullbin', 'debug')
+                full = Array.add.reduceat(half, Array.arange(data.shape[1])[::x_bin], axis=1)
+                if full.shape != shape:
+                    full = full[:shape[0], :shape[1]]
+                fullbin = self.__class__(data=full, datatype=self.datatype)
         else:
+            self.log('DataStruct bin: no binning requested', 'debug')
             fullbin = self.copy()
 
         if xbin < 0:
+            self.log('DataStruct bin: reversing X', 'debug')
             fullbin = fullbin[::-1, ::]
         if ybin < 0:
+            self.log('DataStruct bin: reversing Y', 'debug')
             fullbin = fullbin[::, ::-1]
 
         return fullbin
@@ -386,6 +492,7 @@ class DataStruct(object):
            Return a copy with the Y-axis flipped (top to bottom).
         '''
 
+        self.log('DataStruct flip', 'verbose')
         return self.bin(1,-1)
 
     def flop(self):
@@ -394,6 +501,7 @@ class DataStruct(object):
            Return a copy with the X-axis flipped (left to right).
         '''
 
+        self.log('DataStruct flop', 'verbose')
         return self.bin(-1,1)
 
     def reshape(self, shape):
@@ -406,8 +514,10 @@ class DataStruct(object):
            The shape will generally be a tuple of the form (x,y) or (n,).
         '''
 
+        self.log('DataStruct reshape', 'verbose')
         if self.data is not None:
             if self.has_bitmask():
+                self.log('DataStruct reshape bmask', 'debug')
                 self.bmask.reshape(shape)
             self.data = self.data.reshape(shape[::-1])
 
@@ -417,8 +527,10 @@ class DataStruct(object):
            Swap NAXIS1 and NAXIS2 inplace.
         '''
 
+        self.log('DataStruct swapaxes', 'verbose')
         if self.data is not None:
             if self.has_bitmask():
+                self.log('DataStruct swapaxes bmask', 'debug')
                 self.bmask.swapaxes(0,1)
             self.data = self.data.swapaxes(0,1)
 
@@ -436,6 +548,7 @@ class DataStruct(object):
            (x1-x0)+1 x (y1-y0)+1
         '''
 
+        self.log('DataStruct extract_region', 'verbose')
         if x0 < 1 or y0 < 1 or x1 > self.xsize() or y1 > self.ysize():
             raise DARMAError, 'Cannot extract region %s: region not contained completely within the %s!' % (`(x0, y0, x1, y1)`, self.__class__.__name__)
 
@@ -532,11 +645,14 @@ class DataStruct(object):
            x.__getitem__(i) <==> x[i]
         '''
 
+        self.log('DataStruct __getitem__', 'verbose')
         if self.data is not None:
             if self.has_bitmask():
+                self.log('DataStruct __getitem__ bmask', 'debug')
                 bmask = self.bmask.__getitem__(key)
             else:
                 bmask = None
+            self.log('DataStruct __getitem__ adjust index: %s' % `key`, 'debug')
             key = _adjust_index(key)
             return self.__class__(data=self.data.__getitem__(key),
                                   bmask=bmask)
@@ -550,9 +666,11 @@ class DataStruct(object):
            x.__setitem__(i, y) <==> x[i] = y
         '''
 
+        self.log('DataStruct __setitem__', 'verbose')
         if self.data is not None:
+            self.log('DataStruct __setitem__ adjust index: %s' % `key`, 'debug')
             key = _adjust_index(key)
-
+            self.log('DataStruct __setitem__ value: %s' % value.data, 'debug')
             self.data.__setitem__(key, value.data)
         else:
             raise DARMAError, 'Cannot set item.  Data array does not exist!'
@@ -564,6 +682,7 @@ class DataStruct(object):
            x.__contains__(y) <==> y in x
         '''
 
+        self.log('DataStruct __contains__: %s' % value, 'debug')
         return value in self.data
 
     #def __repr__(self):
@@ -594,13 +713,17 @@ class DataStruct(object):
            and non-images.
         '''
 
+        self.log('DataStruct _arith_op_', 'verbose')
         if isinstance(other, DataStruct):
             if other.data is not None:
+                self.log('DataStruct _arith_op_ DataStruct: op=%s, data=%s, args=%s, kwargs=%s' % (op, other.data, args, kwargs), 'debug')
                 return self.__class__(data=op(other.data, *args, **kwargs),
                                       bmask=self.get_bitmask())
             else:
+                self.log('DataStruct _arith_op_ DataStruct no data: op=%s, args=%s, kwargs=%s' % (op, args, kwargs), 'debug')
                 return self.copy()
         else:
+            self.log('DataStruct _arith_op_ non-DataStruct: op=%s, data=%s, args=%s, kwargs=%s' % (op, other, args, kwargs), 'debug')
             return self.__class__(data=op(other, *args, **kwargs),
                                   bmask=self.get_bitmask())
 
@@ -611,10 +734,15 @@ class DataStruct(object):
            other images and non-images.
         '''
 
+        self.log('DataStruct _inplace_op_', 'verbose')
         if isinstance(other, DataStruct):
             if other.data is not None:
+                self.log('DataStruct _inplace_op_ DataStruct: op=%s, data=%s, args=%s, kwargs=%s' % (op, other.data, args, kwargs), 'debug')
                 self.data = op(other.data, *args, **kwargs)
+            else:
+                self.log('DataStruct _inplace_op_ DataStruct no data: op=%s, args=%s, kwargs=%s' % (op, args, kwargs), 'debug')
         else:
+            self.log('DataStruct _inplace_op_ non-DataStruct: op=%s, data=%s, args=%s, kwargs=%s' % (op, other, args, kwargs), 'debug')
             self.data = op(other, *args, **kwargs)
         return self
 
@@ -1077,6 +1205,7 @@ class DataStruct(object):
            x.__neg__() <==> -x
         '''
 
+        self.log('DataStruct __neg__', 'verbose')
         if self.data is not None:
             return self.__class__(data=self.data.__neg__(),
                                   bmask=self.get_bitmask())
@@ -1090,6 +1219,7 @@ class DataStruct(object):
            x.__pos__() <==> +x
         '''
 
+        self.log('DataStruct __pos__', 'verbose')
         if self.data is not None:
             return self.__class__(data=self.data.__pos__(),
                                   bmask=self.get_bitmask())
@@ -1103,6 +1233,7 @@ class DataStruct(object):
            x.__abs__() <==> abs(x)
         '''
 
+        self.log('DataStruct __abs__', 'verbose')
         if self.data is not None:
             return self.__class__(data=self.data.__abs__(),
                                   bmask=self.get_bitmask())
@@ -1118,6 +1249,7 @@ class DataStruct(object):
            NOTE: only works on integer datatypes
         '''
 
+        self.log('DataStruct __invert__', 'verbose')
         if self.data is not None:
             return self.__class__(data=self.data.__invert__(),
                                   bmask=self.get_bitmask())
@@ -1136,7 +1268,9 @@ class DataStruct(object):
            integer representation.
         '''
 
+        self.log('DataStruct __int__', 'verbose')
         if self.data is not None:
+            self.log('DataStruct __int__: astype=%s' % INT, 'debug')
             return self.__class__(data=self.data.astype(INT),
                                   bmask=self.get_bitmask())
         else:
@@ -1149,7 +1283,9 @@ class DataStruct(object):
            integer representation.
         '''
 
+        self.log('DataStruct __long__', 'verbose')
         if self.data is not None:
+            self.log('DataStruct __int__: astype=%s' % LONG, 'debug')
             return self.__class__(data=self.data.astype(LONG),
                                   bmask=self.get_bitmask())
         else:
@@ -1163,6 +1299,7 @@ class DataStruct(object):
            float32 by default).
         '''
 
+        self.log('DataStruct __float__', 'verbose')
         if self.data is not None:
             return self.__class__(data=self.data.astype('float64'),
                                   bmask=self.get_bitmask())
@@ -1178,7 +1315,9 @@ class DataStruct(object):
            datatype: Array data type
         '''
 
+        self.log('DataStruct astype', 'verbose')
         if self.data is not None:
+            self.log('DataStruct astype: astype=%s' % datatype, 'debug')
             return self.__class__(data=self.data.astype(datatype),
                                   bmask=self.get_bitmask())
         else:
@@ -1197,6 +1336,8 @@ class DataStruct(object):
               value: any number construct (int, float, imag, nan, etc.)
         '''
 
+        self.log('DataStruct set_val', 'verbose')
+        self.log('DataStruct set_val: val=%s' % value, 'debug')
         self.data.fill(value)
 
     def set_zero(self):
@@ -1206,6 +1347,7 @@ class DataStruct(object):
         '''
 
         # Same as Array.zeros()
+        self.log('DataStruct set_zero', 'verbose')
         self.set_val()
 
     ########################################################################
@@ -1434,4 +1576,50 @@ def fold_string(string, num=80, char='', newline='\n'):
     if output.endswith(newline):
         output = output[:-len(newline)]
     return output
+
+def get_tmpbase(suffix='', prefix='tmp', dir=None):
+
+    '''
+       Return a basename for a temporary filename.
+
+       Loosely follows tempfile.mktemp syntax, but constructs a name based on
+       the current time (seconds since 00:00:00 1970-01-01 UTC) with
+       microsecond precision followed by a 6 character random string.  This
+       should virtually guarantee temp-name uniqueness.  The returned string
+       has the following form:
+
+       '<dir>/<prefix><seconds.microseconds>.<random_string>.<suffix>'
+
+       If dir is not None, it will be supplied with a trailing '/' if one is
+       not given.  If suffix is not '', it will be preceeded by a '.' if one
+       is not given.
+
+       suffix: suffix to add
+       prefix: prefix to add
+          dir: pathname to prepend to file (None means the same as '')
+
+       NOTE: If dir is given, it will be checked for, and an Exception raised
+             if it does not exist.
+    '''
+
+    from os import path
+    from datetime import datetime
+    from tempfile import mktemp
+
+    if dir is not None:
+        if not path.exists(dir):
+            raise Exception, 'Path: %s does not exist!'
+        if not dir.endswith('/'):
+            dir = '%s/' % dir
+    else:
+        dir = ''
+    dt = datetime.now()
+    date_str = '%s.%06d' % (dt.strftime('%s'), dt.microsecond)
+    rand_str = '.%s' % mktemp(suffix='', prefix='', dir='')
+    if suffix != '':
+        if suffix.startswith('.'):
+            suffix = suffix[1:]
+        suffix = '.%s' % suffix
+
+    return '%s%s%s%s%s' % (dir, prefix, date_str, rand_str, suffix)
 
