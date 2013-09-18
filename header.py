@@ -60,7 +60,7 @@ class header(object):
                 try:
                     v = self.hdr[k]
                 except ValueError, e:
-                    del self.hdr[k]
+                    del(self.hdr[k])
 
     def load(self):
 
@@ -152,6 +152,7 @@ class header(object):
                     for char in attr.upper():
                         if char not in allowed_chars:
                             attr = attr.replace(char, '_')
+                    #if card.key.startswith('HIERARCH '):
                     if isinstance(card, pyfits.core._Hierarch):
                         attr = 'HIERARCH_%s' % attr
                     setattr(self, attr, card)
@@ -180,6 +181,7 @@ class header(object):
            header 'deleter' method
         '''
 
+        del(self._hdr)
         self._hdr = None
         self._IS_VERIFIED = False
 
@@ -213,10 +215,20 @@ class header(object):
            card_list 'deleter' method
         '''
 
+        del(self._card_list)
         self._card_list = []
 
     card_list = property(_get_card_list, _set_card_list, _del_card_list,
                          'Attribute to store the list of cards for the header')
+
+    def __del__(self):
+
+        '''
+           Cleanup headers before destruction
+        '''
+
+        del(self.card_list)
+        del(self.hdr)
 
     def save(self, filename, raw=True, mode='clobber', dataless=False):
 
@@ -334,6 +346,7 @@ class header(object):
                 raise DARMAError, 'Invalid header!  No SIMPLE or XTENSION keywords.'
             # Fix any bad keywords PyFITS won't prior to verification.
             for card in hdu.header.ascardlist():
+                #if card.key.count(' ') and not card.key.startswith('HIERARCH '):
                 if card.key.count(' ') and not isinstance(card, pyfits.core._Hierarch):
                     new_key = card.key.replace(' ', '_')
                     if option != 'silentfix':
@@ -441,6 +454,25 @@ class header(object):
 
         return self.hdr.get_comment()
 
+    def get_comment_cards(self):
+
+        '''
+           Get all comments as a list of header cards where applicable
+           (i.e., if no proper header cards exist in the comments, the
+           returned card list is empty).
+        '''
+
+        comments = self.hdr.get_comment()
+        cards = []
+        for comment in comments:
+            card = pyfits.Card().fromstring(comment)
+            try:
+                card.verify('exception')
+                cards.append(card)
+            except:
+                pass
+        return pyfits.CardList(cards=cards)
+
     def get_history(self):
 
         '''
@@ -448,6 +480,25 @@ class header(object):
         '''
 
         return self.hdr.get_history()
+
+    def get_history_cards(self):
+
+        '''
+           Get all histories as a list of header cards where applicable
+           (i.e., if no proper header cards exist in the histories, the
+           returned card list is empty).
+        '''
+
+        historys = self.hdr.get_history()
+        cards = []
+        for history in historys:
+            card = pyfits.Card().fromstring(history)
+            try:
+                card.verify('exception')
+                cards.append(card)
+            except:
+                pass
+        return pyfits.CardList(cards=cards)
 
     def add_blank(self, value='', before=None, after=None):
 
@@ -759,6 +810,7 @@ class header(object):
                 result.add_blank(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
             elif not result.hdr.has_key(card.key) or clobber:
+                #if card.key.startswith('HIERARCH '):
                 if isinstance(card, pyfits.core._Hierarch):
                     key = 'HIERARCH '+card.key
                 else:
@@ -922,6 +974,7 @@ class header(object):
             for char in attr.upper():
                 if char not in allowed_chars:
                     attr = attr.replace(char, '_')
+            #if card.key.startswith('HIERARCH '):
             if isinstance(card, pyfits.core._Hierarch):
                 attr = 'HIERARCH_%s' % attr
             setattr(self, attr, card)
