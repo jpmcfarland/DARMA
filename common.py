@@ -36,14 +36,14 @@ loglevel = {
             'debug'   : NORMAL+VERBOSE+DEBUG
            }
 
-def pyfits_open(*kw, **kwargs):
+def pyfits_open(*args, **kwargs):
 
     '''
        Wrapper around pyfits.open() method to allow arbitrary extra
        arguments common to all open commands, e.g., ignore_missing_end.
     '''
 
-    return pyfits.open(ignore_missing_end=True, *kw, **kwargs)
+    return pyfits.open(ignore_missing_end=True, *args, **kwargs)
 
 class DARMAError(Exception):
 
