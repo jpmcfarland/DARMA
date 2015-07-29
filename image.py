@@ -23,15 +23,16 @@ class image(DataStruct):
        NOTE: All interfaces through the image object have the axes in the
              expected order: x,y (or NAXIS1,NAXIS2) with a unity-index access
              to the data (FITS standard), but the PyFITS interface returns an
-             Array object with them in a swapped format: (y,x) assigned to the
-             data attribute of the image object that is zero-indexed.  This is
-             due to the way Array counts axes slow to fast.  Logically, data
-             is stored in the array as a list of lists, where the first axis
-             refers to individual lists, and the second refers to the list
-             elements: rows then columns respectively (or NAXIS2 index then
-             NAXIS1 index respectively in FITS terms).  Data in a FITS file is
-             stored in exactly this same way making the loading and unloading
-             of data arrays most efficient if this convention is used.
+             Array object with them in a swapped format due to row-major to
+             column-major conversion: (y,x) assigned to the data attribute of
+             the image object that is zero-indexed.  This is due to the way
+             Array counts axes slow to fast.  Logically, data is stored in the
+             array as a list of lists, where the first axis refers to
+             individual lists, and the second refers to the list elements:
+             rows then columns respectively (or NAXIS2 index then NAXIS1 index
+             respectively in FITS terms).  Data in a FITS file is stored in
+             exactly this same way making the loading and unloading of data
+             arrays most efficient if this convention is used.
 
              When accessing array elements through the data attribute
              directly, be aware of these inconsistencies.  Also, if manually
