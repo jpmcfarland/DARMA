@@ -162,8 +162,9 @@ class header(object):
         '''
            header 'getter' method
         '''
-
-        self.load()
+        if self._hdr is None:
+            self.load()
+        
         return self._hdr
 
     def _set_header(self, hdr):
