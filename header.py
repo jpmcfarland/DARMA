@@ -114,8 +114,10 @@ class header(object):
                             if card_list[i].startswith('END'):
                                 indexes.append(i+1)
                             i += 1
+                        # trim the index list
+                        _ = indexes.pop(-1)
                     header_cards = pyfits.CardList()
-                    if self.extension > len(indexes)-1:
+                    if self.extension >= len(indexes):
                         raise DARMAError, 'extension %d is not in card_list!' % self.extension
                     for card in card_list[indexes[self.extension]:]:
                         if not card.startswith('END'):
@@ -524,8 +526,8 @@ class header(object):
            Add a COMMENT card.
 
             value: comment text to be added (folds at 72 characters)
-           before: keyword to place blank before
-            after: keyword to place blank after
+           before: keyword to place comment before
+            after: keyword to place comment after
         '''
 
         values = fold_string(value, num=72).split('\n')
@@ -541,8 +543,8 @@ class header(object):
            Add a HISTORY card.
 
             value: history text to be added (folds at 72 characters)
-           before: keyword to place blank before
-            after: keyword to place blank after
+           before: keyword to place history before
+            after: keyword to place history after
         '''
 
         values = fold_string(value, num=72).split('\n')
@@ -1044,19 +1046,72 @@ class header(object):
            x.__iter__() <==> iter(x)
 
            Iterate over the cards in this header, not just the keywords.
-           Use iterkeys() to iterate over the keywords.
+           Use iterkeywords()/iterkeys() to iterate over the keywords.
         '''
 
         return self.card_list.__iter__()
 
-    def iteritems(self):
+    def items(self, comments=True):
+
+        '''
+           H.items() -> a list of (keyword, value, comment) or (keyword,
+           value) items of H
+
+             comments: include comments in item tuple
+        '''
+
+        if comments:
+            return [(card.key, card.value, card.comment) for card in self]
+        else:
+            return self.hdr.items()
+
+    def keys(self):
+
+        '''
+           H.keys() -> a list of keywords of H
+
+           Synonym for keywords()
+        '''
+
+        return self.keywords()
+
+    def keywords(self):
+
+        '''
+           H.keys() -> a list of keywords of H
+        '''
+
+        return self.hdr.keys()
+
+    def values(self):
+
+        '''
+           H.values() -> a list of values of H
+        '''
+
+        return [card.value for card in self]
+
+    def comments(self):
+
+        '''
+           H.comments() -> a list of comments of H
+        '''
+
+        return [card.comment for card in self]
+
+    def iteritems(self, comments=True):
 
         '''
            H.iteritems() -> an iterator over the (keyword, value, comment)
-           items of H
+           or (keyword, value) items of H
+
+             comments: include comments in item tuple
         '''
 
-        return iter([(card.key, card.value, card.comment) for card in self])
+        if comments:
+            return iter([(card.key, card.value, card.comment) for card in self])
+        else:
+            return iter(self.hdr.items())
 
     def iterkeys(self):
 
@@ -1074,7 +1129,7 @@ class header(object):
            H.iterkeywords() -> an iterator over the keywords of H
         '''
 
-        return iter(self.card_list.keys())
+        return iter(self.keys())
 
     def itervalues(self):
 
@@ -1155,7 +1210,7 @@ def getval(filename, key, ext=0):
     fd.close()
     return None
 
-def get_headers(filename):
+def get_headers(filename=None, card_list=None):
 
     '''
        The sole purpose of this factory function is to create a list of
@@ -1164,12 +1219,23 @@ def get_headers(filename):
        multi-extension, this is a list of one primary header and N
        extension headers, where N is the number of extensions.
 
-       filename: name of a valid FITS file, single- or multi-extension
+          filename: name of a valid FITS file, single- or multi-extension
+         card_list: a list of header cards (80 character strings, NULL
+                    terminated), a pyfits.CardList instance, or the name
+                    of a text file containing the header cards
     '''
 
-    hdus = pyfits_open(filename, memmap=1)
-    headers = [header(card_list=hdu.header.ascardlist()) for hdu in hdus]
-    hdus.close()
+    headers = []
+    if filename is not None:
+        hdus = pyfits_open(filename, memmap=1)
+        headers = [header(card_list=hdu.header.ascardlist()) for hdu in hdus]
+        hdus.close()
+    elif card_list is not None:
+        for ext in xrange(1000):
+            try:
+                headers.append(header(card_list=card_list, extension=ext))
+            except DARMAError:
+                break
 
     return headers
 
