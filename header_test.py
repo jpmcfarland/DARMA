@@ -4,9 +4,8 @@
 __version__ = '@(#)$Revision$'
 
 import unittest, os
-import header, image, image_generator
-
-from common import DARMAError
+from astro.util.darma import header, image, image_generator
+from astro.util.darma.common import DARMAError
 
 def build_test_data():
     '''
