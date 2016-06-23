@@ -96,19 +96,19 @@ class StatStruct:
            Print out all statistics values.
         '''
 
-        print 'min_pix: %s' % self.min_pix
-        print 'max_pix: %s' % self.max_pix
-        print 'avg_pix: %s' % self.avg_pix
-        print 'median : %s' % self.median
-        print 'stdev  : %s' % self.stdev
-        print 'energy : %s' % self.energy
-        print 'flux   : %s' % self.flux
-        print 'absflux: %s' % self.absflux
-        print 'min_x  : %s' % self.min_x
-        print 'min_y  : %s' % self.min_y
-        print 'max_x  : %s' % self.max_x
-        print 'max_y  : %s' % self.max_y
-        print 'npix   : %s' % self.npix
+        print('min_pix: %s' % self.min_pix)
+        print('max_pix: %s' % self.max_pix)
+        print('avg_pix: %s' % self.avg_pix)
+        print('median : %s' % self.median)
+        print('stdev  : %s' % self.stdev)
+        print('energy : %s' % self.energy)
+        print('flux   : %s' % self.flux)
+        print('absflux: %s' % self.absflux)
+        print('min_x  : %s' % self.min_x)
+        print('min_y  : %s' % self.min_y)
+        print('max_x  : %s' % self.max_x)
+        print('max_y  : %s' % self.max_y)
+        print('npix   : %s' % self.npix)
 
     def dump(self):
 
@@ -138,7 +138,7 @@ class DataStruct(object):
 
         # Allow DARMA to be imported even if NumPy is not available.
         if not _HAS_NUMPY:
-            raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
+            raise DARMAError('DARMA pixel functionality not possible: cannot import module numpy')
         if 'verbose' in kwargs:
             self.verbose = kwargs['verbose']
         self.log('DataStruct constructor', 'debug')
@@ -155,7 +155,7 @@ class DataStruct(object):
         verbose = self.verbose
         if verbose in loglevel and level in loglevel:
             if loglevel[verbose] & loglevel[level]:
-                print msg
+                print(msg)
 
     def load(self):
 
@@ -321,14 +321,14 @@ class DataStruct(object):
 
         self.log('DataStruct save', 'verbose')
         if self.data is None:
-            raise DARMAError, 'No data to save!'
+            raise DARMAError('No data to save!')
 
         if self.readonly and (filename is None or filename == self.filename):
-            raise DARMAError, 'Saving read-only data'
+            raise DARMAError('Saving read-only data')
 
         if not filename:
             if not self.filename:
-                raise DARMAError, 'Neither filename (%s) nor self.filename (%s) contain a valid file name!' % (filename, self.filename)
+                raise DARMAError('Neither filename (%s) nor self.filename (%s) contain a valid file name!' % (filename, self.filename))
             else:
                 filename = self.filename
         else:
@@ -354,8 +354,8 @@ class DataStruct(object):
                 pyfits.writeto(filename, data=self.data.astype(datatype),
                                header=hdr, clobber=clobber,
                                output_verify=option)
-        except Exception, e:
-            raise DARMAError, e
+        except Exception as e:
+            raise DARMAError(e)
 
         if update_datamd5:
             self.log('DataStruct save: update datamd5', 'debug')
@@ -384,13 +384,13 @@ class DataStruct(object):
             filename = tempfile.gettempdir() + '/' + '%s' % base_name
             del(tempfile)
         elif os.path.exists(filename):
-            raise DARMAError, 'Cowardly refusing to overwrite existing file.  Use a differnt filename.'
+            raise DARMAError('Cowardly refusing to overwrite existing file.  Use a differnt filename.')
 
         self.log('DataStruct display: saving file', 'debug')
         self.save(filename, update_datamd5=False)
 
         if not os.path.exists(filename):
-            raise DARMAError, 'Could not find file %s' % self.filename
+            raise DARMAError('Could not find file %s' % self.filename)
 
         self.log('DataStruct display: launching viewer', 'verbose')
         os.system('%s %s' % (viewer, filename))
@@ -425,7 +425,7 @@ class DataStruct(object):
         y_bin = abs(int(ybin))
 
         if x_bin == 0 or y_bin == 0:
-            raise DARMAError, 'Unsupported binning factor(s): (%s, %s)' % (str(xbin), str(ybin))
+            raise DARMAError('Unsupported binning factor(s): (%s, %s)' % (str(xbin), str(ybin)))
 
         if x_bin != 1 or y_bin != 1:
             if old:
@@ -550,7 +550,7 @@ class DataStruct(object):
 
         self.log('DataStruct extract_region', 'verbose')
         if x0 < 1 or y0 < 1 or x1 > self.xsize() or y1 > self.ysize():
-            raise DARMAError, 'Cannot extract region %s: region not contained completely within the %s!' % (`(x0, y0, x1, y1)`, self.__class__.__name__)
+            raise DARMAError('Cannot extract region %s: region not contained completely within the %s!' % (repr((x0, y0, x1, y1)), self.__class__.__name__))
 
         return self[x0:x1, y0:y1]
 
@@ -579,15 +579,15 @@ class DataStruct(object):
             bitmask_size = 0
         total_size       = data_size + bitmask_size
         # Print them out.
-        print '   image class: %s'       %  self.__class__
-        print '         shape: %s'       % `self.shape`
-        print '       npixels: %s'       %  size
-        print '      datatype: %s'       %  self.datatype
-        print '      itemsize: %s bytes' %  item_size
-        print '      datasize: %s bytes' %  data_size
-        print 'has nonnumbers: %s'       %  has_nonnumbers
-        print '  bitmask size: %s bytes' %  bitmask_size
-        print '    total size: %s bytes' %  total_size
+        print('   image class: %s'       %  self.__class__)
+        print('         shape: %s'       % repr(self.shape))
+        print('       npixels: %s'       %  size)
+        print('      datatype: %s'       %  self.datatype)
+        print('      itemsize: %s bytes' %  item_size)
+        print('      datasize: %s bytes' %  data_size)
+        print('has nonnumbers: %s'       %  has_nonnumbers)
+        print('  bitmask size: %s bytes' %  bitmask_size)
+        print('    total size: %s bytes' %  total_size)
 
     def xsize(self):
 
@@ -652,7 +652,7 @@ class DataStruct(object):
                 bmask = self.bmask.__getitem__(key)
             else:
                 bmask = None
-            self.log('DataStruct __getitem__ adjust index: %s' % `key`, 'debug')
+            self.log('DataStruct __getitem__ adjust index: %s' % repr(key), 'debug')
             key = _adjust_index(key)
             return self.__class__(data=self.data.__getitem__(key),
                                   bmask=bmask)
@@ -668,12 +668,12 @@ class DataStruct(object):
 
         self.log('DataStruct __setitem__', 'verbose')
         if self.data is not None:
-            self.log('DataStruct __setitem__ adjust index: %s' % `key`, 'debug')
+            self.log('DataStruct __setitem__ adjust index: %s' % repr(key), 'debug')
             key = _adjust_index(key)
             self.log('DataStruct __setitem__ value: %s' % value.data, 'debug')
             self.data.__setitem__(key, value.data)
         else:
-            raise DARMAError, 'Cannot set item.  Data array does not exist!'
+            raise DARMAError('Cannot set item.  Data array does not exist!')
 
     def __contains__(self, value):
 
@@ -1369,7 +1369,7 @@ def _datamd5(filename, regions=None, buffer_blocks=32):
     import os, md5
 
     if not os.path.exists(filename):
-        raise DARMAError, 'No FITS file (%s) to calcualte MD5SUM from!' % filename
+        raise DARMAError('No FITS file (%s) to calcualte MD5SUM from!' % filename)
 
     fitsfile = pyfits_open(filename, mode='readonly', memmap=1)
     md5sum   = md5.md5()
@@ -1377,7 +1377,7 @@ def _datamd5(filename, regions=None, buffer_blocks=32):
     block  = 2880
     number = buffer_blocks
     if regions is None:
-        regions = range(len(fitsfile))
+        regions = list(range(len(fitsfile)))
     for index in regions:
         hdu = fitsfile[index]
         start  = hdu._datLoc
@@ -1406,9 +1406,9 @@ def _update_datamd5(filename, datamd5):
     import os
 
     if not os.path.exists(filename):
-        raise DARMAError, 'No FITS file (%s) to update DATAMD5 for!' % filename
+        raise DARMAError('No FITS file (%s) to update DATAMD5 for!' % filename)
     if len(datamd5) != 32:
-        raise DARMAError, '%s does not appear to be a valid MD5SUM.' % datamd5
+        raise DARMAError('%s does not appear to be a valid MD5SUM.' % datamd5)
 
     fitsfile = pyfits_open(filename, mode='update', memmap=1)
     fitsfile[0].header.update('DATAMD5', datamd5, comment='MD5 checksum of all data regions')
@@ -1454,19 +1454,19 @@ def _adjust_index(key):
     '''
 
     # If two indexes.
-    if type(key) is tuple:
+    if isinstance(key, tuple):
         # Make sure no more than 2 indexes exist.
         if len(key) > 2:
-            raise IndexError, 'Maximum 2 indexes/slices allowed!'
+            raise IndexError('Maximum 2 indexes/slices allowed!')
         key0 = key[0]
         key1 = key[1]
         # Slice modification for first index.
-        if type(key0) is slice:
+        if isinstance(key0, slice):
             start = key0.start
             stop  = key0.stop
             step  = key0.step
             if start == 0 or stop == 0:
-                raise DARMAError, 'Slice [%d:%d, _] not in FITS convention!' % (start, stop)
+                raise DARMAError('Slice [%d:%d, _] not in FITS convention!' % (start, stop))
             # Rectify negative indexes.
             if start is not None and start < 0: start += 1
             if stop  is not None and stop  < 0: stop  += 1
@@ -1481,18 +1481,18 @@ def _adjust_index(key):
         # Non-slice modification for first index.
         else:
             if key0 == 0:
-                raise DARMAError, 'Index [%d, _] not in FITS convention!' % key0
+                raise DARMAError('Index [%d, _] not in FITS convention!' % key0)
             # Rectify negative indexes.
             if key0 is not None and key0 < 0: key0 += 1
             # Shift indexes for zero-indexed array.
             key0 -= 1
         # Slice modification for second index.
-        if type(key1) is slice:
+        if isinstance(key1, slice):
             start = key1.start
             stop  = key1.stop
             step  = key1.step
             if start == 0 or stop == 0:
-                raise DARMAError, 'Slice [_, %d:%d] not in FITS convention!' % (start, stop)
+                raise DARMAError('Slice [_, %d:%d] not in FITS convention!' % (start, stop))
             # Rectify negative indexes.
             if start is not None and start < 0: start += 1
             if stop  is not None and stop  < 0: stop  += 1
@@ -1507,7 +1507,7 @@ def _adjust_index(key):
         # Non-slice modification for second index.
         else:
             if key1 == 0:
-                raise DARMAError, 'Index [_, %d] not in FITS convention!' % key1
+                raise DARMAError('Index [_, %d] not in FITS convention!' % key1)
             # Rectify negative indexes.
             if key1 is not None and key1 < 0: key1 += 1
             # Shift indexes for zero-indexed array.
@@ -1517,12 +1517,12 @@ def _adjust_index(key):
     else:
         key0 = key
         # Slice modification.
-        if type(key0) is slice:
+        if isinstance(key0, slice):
             start = key0.start
             stop  = key0.stop
             step  = key0.step
             if start == 0 or stop == 0:
-                raise DARMAError, 'Slice [%d:%d] not in FITS convention!' % (start, stop)
+                raise DARMAError('Slice [%d:%d] not in FITS convention!' % (start, stop))
             # Rectify negative indexes.
             if start is not None and start < 0: start += 1
             if stop  is not None and stop  < 0: stop  += 1
@@ -1537,7 +1537,7 @@ def _adjust_index(key):
         # Non-slice modification
         else:
             if key0 == 0:
-                raise DARMAError, 'Index [%d] not in FITS convention!' % key0
+                raise DARMAError('Index [%d] not in FITS convention!' % key0)
             # Rectify negative indexes.
             if key0 is not None and key0 < 0: key0 += 1
             # Shift indexes for zero-indexed array.
@@ -1608,7 +1608,7 @@ def get_tmpbase(suffix='', prefix='tmp', dir=None):
 
     if dir is not None:
         if not path.exists(dir):
-            raise Exception, 'Path: %s does not exist!'
+            raise Exception('Path: %s does not exist!')
         if not dir.endswith('/'):
             dir = '%s/' % dir
     else:

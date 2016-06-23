@@ -5,9 +5,9 @@ __version__ = '@(#)$Revision$'
 
 import math
 
-from common import Array, Arrayrandom
-from common import DARMAError, _HAS_NUMPY
-from image import image
+from astro.util.darma.common import Array, Arrayrandom
+from astro.util.darma.common import DARMAError, _HAS_NUMPY
+from astro.util.darma.image import image
 
 class image_generator:
 
@@ -27,7 +27,7 @@ class image_generator:
 
         # Allow DARMA to be imported even if NumPy is not available.
         if not _HAS_NUMPY:
-            raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
+            raise DARMAError('DARMA pixel functionality not possible: cannot import module numpy')
 
         self.xsize = xsize
         self.ysize = ysize
@@ -77,7 +77,7 @@ class image_generator:
         '''
 
         if a == 0 or b == 0:
-            raise DARMAError, 'Neither a nor b can be 0 in the Beta function!'
+            raise DARMAError('Neither a nor b can be 0 in the Beta function!')
         # PyFITS Array axes are reversed.
         return image(data=Arrayrandom.beta(a, b, [self.ysize, self.xsize]))
 
@@ -227,7 +227,7 @@ class image_generator:
            pars = param_dict
 
         if not (len(pars['x_pos']) == len(pars['y_pos']) == len(pars['amplitude']) == len(pars['sigma_x']) == len(pars['sigma_y'])):
-            raise DARMAError, 'param_dict values of different length!'
+            raise DARMAError('param_dict values of different length!')
 
         def gauss2d(y, x):
             return ampl*math.e**(-0.5*(((x-xpos-1)/sigx)**2+((y-ypos-1)/sigy)**2))
@@ -321,7 +321,7 @@ class image_generator:
            pars = param_dict
 
         if not (len(pars['x_pos']) == len(pars['y_pos']) == len(pars['amplitude']) == len(pars['sigma_x']) == len(pars['sigma_y'])):
-            raise DARMAError, 'param_dict values of different length!'
+            raise DARMAError('param_dict values of different length!')
 
         def lorentz2d(y, x):
             return ampl*((sigx/((x-xpos-1)**2+sigx**2))*(sigy/((y-ypos-1)**2+sigy**2)))
