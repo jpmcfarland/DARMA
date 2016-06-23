@@ -5,8 +5,8 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, os
 
-from common import Array, pyfits_open
-from common import DARMAError, DataStruct, get_tmpbase
+from astro.util.darma.common import Array, pyfits_open
+from astro.util.darma.common import DARMAError, DataStruct, get_tmpbase
 
 class pixelmap(DataStruct):
 
@@ -44,7 +44,7 @@ class pixelmap(DataStruct):
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
-                raise DARMAError, 'Filename: %s not found!' % self.filename
+                raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
 
@@ -67,8 +67,8 @@ class pixelmap(DataStruct):
                 try:
                     #self._data = pyfits.getdata(self.filename, self.extension).astype('bool')
                     self._data = pyfits_open(self.filename, memmap=self.memmap)[self.extension].data.astype('bool')
-                except Exception, e:
-                    raise DARMAError, 'Error loading pixelmap from %s: %s' % (self.filename, e)
+                except Exception as e:
+                    raise DARMAError('Error loading pixelmap from %s: %s' % (self.filename, e))
         else:
             self._data = Array.asanyarray(self._data, dtype='bool')
             if not self._data.flags.contiguous:
@@ -110,7 +110,7 @@ class pixelmap(DataStruct):
            Return an image object constructed from this pixelmap object.
         '''
 
-        from image import image
+        from astro.util.darma.image import image
         return image(data=self.data)
 
     def as_eclipse_pixelmap(self):

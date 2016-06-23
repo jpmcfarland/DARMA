@@ -6,9 +6,13 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, os
 
-from common import Array, pyfits_open
-from common import DARMAError, DataStruct, _adjust_index
-from pixelmap import pixelmap
+from astro.util.darma.common import Array, pyfits_open
+from astro.util.darma.common import DARMAError, DataStruct, _adjust_index
+from astro.util.darma.pixelmap import pixelmap
+try:
+    range = xrange # Python 2
+except NameError:
+    pass # Python 3
 
 
 IMPORT_TYPES = ['bool', 'int8', 'int16', 'int32', 'uint8','uint16','uint32']
@@ -60,11 +64,11 @@ class bitmask(DataStruct):
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
-                raise DARMAError, 'Filename: %s not found!' % self.filename
+                raise DARMAError('Filename: %s not found!' % self.filename)
         # Check datatype (can only use integers internally, and can only
         # export uint8, int16, and int32 to FITS)
         if datatype and Array.dtype(datatype).name not in IMPORT_TYPES:
-            raise DARMAError, 'Error -- datatype MUST be of boolean type or of integer type not more than 32-bits!'
+            raise DARMAError('Error -- datatype MUST be of boolean type or of integer type not more than 32-bits!')
 
     def load(self):
 
@@ -105,8 +109,8 @@ class bitmask(DataStruct):
                             self._data = self._data.astype(datatype)
                         if conserve:
                             self._clean_bitmask()
-                    except Exception, e:
-                        raise DARMAError, 'Error loading bitmask from %s: %s' % (filename, e)
+                    except Exception as e:
+                        raise DARMAError('Error loading bitmask from %s: %s' % (filename, e))
             else:
                 log('bitmask load_bitmask from data array: data=%s, dtype=%s' % (self._data, datatype), 'debug')
                 self._data = Array.asanyarray(self._data, dtype=datatype)
@@ -293,7 +297,7 @@ class bitmask(DataStruct):
 
         self.log('bitmask which_bits', 'verbose')
         bits = []
-        for bit in xrange(self.bits):
+        for bit in range(self.bits):
             if self.has_bit(bit=bit):
                 bits.append(bit)
         return bits
@@ -326,7 +330,7 @@ class bitmask(DataStruct):
 
         self.log('bitmask save', 'verbose')
         if datatype not in EXPORT_TYPES:
-            raise DARMAError, 'ERROR -- unsupported export datatype: %s not in %s' % (datatype, EXPORT_TYPES)
+            raise DARMAError('ERROR -- unsupported export datatype: %s not in %s' % (datatype, EXPORT_TYPES))
         DataStruct.save(self, filename=filename, hdr=hdr, datatype=datatype, clobber=clobber, update_datamd5=update_datamd5, option=option)
 
     #def __getitem__(self, key):

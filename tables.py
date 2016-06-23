@@ -5,9 +5,9 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, math, os
 
-from common import Array
-from common import DARMAError, _HAS_NUMPY, pyfits_open
-from header import header
+from astro.util.darma.common import Array
+from astro.util.darma.common import DARMAError, _HAS_NUMPY, pyfits_open
+from astro.util.darma.header import header
 
 datatypes = {
              'ascii'  : pyfits.TableHDU,
@@ -50,7 +50,7 @@ class columns(object):
 
         # Allow DARMA to be imported even if NumPy is not available.
         if not _HAS_NUMPY:
-            raise DARMAError, 'DARMA table functionality not possible: cannot import module numpy'
+            raise DARMAError('DARMA table functionality not possible: cannot import module numpy')
 
         self.filename   = filename
         self._name      = name
@@ -61,7 +61,7 @@ class columns(object):
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
-                raise DARMAError, 'Filename: %s not found!' % self.filename
+                raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
 
@@ -86,8 +86,8 @@ class columns(object):
                     self.hdus = pyfits_open(self.filename, memmap=self.memmap)
                     self.table = self.hdus[self._name]
                     self.header = header(card_list=self.table.header.ascardlist())
-                except Exception, e:
-                    raise DARMAError, 'Error loading table from %s: %s' % (self.filename, e)
+                except Exception as e:
+                    raise DARMAError('Error loading table from %s: %s' % (self.filename, e))
             for name in self.names:
                 if not hasattr(self, name):
                     setattr(self, name, name)
@@ -244,12 +244,12 @@ class columns(object):
            Display helpful info about the columns.
         '''
 
-        print 'Table "%s" holds the following columns:' % self.table.name
+        print('Table "%s" holds the following columns:' % self.table.name)
         cols = self.table.columns
-        print '%30s %10s %10s' % ('Name', 'Format', 'Unit')
-        print '-'*52
+        print('%30s %10s %10s' % ('Name', 'Format', 'Unit'))
+        print('-'*52)
         for name, format, unit in zip(cols.names, cols.formats, cols.units):
-            print '%30s %10s %10s' % (name, format, unit)
+            print('%30s %10s %10s' % (name, format, unit))
 
     def __repr__(self):
 
@@ -316,7 +316,7 @@ class tables(list):
 
         # Allow DARMA to be imported even if NumPy is not available.
         if not _HAS_NUMPY:
-            raise DARMAError, 'DARMA table functionality not possible: cannot import module numpy'
+            raise DARMAError('DARMA table functionality not possible: cannot import module numpy')
 
         self.filename  = filename
         self.table_ids = table_ids
@@ -330,7 +330,7 @@ class tables(list):
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
-                raise DARMAError, 'Filename: %s not found!' % self.filename
+                raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
 
@@ -357,7 +357,7 @@ class tables(list):
                         hdu_names = [hdu.name for hdu in hdus][1:]
                         table_names = [id for id in self.table_ids if id in hdu_names]
                     elif self.indexes:
-                        hdu_indexes = range(1, len(hdus))
+                        hdu_indexes = list(range(1, len(hdus)))
                         table_names = [hdus[idx].name for idx in self.indexes if idx in hdu_indexes]
                     else:
                         table_names = [hdu.name for hdu in hdus][1:]
@@ -370,8 +370,8 @@ class tables(list):
                                        memmap=self.memmap)
                         self._tables.append(cols)
                     hdus.close()
-                except Exception, e:
-                    raise DARMAError, 'Error loading tables from %s: %s' % (self.filename, e)
+                except Exception as e:
+                    raise DARMAError('Error loading tables from %s: %s' % (self.filename, e))
 
             self._names = [cols.name for cols in self._tables]
 
@@ -395,13 +395,13 @@ class tables(list):
         '''
         '''
 
-        if type(value) == list:
+        if isinstance(value, list):
             for val in value:
-                if type(val) != columns:
-                    raise DARMAError, 'Cannot set tables to object of type: %s' % type(val)
+                if not isinstance(val, columns):
+                    raise DARMAError('Cannot set tables to object of type: %s' % type(val))
             self._tables = value
         else:
-            raise DARMAError, 'Cannot set tables to object of type: %s' % type(value)
+            raise DARMAError('Cannot set tables to object of type: %s' % type(value))
 
     def _del_tables(self):
 
@@ -444,7 +444,7 @@ class tables(list):
 
         if name in self.names:
             return self._dict[name]
-        elif type(name) == int:
+        elif isinstance(name, int):
             return self._dict[self.names[name]]
         else:
             return None
@@ -521,9 +521,9 @@ class tables(list):
         '''
 
         n = 0
-        print ' %s\t%20s\t%15s\t%12s' % ('No.', 'Name', 'Type', 'Shape')
+        print(' %s\t%20s\t%15s\t%12s' % ('No.', 'Name', 'Type', 'Shape'))
         for name in self.names:
-            print ' % 2d\t%20s\t%15s\t%12s' % (n, name, self._dict[name].__class__.__name__, self._dict[name].shape())
+            print(' % 2d\t%20s\t%15s\t%12s' % (n, name, self._dict[name].__class__.__name__, self._dict[name].shape()))
             n += 1
 
     def __del__(self):

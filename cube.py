@@ -6,10 +6,10 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, os
 
-from common import DataStruct, Array, FLOAT, INT, LONG, pyfits_open
-from common import DARMAError, _HAS_NUMPY, _datamd5, _update_datamd5
-from image import image
-from pixelmap import pixelmap
+from astro.util.darma.common import DataStruct, Array, FLOAT, INT, LONG, pyfits_open
+from astro.util.darma.common import DARMAError, _HAS_NUMPY, _datamd5, _update_datamd5
+from astro.util.darma.image import image
+from astro.util.darma.pixelmap import pixelmap
 
 class cube(DataStruct):
 
@@ -47,7 +47,7 @@ class cube(DataStruct):
 
         # Allow DARMA to be imported even if NumPy is not available.
         if not _HAS_NUMPY:
-            raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
+            raise DARMAError('DARMA pixel functionality not possible: cannot import module numpy')
 
         self.filename   = filename or None
         self.extension  = extension
@@ -60,7 +60,7 @@ class cube(DataStruct):
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
-                raise DARMAError, 'Filename: %s not found!' % self.filename
+                raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
 
@@ -92,8 +92,8 @@ class cube(DataStruct):
                 try:
                     #_data = pyfits.getdata(filename, extension)
                     _data = pyfits_open(filename, memmap=memmap)[extension].data
-                except Exception,e:
-                    raise DARMAError, 'Unable to load data from %s : %s' % (filename, e)
+                except Exception as e:
+                    raise DARMAError('Unable to load data from %s : %s' % (filename, e))
             elif data:
                 _data = data
                 del data
@@ -110,7 +110,7 @@ class cube(DataStruct):
             elif len(shape) == 4:
                 _data = _data[index]
             else:
-                raise DARMAError, 'Cubes with %d dimensions are not supported!' % len(shape)
+                raise DARMAError('Cubes with %d dimensions are not supported!' % len(shape))
             self._data = _data
 
     def as_image_list(self):
@@ -157,11 +157,11 @@ class cube(DataStruct):
         '''
 
         if self.readonly and (filename is None or filename == self.filename):
-            raise DARMAError, 'Saving read-only data'
+            raise DARMAError('Saving read-only data')
 
         if not filename:
             if not self.filename:
-                raise DARMAError, 'Neither filename (%s) nor self.filename (%s) contain a valid file name!' % (filename, self.filename)
+                raise DARMAError('Neither filename (%s) nor self.filename (%s) contain a valid file name!' % (filename, self.filename))
             else:
                 filename = self.filename
         else:
@@ -406,7 +406,7 @@ class cube(DataStruct):
 
         num = self.data.shape[0]
         if num < 3:
-            raise DARMAError, 'median requires at least three images!'
+            raise DARMAError('median requires at least three images!')
 
         return image(data=Array.median(self.data))
 
@@ -574,10 +574,10 @@ def make_cube(xsize, ysize, zsize, datatype=FLOAT, value=None):
 
     # Allow DARMA to be imported even if NumPy is not available.
     if not _HAS_NUMPY:
-        raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
+        raise DARMAError('DARMA pixel functionality not possible: cannot import module numpy')
 
     if not(xsize > 0 and ysize > 0 and zsize > 0):
-        raise DARMAError, 'Invalid image dimensions'
+        raise DARMAError('Invalid image dimensions')
 
     # PyFITS Array axes are reversed.
     c = cube(data=Array.zeros((zsize, ysize, xsize), dtype=datatype))
