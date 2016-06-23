@@ -5,11 +5,15 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, math, os
 
-#from common import Array, Arrayfft, Arrayfilters
-from common import Array, Arrayfft, pyfits_open
-from common import DARMAError, _HAS_NUMPY, DataStruct, StatStruct, FLOAT
-from pixelmap import pixelmap
-from bitmask import bitmask
+#from astro.util.darma.common import Array, Arrayfft, Arrayfilters
+from astro.util.darma.common import Array, Arrayfft, pyfits_open
+from astro.util.darma.common import DARMAError, _HAS_NUMPY, DataStruct, StatStruct, FLOAT
+from astro.util.darma.pixelmap import pixelmap
+from astro.util.darma.bitmask import bitmask
+try:
+    range = xrange # Python 2
+except NameError:
+    pass # Python 3
 
 class image(DataStruct):
 
@@ -240,7 +244,7 @@ class image(DataStruct):
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
-                raise DARMAError, 'Filename: %s not found!' % self.filename
+                raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
 
@@ -276,8 +280,8 @@ class image(DataStruct):
                     log('image load_image from file: filename=%s, memmap=%s, extension=%s' % (filename, memmap, extension), 'debug')
                     #self._data = pyfits.getdata(filename, extension)
                     self._data = pyfits_open(filename, memmap=memmap)[extension].data
-                except Exception, e:
-                    raise DARMAError, 'Error loading image from %s: %s' % (filename, e)
+                except Exception as e:
+                    raise DARMAError('Error loading image from %s: %s' % (filename, e))
         else:
             log('image load_image from data array: data=%s, dtype=%s' % (self._data, datatype), 'debug')
             self._data = Array.asanyarray(self._data, dtype=datatype)
@@ -571,7 +575,7 @@ class image(DataStruct):
                     stats.convergence = 0
             return stats
         else:
-            raise DARMAError, 'Empty data array!'
+            raise DARMAError('Empty data array!')
 
     def get_mean(self, filter=False):
 
@@ -804,7 +808,7 @@ class image(DataStruct):
 #        result.pcheck('Error applying filter %s' % filtername)
 #        return result
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def filter_mean(self, xsize=3, ysize=3):
@@ -830,7 +834,7 @@ class image(DataStruct):
 #        result.pcheck('Error applying filter')
 #        return result
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def filter_median(self, xsize=3, ysize=3):
@@ -855,7 +859,7 @@ class image(DataStruct):
 #        result.pcheck('Error applying median filter')
 #        return result
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def filter_dx(self):
@@ -871,7 +875,7 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('dx')
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def filter_dy(self):
@@ -887,7 +891,7 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('dy')
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def filter_dx2(self):
@@ -903,7 +907,7 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('dx2')
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def filter_dy2(self):
@@ -919,7 +923,7 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('dy2')
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def filter_contour1(self):
@@ -935,7 +939,7 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('contour1')
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def filter_contour2(self):
@@ -951,7 +955,7 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('contour2')
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def filter_contour3(self):
@@ -967,7 +971,7 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('contour3')
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def filter_contrast1(self):
@@ -983,7 +987,7 @@ class image(DataStruct):
 #        '''
 #        return self._apply_filter('contrast1')
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def hough_transform(self, threshold):
@@ -1066,7 +1070,7 @@ class image(DataStruct):
         #    raise DARMAError, 'Error thresholding'
         #return result
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     ##################################################################
@@ -1222,7 +1226,7 @@ class image(DataStruct):
         #                                        nwx, nwy, Threshold)
         #return result,qualityIndex
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None, None
 
     def run_flattest(self, nwx, nwy):
@@ -1252,7 +1256,7 @@ class image(DataStruct):
         #qualityIndex = c_eclipse.image_flattest(self.p_ima,result.p_ima,nwx,nwy)
         #return result,qualityIndex
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None, None
 
     def run_flatfittingtest(self,nwx,nwy,nfwx,nfwy):
@@ -1286,7 +1290,7 @@ class image(DataStruct):
         #                                        result.p_ima,nwx,nwy)
         #return result,qualityIndex
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None, None
 
     def run_counttest(self,Threshold):
@@ -1314,7 +1318,7 @@ class image(DataStruct):
 #        qualityIndex = c_eclipse.image_count_threshold_withoutBPM(self.p_ima,result.p_ima,Threshold,sum)
 #        return qualityIndex
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def run_imsurfit(self,nwx,nwy):
@@ -1354,7 +1358,7 @@ class image(DataStruct):
 #        imsurfit.p_ima = c_eclipse.image_surfit(self.p_ima,nwx,nwy)
 #        return imsurfit
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
     def threshold(self, lv, hv, sl, sh):
@@ -1379,7 +1383,7 @@ class image(DataStruct):
 #        result.p_ima = c_eclipse.image_threshold(self.p_ima,lv, hv, sl, sh)
 #        return result
 
-        print 'WARNING - This method is not yet implemented!'
+        print('WARNING - This method is not yet implemented!')
         return None
 
 def convert(filename, bitpix=16):
@@ -1404,7 +1408,7 @@ def convert(filename, bitpix=16):
     np = pyfits.np
     # incorrect/unsupported bitpix value
     if bitpix not in bpmap:
-        raise DARMAError, 'Unsupported bitpix value!  Must be one of %s' % bpmap.keys()
+        raise DARMAError('Unsupported bitpix value!  Must be one of %s' % list(bpmap.keys()))
     # open HDUList
     hdus = pyfits.open(filename, mode='update', memmap=True)
     if len(hdus) == 1:
@@ -1419,7 +1423,7 @@ def convert(filename, bitpix=16):
             continue
         # integer data must be scaled if dynamic range too great
         if bitpix > 0:
-            print 'Converting data in %s' % hdu.name
+            print('Converting data in %s' % hdu.name)
             # default values
             bzero = 2.**(bitpix-1)
             bscale = 1.0
@@ -1470,10 +1474,10 @@ def make_image(xsize, ysize, datatype=FLOAT, value=None):
 
     # Allow DARMA to be imported even if NumPy is not available.
     if not _HAS_NUMPY:
-        raise DARMAError, 'DARMA pixel functionality not possible: cannot import module numpy'
+        raise DARMAError('DARMA pixel functionality not possible: cannot import module numpy')
 
     if not(xsize > 0 and ysize > 0):
-        raise DARMAError, 'Invalid image dimesions'
+        raise DARMAError('Invalid image dimesions')
 
     # PyFITS Array axes are reversed.
     ima = image(data=Array.zeros((ysize, xsize), dtype=datatype), datatype=datatype)
@@ -1528,7 +1532,7 @@ def mean(data, nanmask=None, filter=False):
     if _data.size:
         return _data.mean(dtype='float64')
     else:
-        raise DARMAError, 'Empty data array!'
+        raise DARMAError('Empty data array!')
 
 def median(data, nanmask=None, sorted=False, filter=False):
 
@@ -1556,7 +1560,7 @@ def median(data, nanmask=None, sorted=False, filter=False):
         else:
             return (_data[n/2]+_data[n/2-1])/2.0
     else:
-        raise DARMAError, 'Empty data array!'
+        raise DARMAError('Empty data array!')
 
 def stdev(data, nanmask=None, filter=False):
 
@@ -1577,7 +1581,7 @@ def stdev(data, nanmask=None, filter=False):
         sum_val = _data.sum(dtype='float64')
         return math.sqrt(((_data**2).sum(dtype='float64')-((sum_val**2)/n))/(n-1.0))
     else:
-        raise DARMAError, 'Empty data array!'
+        raise DARMAError('Empty data array!')
 
 def rms(data, nanmask=None, filter=False):
 
@@ -1597,7 +1601,7 @@ def rms(data, nanmask=None, filter=False):
     if n:
         return math.sqrt((_data**2).sum(dtype='float64')/n)
     else:
-        raise DARMAError, 'Empty data array!'
+        raise DARMAError('Empty data array!')
 
 def min(data, nanmask=None, filter=False):
 
@@ -1616,7 +1620,7 @@ def min(data, nanmask=None, filter=False):
     if n:
         return data.min()
     else:
-        raise DARMAError, 'Empty data array!'
+        raise DARMAError('Empty data array!')
 
 def max(data, nanmask=None, filter=False):
 
@@ -1635,7 +1639,7 @@ def max(data, nanmask=None, filter=False):
     if n:
         return data.max()
     else:
-        raise DARMAError, 'Empty data array!'
+        raise DARMAError('Empty data array!')
 
 def filter_nonnumbers(data, nanmask=None, filter=False):
 
@@ -1680,7 +1684,7 @@ def uniform_filter1d(array, filter_size, mode=None, copy=False):
     modes = ['reflect']
 
     if len(array.shape) != 1:
-        raise DARMAError, 'uniform_filter1d only supports arrays of one dimension!'
+        raise DARMAError('uniform_filter1d only supports arrays of one dimension!')
 
     if copy:
         copy = array.copy()
@@ -1697,7 +1701,7 @@ def uniform_filter1d(array, filter_size, mode=None, copy=False):
             buffer[filter_size:-filter_size] = copy
             buffer[-filter_size:]            = copy[-2:-(filter_size+2):-1]
 
-        for i in xrange(copy.size):
+        for i in range(copy.size):
             # buffer.size = copy.size+2*filter_size
             copy[i] = buffer[i:i+2*filter_size+1].mean(dtype='float64')
 
@@ -1706,10 +1710,10 @@ def uniform_filter1d(array, filter_size, mode=None, copy=False):
         buffer = Array.empty(shape=copy.shape, dtype=copy.dtype)
 
         # Don't treat boundries at all.  Shrink smoothing box at ends.
-        for i in xrange(copy.size):
+        for i in range(copy.size):
             minj = Array.max([0, i-filter_size])
             maxj = Array.min([copy.size-1, i+filter_size])+1
-            buffer[i] = copy[[j for j in xrange(minj, maxj)]].mean(dtype='float64')
+            buffer[i] = copy[[j for j in range(minj, maxj)]].mean(dtype='float64')
         copy = buffer
 
     return copy
