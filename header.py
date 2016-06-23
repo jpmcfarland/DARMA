@@ -5,11 +5,7 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, os
 
-from astro.util.darma.common import DARMAError, fold_string, pyfits_open
-try:
-    range = xrange
-except NameError:
-    pass
+from common import DARMAError, fold_string, pyfits_open
 
 class header(object):
 
@@ -60,10 +56,10 @@ class header(object):
         self.load_header()
 
         if option == 'silentfix' and self.hdr is not None:
-            for k in list(self.hdr.keys()):
+            for k in self.hdr.keys():
                 try:
                     v = self.hdr[k]
-                except ValueError as e:
+                except ValueError, e:
                     del(self.hdr[k])
 
     def load(self):
@@ -100,7 +96,7 @@ class header(object):
         if self._hdr is None:
             card_list = self._card_list
             if card_list is not None:
-                if isinstance(card_list, str):
+                if type(card_list) == str:
                     fd = file(card_list, 'r')
                     length = self.item_size()
                     lines = fd.read()
@@ -110,11 +106,11 @@ class header(object):
                         card_list = [line.strip('\n') for line in lines.split('\n')]
                     # Raw FITS file.
                     else:
-                        card_list = [lines[n:n+length] for n in range(0, len(lines), length)]
-                if isinstance(card_list, list):
+                        card_list = [lines[n:n+length] for n in xrange(0, len(lines), length)]
+                if type(card_list) == list:
                     indexes = [0]
                     if self.extension != 0:
-                        for i in range(len(card_list)):
+                        for i in xrange(len(card_list)):
                             if card_list[i].startswith('END'):
                                 indexes.append(i+1)
                             i += 1
@@ -122,16 +118,16 @@ class header(object):
                         _ = indexes.pop(-1)
                     header_cards = pyfits.CardList()
                     if self.extension >= len(indexes):
-                        raise DARMAError('extension %d is not in card_list!' % self.extension)
+                        raise DARMAError, 'extension %d is not in card_list!' % self.extension
                     for card in card_list[indexes[self.extension]:]:
                         if not card.startswith('END'):
                             header_cards.append(pyfits.Card().fromstring(card))
                         else:
                             break
-                elif isinstance(card_list, pyfits.CardList):
+                elif type(card_list) == pyfits.CardList:
                     header_cards = card_list
                 else:
-                    raise DARMAError('card_list (or source file) not in correct format!')
+                    raise DARMAError, 'card_list (or source file) not in correct format!'
                 self._hdr = pyfits.Header(cards=header_cards)
             elif self.filename is not None:
                 try:
@@ -141,13 +137,13 @@ class header(object):
                     else:
                         self._hdr = hdu.header
                     del(hdu)
-                except Exception as e:
-                    raise DARMAError('Error loading header from %s: %s' % (self.filename, e))
+                except Exception, e:
+                    raise DARMAError, 'Error loading header from %s: %s' % (self.filename, e)
             else:
                 self._hdr = None
         else:
             if not isinstance(self._hdr, pyfits.Header):
-                raise DARMAError('%s must be a %s instance!' % (self._hdr, pyfits.Header))
+                raise DARMAError, '%s must be a %s instance!' % (self._hdr, pyfits.Header)
         self.verify(option=self.option)
 
         if self._hdr is not None:
@@ -257,7 +253,7 @@ class header(object):
         modes = ['clobber', 'append']
 
         if mode not in modes:
-            raise DARMAError('mode \'%s\' not supported!  Use one of %s instead.' % (mode, modes))
+            raise DARMAError, 'mode \'%s\' not supported!  Use one of %s instead.' % (mode, modes)
 
         hdr = self.copy()
         if hdr.filename is None:
@@ -273,7 +269,7 @@ class header(object):
         crlf = {True :   '', False : '\n'}
 
         if dataless:
-            for n in range(1,100):
+            for n in xrange(1,100):
                 key = 'NAXIS%d' % n
                 if key in hdr:
                     del hdr[key]
@@ -335,7 +331,7 @@ class header(object):
             bitpix = hdr.ascardlist()['BITPIX']
             naxis = hdr.ascardlist()['NAXIS']
             naxisn = []
-            for n in range(1,999):
+            for n in xrange(1,999):
                 if hdr.get('NAXIS%d' % n) is not None:
                     naxisn.append(hdr.ascardlist()['NAXIS%d' % n])
                 else:
@@ -350,14 +346,14 @@ class header(object):
             elif xtension == 'TABLE':
                 hdu = pyfits.TableHDU(header=hdr)
             else:
-                raise DARMAError('Invalid header!  No SIMPLE or XTENSION keywords.')
+                raise DARMAError, 'Invalid header!  No SIMPLE or XTENSION keywords.'
             # Fix any bad keywords PyFITS won't prior to verification.
             for card in hdu.header.ascardlist():
                 #if card.key.count(' ') and not card.key.startswith('HIERARCH '):
                 if card.key.count(' ') and not isinstance(card, pyfits.core._Hierarch):
                     new_key = card.key.replace(' ', '_')
                     if option != 'silentfix':
-                        print('WARNING -- renaming invalid key %s to %s' % (card.key, new_key))
+                        print 'WARNING -- renaming invalid key %s to %s' % (card.key, new_key)
                     hdu.header.rename_key(card.key, new_key)
             # Verify header within the HDU and copy back.
             hdu.verify(option=option)
@@ -426,13 +422,13 @@ class header(object):
         while disk_size%blksize:
             disk_size += item_size
         # Print them out.
-        print('         class: %s'       %  self.__class__)
-        print('  total length: %s cards' %  length)
-        print('     (comment): %s cards' %  comments)
-        print('     (history): %s cards' %  history)
-        print('      itemsize: %s bytes' %  item_size)
-        print('     data size: %s bytes' %  data_size)
-        print('  size on disk: %s bytes' %  disk_size)
+        print '         class: %s'       %  self.__class__
+        print '  total length: %s cards' %  length
+        print '     (comment): %s cards' %  comments
+        print '     (history): %s cards' %  history
+        print '      itemsize: %s bytes' %  item_size
+        print '     data size: %s bytes' %  data_size
+        print '  size on disk: %s bytes' %  disk_size
 
     def item_size(self):
 
@@ -569,14 +565,14 @@ class header(object):
         '''
 
         if oldkey in ['COMMENT', 'HISTORY', '']:
-            raise DARMAError('Cannot rename %s key!' % oldkey)
+            raise DARMAError, 'Cannot rename %s key!' % oldkey
         if newkey in ['COMMENT', 'HISTORY', '']:
-            raise DARMAError('Cannot rename %s key!' % newkey)
+            raise DARMAError, 'Cannot rename %s key!' % newkey
         try:
             self.hdr.rename_key(oldkey, newkey, force=force)
             self._IS_VERIFIED = False
-        except Exception as e:
-            raise DARMAError('Error renaming %s in header: %s' % (oldkey, e))
+        except Exception, e:
+            raise DARMAError, 'Error renaming %s in header: %s' % (oldkey, e)
 
     def dump(self):
 
@@ -584,7 +580,7 @@ class header(object):
            Dump the contents of the header to the screen.
         '''
 
-        print(self.card_list)
+        print self.card_list
 
     def new(self):
 
@@ -621,7 +617,7 @@ class header(object):
         self.hdr = pyfits.Header()
         self._IS_VERIFIED = True
         if not self.hdr:
-            raise DARMAError('Error creating new header')
+            raise DARMAError, 'Error creating new header'
         return self
 
     def default(self, type='primary'):
@@ -651,10 +647,10 @@ class header(object):
         elif type is 'image':
             self.hdr = pyfits.ImageHDU().header
         else:
-            raise DARMAError('type MUST be either "primary" or "image"!')
+            raise DARMAError, 'type MUST be either "primary" or "image"!'
         self._IS_VERIFIED = False
         if not self.hdr:
-            raise DARMAError('Error creating default header')
+            raise DARMAError, 'Error creating default header'
         return self
 
     def add(self, key, value, comment=None):
@@ -680,8 +676,8 @@ class header(object):
                 result.add_blank(value, after=after)
             else:
                 self.update(key, value, comment=comment, after=after)
-        except Exception as e:
-            raise DARMAError('Error adding %s to header: %s' % (repr((key, value, comment)), e))
+        except Exception, e:
+            raise DARMAError, 'Error adding %s to header: %s' % (`(key, value, comment)`, e)
 
     def append(self, key, value, comment=None):
 
@@ -702,11 +698,11 @@ class header(object):
             elif key == '':
                 self.add_blank(value, after=last_key)
             else:
-                if key in self:
+                if self.has_key(key):
                     del self[key]
                 self.update(key, value, comment=comment, after=last_key)
-        except Exception as e:
-            raise DARMAError('Error adding %s to header: %s' % (repr((key, value, comment)), e))
+        except Exception, e:
+            raise DARMAError, 'Error adding %s to header: %s' % (`(key, value, comment)`, e)
 
     def fromstring(self, cardstring):
 
@@ -730,7 +726,7 @@ class header(object):
         key, value, comment = '', '', ''
         index = cardstring.find('=')
         if index == -1:
-            raise DARMAError('ERROR -- Incorrectly formatted cardstring: no \'=\' !')
+            raise DARMAError, 'ERROR -- Incorrectly formatted cardstring: no \'=\' !'
         key, valuecomment = cardstring[:index], cardstring[index+1:]
         index = valuecomment.find('/')
         if index != -1:
@@ -755,8 +751,8 @@ class header(object):
 
         try:
             self.update(key, value, comment=comment)
-        except Exception as e:
-            raise DARMAError('Error updating %s in header: %s' % (repr((key, value, comment)), e))
+        except Exception, e:
+            raise DARMAError, 'Error updating %s in header: %s' % (`(key, value, comment)`, e)
 
     def update(self, key, value, comment=None, before=None, after=None):
 
@@ -766,13 +762,13 @@ class header(object):
         '''
 
         if key in ['COMMENT', 'HISTORY', '']:
-            raise DARMAError('Cannot update %s key!' % key)
+            raise DARMAError, 'Cannot update %s key!' % key
         try:
             self.hdr.update(key, value, comment=comment, before=before,
                             after=after)
             self._IS_VERIFIED = False
-        except Exception as e:
-            raise DARMAError('Error updating %s in header: %s' % (repr((key, value, comment)), e))
+        except Exception, e:
+            raise DARMAError, 'Error updating %s in header: %s' % (`(key, value, comment)`, e)
 
     def copy(self):
 
@@ -788,7 +784,7 @@ class header(object):
             result.hdr = self.hdr.copy()
             result.option = self.option
             if not result.hdr:
-                raise DARMAError('Error copying header!')
+                raise DARMAError, 'Error copying header!'
         return result
 
     def merge(self, other, clobber=True):
@@ -816,7 +812,7 @@ class header(object):
             elif card.key == '':
                 result.add_blank(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
-            elif card.key not in result.hdr or clobber:
+            elif not result.hdr.has_key(card.key) or clobber:
                 #if card.key.startswith('HIERARCH '):
                 if isinstance(card, pyfits.core._Hierarch):
                     key = 'HIERARCH '+card.key
@@ -842,7 +838,7 @@ class header(object):
         # Allow new header to be verified all at once.
         result._IS_VERIFIED = False
         if not result.hdr:
-            raise DARMAError('Error merging headers')
+            raise DARMAError, 'Error merging headers'
         return result
 
     def merge_into_file(self, filename, clobber=True):
@@ -858,7 +854,7 @@ class header(object):
         hdu = pyfits_open(filename, mode='update', memmap=1)
         orig_hdr = header(card_list=hdu[0].header.ascardlist(), option=self.option)
         self_hdr = self.copy()
-        naxis_keys = ['NAXIS%d' % val for val in range(1, self_hdr['NAXIS']+1)]
+        naxis_keys = ['NAXIS%d' % val for val in xrange(1, self_hdr['NAXIS']+1)]
         ignored_keys =  ['SIMPLE', 'BITPIX', 'NAXIS'] + naxis_keys
         for key in ignored_keys:
             del self_hdr.hdr[key]
@@ -913,7 +909,7 @@ class header(object):
             return 'Undefined'
         else:
             # Allow very long strings to be returned intact.
-            if isinstance(value, str) and value.count('CONTINUE'):
+            if type(value) == str and value.count('CONTINUE'):
                 while value.count('CONTINUE'):
                     value = '%s%s' % (value[:value.find('CONTINUE')-3], value[value.find('CONTINUE')+11:])
                 value = value[1:-2]
@@ -925,7 +921,7 @@ class header(object):
            Return the evaluation of the existance of a keyword in the header.
         '''
 
-        return key in self.hdr
+        return self.hdr.has_key(key)
 
     def __len__(self):
 
@@ -933,7 +929,7 @@ class header(object):
            Number of header cards (excludes the END card).
         '''
 
-        return len(list(self.hdr.items()))
+        return len(self.hdr.items())
 
     def __getitem__(self, key):
 
@@ -970,7 +966,7 @@ class header(object):
             self.add_history(value)
         elif key == '':
             self.add_blank(value)
-        elif key in self:
+        elif self.has_key(key):
             self.modify(key, value, comment)
         else:
             self.add(key, value, comment)
@@ -1005,7 +1001,7 @@ class header(object):
            x.__contains__(y) <==> y in x
         '''
 
-        return key in self
+        return self.has_key(key)
 
     def __repr__(self):
 
@@ -1067,7 +1063,7 @@ class header(object):
         if comments:
             return [(card.key, card.value, card.comment) for card in self]
         else:
-            return list(self.hdr.items())
+            return self.hdr.items()
 
     def keys(self):
 
@@ -1085,7 +1081,7 @@ class header(object):
            H.keys() -> a list of keywords of H
         '''
 
-        return list(self.hdr.keys())
+        return self.hdr.keys()
 
     def values(self):
 
@@ -1115,7 +1111,7 @@ class header(object):
         if comments:
             return iter([(card.key, card.value, card.comment) for card in self])
         else:
-            return iter(list(self.hdr.items()))
+            return iter(self.hdr.items())
 
     def iterkeys(self):
 
@@ -1133,7 +1129,7 @@ class header(object):
            H.iterkeywords() -> an iterator over the keywords of H
         '''
 
-        return iter(list(self.keys()))
+        return iter(self.keys())
 
     def itervalues(self):
 
@@ -1166,7 +1162,7 @@ class header(object):
         if self.filename is None:
             return [self.copy()]
         if not os.path.exists(self.filename):
-            raise DARMAError('File not found: %s' % self.filename)
+            raise DARMAError, 'File not found: %s' % self.filename
 
         return get_headers(self.filename)
 
@@ -1196,7 +1192,7 @@ def getval(filename, key, ext=0):
                 if 'END' in block:
                     ext -= 1
             if ext == 0:
-                for i in range(0,2880,80):
+                for i in xrange(0,2880,80):
                     if ext >= 0:
                         cardstr = block[i:i+80]
                         if cardstr.startswith(key):
@@ -1235,7 +1231,7 @@ def get_headers(filename=None, card_list=None):
         headers = [header(card_list=hdu.header.ascardlist()) for hdu in hdus]
         hdus.close()
     elif card_list is not None:
-        for ext in range(1000):
+        for ext in xrange(1000):
             try:
                 headers.append(header(card_list=card_list, extension=ext))
             except DARMAError:
@@ -1263,11 +1259,11 @@ def update_header_in_file(filename, keywords, values, comments=[None]):
     '''
 
     if len(keywords) != len(values):
-        raise DARMAError('Input keywords and values lists of different length!')
+        raise DARMAError, 'Input keywords and values lists of different length!'
     if len(comments) == 1 and len(keywords) != 1:
         comments = comments*len(keywords)
     if len(comments) != len(keywords):
-        raise DARMAError('Input comments list of wrong length!')
+        raise DARMAError, 'Input comments list of wrong length!'
 
     hdus = pyfits_open(filename, mode='update', memmap=1)
 
