@@ -67,5 +67,5 @@ In addition the package provides:
 
 __version__ = '@(#)$Revision$'
 
-import bitmask, common, cube, header, image, image_generator, pixelmap, tables
+from astro.util.darma import bitmask, common, cube, header, image, image_generator, pixelmap, tables
 
