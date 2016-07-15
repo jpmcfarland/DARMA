@@ -29,7 +29,7 @@ def delete_test_data(name_list):
 class header_read_tests(unittest.TestCase):
 
     def test_bad_read(self):
-        self.failUnlessRaises(DARMAError, header.header, 'Unknown.fits')
+        self.assertRaises(DARMAError, header.header, 'Unknown.fits')
 
     def test_add(self):
         h = header.header()
@@ -37,16 +37,16 @@ class header_read_tests(unittest.TestCase):
         h.add('AKEY', 1, '')
         h.add_after('AKEY', 'BKEY', 2, '')
         h['CKEY'] = 3
-        self.failUnlessEqual(h['AKEY'], 1)
-        self.failUnlessEqual(h['BKEY'], 2)
-        self.failUnlessEqual(h['CKEY'], 3)
+        self.assertEqual(h['AKEY'], 1)
+        self.assertEqual(h['BKEY'], 2)
+        self.assertEqual(h['CKEY'], 3)
 
     def test_copy(self):
         h1 = header.header()
         h1.default()
         h1['AKEY'] = 'Help'
         h2 = h1.copy()
-        self.failUnlessEqual(h1['AKEY'], 'Help')
+        self.assertEqual(h1['AKEY'], 'Help')
 
     def test_merge(self):
         h1, h2 = header.header(), header.header()
@@ -63,9 +63,9 @@ class header_read_tests(unittest.TestCase):
         h2._IS_VERIFIED = True
 
         h3 = h1.merge(h2)
-        self.failUnlessEqual(h3['AKEY'], 1)
-        self.failUnlessEqual(h3['BKEY'], 3)
-        self.failUnlessEqual(h3['CKEY'], 4)
+        self.assertEqual(h3['AKEY'], 1)
+        self.assertEqual(h3['BKEY'], 3)
+        self.assertEqual(h3['CKEY'], 4)
 
 class header_write_tests(unittest.TestCase):
 
@@ -80,10 +80,10 @@ class header_write_tests(unittest.TestCase):
     def _test_write(self, val):
         '''Auxilary function to test writing header'''
         self.hdr['MYKEY'] = val
-        self.failUnlessEqual(self.hdr['MYKEY'], val)
+        self.assertEqual(self.hdr['MYKEY'], val)
         self.ima.save('tmp.fits', self.hdr)
         newhdr = header.header('tmp.fits')
-        self.failUnlessEqual(newhdr['MYKEY'], val)
+        self.assertEqual(newhdr['MYKEY'], val)
         os.remove('tmp.fits')
 
     def test_write_int(self):
