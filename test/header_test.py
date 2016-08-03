@@ -4,7 +4,7 @@ Unit test for DARMA header
 
 __version__ = '@(#)$Revision$'
 
-from ..common import DARMAError, fits as darma_fits, Array as darma_array
+from ..common import DARMAError, fits as darma_fits, Array as darma_array, unicode
 darma_fits_version = darma_fits.__version__
 darma_array_version = darma_array.__version__
 del darma_fits, darma_array
@@ -12,10 +12,7 @@ from ..header import header, getval, get_headers, update_header_in_file, get_key
 
 import unittest, os, collections, numpy as Array
 
-# Python 3 has no formal unicode type, needed for Python 2 tests
-UNICODE_TYPE = type(u'')
-
-# AstroPy/PyFITS comaptibility
+# AstroPy/PyFITS compatibility
 try:
     if 'DARMA_PYFITS' in os.environ:
         raise Exception()
@@ -883,7 +880,7 @@ class header_read_blanks_test(unittest.TestCase):
         blanks = crd.get_blank()
         self.assertEqual(len(blanks), len(BLANK), msg='wrong number of blanks')
         for blank in blanks:
-            self.assertIsInstance(blank, (str, UNICODE_TYPE), msg='wrong blank card type')
+            self.assertIsInstance(blank, (str, unicode), msg='wrong blank card type')
         blanks = pri.get_blank()
         self.assertEqual(len(blanks), 0, msg='number of blanks not zero')
 
@@ -937,7 +934,7 @@ class header_read_comments_test(unittest.TestCase):
         comments = crd.get_comment()
         self.assertEqual(len(comments), len(COMMENT+COMMENTCARDS), msg='wrong number of comments')
         for comment in comments:
-            self.assertIsInstance(comment, (str, UNICODE_TYPE), msg='wrong comment card type')
+            self.assertIsInstance(comment, (str, unicode), msg='wrong comment card type')
         comments = pri.get_comment()
         self.assertEqual(len(comments), 0, msg='number of comments not zero')
 
@@ -984,7 +981,7 @@ class header_read_history_test(unittest.TestCase):
         historys = crd.get_history()
         self.assertEqual(len(historys), len(HISTORY+HISTORYCARDS), msg='wrong number of histories')
         for history in historys:
-            self.assertIsInstance(history, (str, UNICODE_TYPE), msg='wrong history card type')
+            self.assertIsInstance(history, (str, unicode), msg='wrong history card type')
         historys = pri.get_history()
         self.assertEqual(len(historys), 0, msg='number of histories not zero')
 
@@ -1135,7 +1132,7 @@ class header_read_representation_test(unittest.TestCase):
     def test_read_representation(self):
         '''__repr__'''
         pri = self.pri
-        self.assertIsInstance(repr(pri), (str, UNICODE_TYPE), msg='representation is not a string')
+        self.assertIsInstance(repr(pri), (str, unicode), msg='representation is not a string')
 
 class header_read_string_test(unittest.TestCase):
 
@@ -1152,7 +1149,7 @@ class header_read_string_test(unittest.TestCase):
     def test_read_string(self):
         '''__str__'''
         pri = self.pri
-        self.assertIsInstance(str(pri), (str, UNICODE_TYPE), msg='result of string casting is not a string')
+        self.assertIsInstance(str(pri), (str, unicode), msg='result of string casting is not a string')
 
 class header_read_keywords_test(unittest.TestCase):
 
@@ -1863,20 +1860,65 @@ class header_write_update_test(unittest.TestCase):
     def test_write_update(self):
         pass
 
-class header_write_merge(unittest.TestCase):
+class header_write_merge_test(unittest.TestCase):
 
     '''
-       Are two headers merged correctly correctly?
+       Are two headers merged correctly?
     '''
 
     def setUp(self):
-        pass
+        self.pri = header().default()
+        self.ext = header().default(type='image')
+        self.crd = header(cardlist=CARDS)
 
     def tearDown(self):
-        pass
+        del self.pri, self.ext, self.crd
 
     def test_write_merge(self):
-        pass
+        pri = self.pri
+        ext = self.ext
+        crd = self.crd
+        pri['KEYWORD1'] = 'one'
+        pri['HIERARCH Keyword 1'] = 1
+        ext['KEYWORD1'] = 1.0
+        ext['KEYWORD2'] = 2
+        ext['HIERARCH Keyword 1'] = 'one'
+        ext['HIERARCH Keyword 2'] = 2.0
+        mer = pri.merge(ext, clobber=False)
+        self.assertEqual(mer['KEYWORD1'], 'one', msg='KEYWORD1 not in merged header')
+        self.assertEqual(mer['HIERARCH Keyword 1'], 1, msg='HIERARCH Keyword 1 not in merged header')
+        self.assertEqual(mer['KEYWORD2'], 2, msg='KEYWORD2 not in merged header')
+        self.assertEqual(mer['HIERARCH Keyword 2'], 2.0, msg='HIERARCH Keyword 2 not in merged header')
+        self.assertEqual(getattr(mer, 'KEYWORD2').value, 2, msg='KEYWORD2 attribute not in merged header')
+        self.assertEqual(getattr(mer, 'HIERARCH_Keyword_2').value, 2.0, msg='HIERARCH_Keyword_2 attribute not in merged header')
+        self.assertEqual(mer['XTENSION'], None, msg='XTENSION in merged header')
+        self.assertEqual(mer['EXTNAME'], None, msg='EXTNAME in merged header')
+        mer = pri.merge(ext)
+        self.assertEqual(mer['KEYWORD1'], 1.0, msg='KEYWORD1 not in merged header')
+        self.assertEqual(mer['HIERARCH Keyword 1'], 'one', msg='HIERARCH Keyword 1 not in merged header')
+        mer = pri.merge(crd)
+        self.assertEqual(len(mer.get_blank()), len(BLANK), msg='incorrect number of BLANK cards in merged header')
+        self.assertEqual(len(mer.get_comment()), len(COMMENT+COMMENTCARDS), msg='incorrect number of COMMENT cards in merged header')
+        self.assertEqual(len(mer.get_history()), len(HISTORY+HISTORYCARDS), msg='incorrect number of HISTORY cards in merged header')
+
+class header_write_merge_into_file_test(unittest.TestCase):
+
+    '''
+       Is one header merged correctly into another in a file?
+    '''
+
+    def setUp(self):
+        build_test_data_sef()
+        self.pri = header().default()
+        self.sef = header(filename=SINGLE1)
+
+    def tearDown(self):
+        delete_test_data()
+        del self.pri, self.sef
+
+    def test_write_merge_into_file(self):
+        pri = self.pri
+        sef = self.sef
 
 ########################################################################
 #                                                                      #
