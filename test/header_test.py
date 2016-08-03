@@ -1749,13 +1749,13 @@ class header_write_append_test(unittest.TestCase):
         self.assertEqual(crd['KEYWORD1'], crd['KEY1'], msg='added wrong value for KEYWORD1')
         self.assertEqual(getattr(crd, 'KEYWORD1').value, getattr(crd, 'KEY1').value, msg='KEYWORD1 attribute has wrong value')
         self.assertEqual(crd.cards['KEYWORD1'].comment, crd.cards['KEY1'].comment, msg='added wrong comment for KEYWORD1')
-        crd.append('KEYWORD2', 2, 'keyword 2')
+        crd.append('KEYWORD2', 2, 'keyword 2', force=False)
         self.assertEqual(crd.index('KEYWORD2'), crd.index('')-1, msg='KEYWORD2 not appended to bottom of keywords')
         crd['KEY2'] = (2, 'keyword 2')
         self.assertEqual(crd['KEYWORD2'], crd['KEY2'], msg='added wrong value for KEYWORD2')
         self.assertEqual(getattr(crd, 'KEYWORD2').value, getattr(crd, 'KEY2').value, msg='KEYWORD2 attribute has wrong value')
         self.assertEqual(crd.cards['KEYWORD2'].comment, crd.cards['KEY2'].comment, msg='added wrong comment for KEYWORD2')
-        crd.append('HIERARCH Keyword 1', 1.0, 'HIERARCH keyword 1')
+        crd.append('HIERARCH Keyword 1', 1.0, 'HIERARCH keyword 1', force=False)
         self.assertEqual(crd.index('HIERARCH Keyword 1'), crd.index('')-1, msg='HIERARCHY Keyword 1 not appended to bottom of keywords')
         crd['HIERARCH Key 1'] = (1.0, 'HIERARCH keyword 1')
         self.assertEqual(crd['Keyword 1'], crd['Key 1'], msg='added wrong value for HIERARCH Keyword 1')
@@ -1886,8 +1886,8 @@ class header_write_merge_test(unittest.TestCase):
         ext['HIERARCH Keyword 2'] = 2.0
         mer = pri.merge(ext, clobber=False)
         self.assertEqual(mer['KEYWORD1'], 'one', msg='KEYWORD1 not in merged header')
-        self.assertEqual(mer['HIERARCH Keyword 1'], 1, msg='HIERARCH Keyword 1 not in merged header')
         self.assertEqual(mer['KEYWORD2'], 2, msg='KEYWORD2 not in merged header')
+        self.assertEqual(mer['HIERARCH Keyword 1'], 1, msg='HIERARCH Keyword 1 not in merged header')
         self.assertEqual(mer['HIERARCH Keyword 2'], 2.0, msg='HIERARCH Keyword 2 not in merged header')
         self.assertEqual(getattr(mer, 'KEYWORD2').value, 2, msg='KEYWORD2 attribute not in merged header')
         self.assertEqual(getattr(mer, 'HIERARCH_Keyword_2').value, 2.0, msg='HIERARCH_Keyword_2 attribute not in merged header')
@@ -1896,7 +1896,7 @@ class header_write_merge_test(unittest.TestCase):
         mer = pri.merge(ext)
         self.assertEqual(mer['KEYWORD1'], 1.0, msg='KEYWORD1 not in merged header')
         self.assertEqual(mer['HIERARCH Keyword 1'], 'one', msg='HIERARCH Keyword 1 not in merged header')
-        mer = pri.merge(crd)
+        mer = pri.merge(crd, clobber=True)
         self.assertEqual(len(mer.get_blank()), len(BLANK), msg='incorrect number of BLANK cards in merged header')
         self.assertEqual(len(mer.get_comment()), len(COMMENT+COMMENTCARDS), msg='incorrect number of COMMENT cards in merged header')
         self.assertEqual(len(mer.get_history()), len(HISTORY+HISTORYCARDS), msg='incorrect number of HISTORY cards in merged header')
@@ -1910,15 +1910,39 @@ class header_write_merge_into_file_test(unittest.TestCase):
     def setUp(self):
         build_test_data_sef()
         self.pri = header().default()
-        self.sef = header(filename=SINGLE1)
 
     def tearDown(self):
         delete_test_data()
-        del self.pri, self.sef
+        del self.pri
 
     def test_write_merge_into_file(self):
         pri = self.pri
-        sef = self.sef
+        pri['KEYWORD1'] = 1.0
+        pri['KEYWORD2'] = 2
+        pri['HIERARCH Keyword 1'] = 'one'
+        pri['HIERARCH Keyword 2'] = 2.0
+        pri.merge_into_file(SINGLE1)
+        sef = header(filename=SINGLE1)
+        self.assertEqual(sef['KEYWORD1'], 1.0, msg='KEYWORD1 not in merged header')
+        self.assertEqual(sef['KEYWORD2'], 2, msg='KEYWORD2 not in merged header')
+        self.assertEqual(sef['HIERARCH Keyword 1'], 'one', msg='HIERARCH Keyword 1 not in merged header')
+        self.assertEqual(sef['HIERARCH Keyword 2'], 2.0, msg='HIERARCH Keyword 2 not in merged header')
+        pri['KEYWORD1'] = 'one'
+        pri['KEYWORD2'] = 2.0
+        pri['HIERARCH Keyword 1'] = 1
+        pri['HIERARCH Keyword 2'] = 'two'
+        pri.merge_into_file(SINGLE1, clobber=False)
+        sef = header(filename=SINGLE1)
+        self.assertEqual(sef['KEYWORD1'], 1.0, msg='KEYWORD1 not in merged header')
+        self.assertEqual(sef['KEYWORD2'], 2, msg='KEYWORD2 not in merged header')
+        self.assertEqual(sef['HIERARCH Keyword 1'], 'one', msg='HIERARCH Keyword 1 not in merged header')
+        self.assertEqual(sef['HIERARCH Keyword 2'], 2.0, msg='HIERARCH Keyword 2 not in merged header')
+        pri.merge_into_file(SINGLE1, clobber=True)
+        sef = header(filename=SINGLE1)
+        self.assertEqual(sef['KEYWORD1'], 'one', msg='KEYWORD1 not in merged header')
+        self.assertEqual(sef['KEYWORD2'], 2.0, msg='KEYWORD2 not in merged header')
+        self.assertEqual(sef['HIERARCH Keyword 1'], 1, msg='HIERARCH Keyword 1 not in merged header')
+        self.assertEqual(sef['HIERARCH Keyword 2'], 'two', msg='HIERARCH Keyword 2 not in merged header')
 
 ########################################################################
 #                                                                      #
