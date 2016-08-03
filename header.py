@@ -6,11 +6,7 @@ __version__ = '@(#)$Revision$'
 import os
 
 from .common import fits, DARMAError, fold_string
-from .common import fits_open, is_hierarch, get_cards, get_keyword, rename_keyword, update_header, get_cardimage, range, get_comment, get_history, _strip_keyword, _get_index, get_value, add_blank
-
-# Python 3 has no formal unicode type
-# needed for checking str types in Python 2
-UNICODE_TYPE = type(u'')
+from .common import fits_open, is_hierarch, get_cards, get_keyword, rename_keyword, update_header, get_cardimage, range, get_comment, get_history, _strip_keyword, _get_index, get_value, add_blank, unicode
 
 class header(object):
 
@@ -97,7 +93,7 @@ class header(object):
         if self._hdr is None:
             cardlist = self.cardlist
             if cardlist is not None:
-                if isinstance(cardlist, str):
+                if isinstance(cardlist, (str, unicode)):
                     try:
                         with open(cardlist, 'r') as fd:
                             length = self.item_size()
@@ -114,7 +110,7 @@ class header(object):
                 elif isinstance(cardlist, list):
                     header_cards = [] # list of Card instances
                     if len(cardlist):
-                        if isinstance(cardlist[0], (str, UNICODE_TYPE)):
+                        if isinstance(cardlist[0], (str, unicode)):
                             indexes = [0]
                             if self.extension != 0:
                                 for i in range(len(cardlist)):
@@ -438,7 +434,7 @@ class header(object):
                 value = 'T'
             elif card.value is False:
                 value = 'F'
-            elif isinstance(card.value, str) and len(card.value) > 69:
+            elif isinstance(card.value, (str, unicode)) and len(card.value) > 69:
                 value = card.value[:69]
             else:
                 value = card.value
@@ -890,12 +886,12 @@ class header(object):
     def merge(self, other, clobber=True):
 
         '''
-           Merge this header with another header
+           Merge this header with another header.  Returns a new header
+           combining the values of this header with those of another
+           header.  Header cards from other are added to a copy of self.
 
-           Returns a new header combining the values of this header with those
-           of another header.  Header cards (keyword objects) from other are
-           added to self.  If a card.keyword already exists in self, it is not
-           overwritten unless clobber is True.
+               other: header to merge into this one
+             clobber: overwrite existing keywords in this header
         '''
 
         result = self.copy()
@@ -903,28 +899,26 @@ class header(object):
         # remove as the add_blank method requires this to work properly.
         result.append('_DUMMY_', '')
         for card in other.cards:
-            if get_keyword(card) == 'COMMENT':
+            keyword = get_keyword(card)
+            if keyword == 'COMMENT':
                 result.add_comment(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
-            elif get_keyword(card) == 'HISTORY':
+            elif keyword == 'HISTORY':
                 result.add_history(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
-            elif get_keyword(card) == '':
+            elif keyword == '':
                 result.add_blank(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
-            elif get_keyword(card) not in result.hdr or clobber:
+            elif keyword not in result._hdr or clobber:
                 if is_hierarch(card):
-                    keyword = 'HIERARCH '+get_keyword(card)
-                else:
-                    keyword = get_keyword(card)
+                    keyword = 'HIERARCH '+keyword
                 result.update(keyword, card.value, comment=card.comment, before='_DUMMY_')
                 result._IS_VERIFIED = True
         # Remove temporary keyword.
         del result['_DUMMY_']
         # Make sure unnecessary extension keywords are removed.  This is a
         # primary header, not an extension.
-        ext_keywords = ['EXTEND', 'XTENSION', 'EXTNAME', 'EXTVER', 'PCOUNT',
-                        'GCOUNT']
+        ext_keywords = ['XTENSION', 'EXTNAME', 'EXTVER']
         for keyword in ext_keywords:
             if result[keyword] is not None:
                 if keyword == 'EXTNAME':
@@ -936,8 +930,7 @@ class header(object):
                 result._IS_VERIFIED = True
         # Allow new header to be verified all at once.
         result._IS_VERIFIED = False
-        if not result.hdr:
-            raise DARMAError('Error merging headers')
+        result.verify()
         return result
 
     def merge_into_file(self, filename, clobber=True):
@@ -946,8 +939,8 @@ class header(object):
            Merge this header directly into the primary header of an existing
            file.
 
-           Merge this header into the FITS file named filename, overwriting
-           where necessary if clobber is true.
+             filename: name of file in which to merge this header
+              clobber: overwrite existing keywords in file
         '''
 
         hdu = fits_open(filename, mode='update', memmap=1)
@@ -998,7 +991,7 @@ class header(object):
             return 'Undefined'
         else:
             # Allow very long strings to be returned intact.
-            if isinstance(value, str) and value.count('CONTINUE'):
+            if isinstance(value, (str, unicode)) and value.count('CONTINUE'):
                 while value.count('CONTINUE'):
                     value = '%s%s' % (value[:value.find('CONTINUE')-3], value[value.find('CONTINUE')+11:])
                 value = value[1:-2]
@@ -1400,7 +1393,7 @@ def _is_card_length(card_string):
        str <= 80 characters
     '''
 
-    return isinstance(card_string, (str, UNICODE_TYPE)) and len(card_string) <= 80
+    return isinstance(card_string, (str, unicode)) and len(card_string) <= 80
 
 def _has_equals(card_string):
     '''
