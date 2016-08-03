@@ -4,7 +4,12 @@
 
 __version__ = '@(#)$Revision$'
 
-import pyfits, math, os
+import math, os
+# Python 2 to 3 comaptibility
+try:
+    from __builtin__ import xrange as range
+except:
+    from builtins import range
 
 # Allow DARMA to be imported even if NumPy is not available.
 _HAS_NUMPY = True
@@ -13,15 +18,50 @@ try:
     import numpy.random as Arrayrandom
     import numpy.fft as Arrayfft
     # FIXME
-    #import numpy.nd_image.filters as Arrayfilters
+    #import numpy.nd_image.filters as Arrayfilter
 except:
-    Array = Arrayrandom = Arrayfft = None
+    Arrayrandom = Arrayfft = None
+    class ArrayClass():
+        __version__ = ''
+    Array = ArrayClass()
     _HAS_NUMPY = False
+
+# AstroPy/PyFITS compatibility
+_HAS_ASTROPY = False
+_HAS_PYFITS33 = False
+_HAS_PYFITS = False
+try:
+    if 'DARMA_PYFITS' in os.environ:
+        raise Exception()
+    from astropy.io import fits
+    from astropy import __version__
+    fits.__version__ = __version__
+    if __version__ >= u'0.4':
+        _HAS_ASTROPY = True
+    else:
+        raise Exception()
+    print('DARMA using Astropy version %s and NumPy version %s' % (fits.__version__, Array.__version__))
+except:
+    try:
+        import pyfits as fits
+        if fits.__version__ >= '3.3':
+            _HAS_PYFITS33 = True
+            _HAS_PYFITS = True
+        else:
+            _HAS_PYFITS = True
+        print('DARMA using PyFITS version %s and NumPy version %s' % (fits.__version__, Array.__version__))
+    except:
+        pass
+if not _HAS_ASTROPY and not _HAS_PYFITS:
+    raise ImportError('Cannot import either AstroPy or PyFITS!')
+
+# Python 3 has no formal unicode type
+# needed for checking str types in Python 2
+UNICODE_TYPE = type(u'')
 
 # default data types
 FLOAT = 'float32'
-INT   = 'int32'
-LONG  = 'int64'
+INT   = 'int64'
 
 # log levels
 NONE    = 0
@@ -35,15 +75,6 @@ loglevel = {
             'verbose' : NORMAL+VERBOSE,
             'debug'   : NORMAL+VERBOSE+DEBUG
            }
-
-def pyfits_open(*args, **kwargs):
-
-    '''
-       Wrapper around pyfits.open() method to allow arbitrary extra
-       arguments common to all open commands, e.g., ignore_missing_end.
-    '''
-
-    return pyfits.open(ignore_missing_end=True, *args, **kwargs)
 
 class DARMAError(Exception):
 
@@ -346,12 +377,12 @@ class DataStruct(object):
 
         try:
             if self.datatype is datatype:
-                self.log('DataStruct save: pyfits.writeto', 'debug')
-                pyfits.writeto(filename, data=self.data, header=hdr,
+                self.log('DataStruct save: fits.writeto', 'debug')
+                fits.writeto(filename, data=self.data, header=hdr,
                                clobber=clobber, output_verify=option)
             else:
-                self.log('DataStruct save: pyfits.writeto astype(%s)' % datatype, 'debug')
-                pyfits.writeto(filename, data=self.data.astype(datatype),
+                self.log('DataStruct save: fits.writeto astype(%s)' % datatype, 'debug')
+                fits.writeto(filename, data=self.data.astype(datatype),
                                header=hdr, clobber=clobber,
                                output_verify=option)
         except Exception as e:
@@ -1265,28 +1296,13 @@ class DataStruct(object):
 
         '''
            Integer datatype conversion.  Return with the data converted to an
-           integer representation.
-        '''
+           integer representation (%s).
+        ''' % INT
 
         self.log('DataStruct __int__', 'verbose')
         if self.data is not None:
             self.log('DataStruct __int__: astype=%s' % INT, 'debug')
             return self.__class__(data=self.data.astype(INT),
-                                  bmask=self.get_bitmask())
-        else:
-            return self
-
-    def __long__(self):
-
-        '''
-           Long datatype conversion.  Return with the data converted to a long
-           integer representation.
-        '''
-
-        self.log('DataStruct __long__', 'verbose')
-        if self.data is not None:
-            self.log('DataStruct __int__: astype=%s' % LONG, 'debug')
-            return self.__class__(data=self.data.astype(LONG),
                                   bmask=self.get_bitmask())
         else:
             return self
@@ -1371,7 +1387,7 @@ def _datamd5(filename, regions=None, buffer_blocks=32):
     if not os.path.exists(filename):
         raise DARMAError('No FITS file (%s) to calcualte MD5SUM from!' % filename)
 
-    fitsfile = pyfits_open(filename, mode='readonly', memmap=1)
+    fitsfile = fits_open(filename, mode='readonly', memmap=1)
     md5sum   = md5.md5()
 
     block  = 2880
@@ -1410,7 +1426,7 @@ def _update_datamd5(filename, datamd5):
     if len(datamd5) != 32:
         raise DARMAError('%s does not appear to be a valid MD5SUM.' % datamd5)
 
-    fitsfile = pyfits_open(filename, mode='update', memmap=1)
+    fitsfile = fits_open(filename, mode='update', memmap=1)
     fitsfile[0].header.update('DATAMD5', datamd5, comment='MD5 checksum of all data regions')
     fitsfile.close()
     # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
@@ -1622,4 +1638,332 @@ def get_tmpbase(suffix='', prefix='tmp', dir=None):
         suffix = '.%s' % suffix
 
     return '%s%s%s%s%s' % (dir, prefix, date_str, rand_str, suffix)
+
+#####################################
+# Astropy/PyFITS compatibility code #
+#####################################
+
+def fits_open(*args, **kwargs):
+
+    '''
+       Wrapper around fits.open() method to allow arbitrary extra
+       arguments common to all open commands, e.g., ignore_missing_end.
+    '''
+
+    return fits.open(ignore_missing_end=True, *args, **kwargs)
+
+
+def new_table(columns=[], header=None, nrows=0, fill=False, tbtype='BinTableHDU'):
+
+    '''
+       In PyFITS >= 3.3 pyfits.new_table() is deprecated.  Use
+       pyfits.BinTableHDU.from_columns() for new BINARY tables or
+       pyfits.TableHDU.from_columns() for new ASCII tables instead.
+       Similarly, in AstroPy >=0.4 astropy.io.fits.new_table() is
+       deprecated.  Use from_columns() methods from
+       astropy.io.fits.BinTableHDU and astropy.io.fits.TableHDU.
+
+       Create a new table from the input column definitions.
+
+         columns: sequence of Column or ColDefs objects to create a
+                  table from
+          header: fits.Header instance to be used to populate the non-
+                  required keywords
+           nrows: umber of rows in the new table
+            fill: fill all cells with zeros or blanks
+          tbtype: table type to be created ("BinTableHDU" or "TableHDU")
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        if tbtype == 'BinTableHDU':
+            return fits.BinTableHDU.from_columns(columns=columns, header=header, nrows=nrows, fill=fill)
+        if tbtype == 'TableHDU':
+            return fits.TableHDU.from_columns(columns=columns, header=header, nrows=nrows, fill=fill)
+    else:
+        return fits.new_table(input=columns, header=header, nrows=nrows, fill=fill, tbtype='BinTableHDU')
+
+def _strip_keyword(keyword, fill=False):
+
+    '''
+       Return a keyword stripped of 'HIERARCH ' if a string.
+
+         keyword: any keyword string or index
+            fill: additionally, replace ' ' with '_'
+    '''
+
+    if type(keyword) in [str, UNICODE_TYPE]:
+        if keyword.startswith('HIERARCH '):
+            keyword = keyword[9:]
+        if fill:
+            keyword = keyword.replace(' ', '_')
+        return keyword
+    elif type(keyword) is int:
+        return keyword
+    else:
+        print('keyword type: %s' % type(keyword))
+        raise DARMAError('keyword is not of type str or int')
+
+def is_hierarch(card):
+
+    '''
+       Return if a fits.Card instance is a HIERARCH card.
+
+         card: a fits.Card instance
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        return card._hierarch
+    else:
+        return isinstance(card, fits.core._Hierarch)
+
+def get_cards(hdr):
+
+    '''
+       Return the card list (dictionary-like object, actually) of a
+       fits.Header instance.
+
+         hdr: a fits.Header instance
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        return hdr.cards
+    else:
+        return hdr.ascardlist()
+
+def get_keyword(card):
+
+    '''
+       Return the keyword of a fits.Card instance.
+
+         card: a fits.Card instance
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        return card.keyword
+    else:
+        return card.key
+
+def _remove_cards(hdr, keywords):
+
+    '''
+       Astropy/new PyFITS cannot remove a HIERARCH keyword card properly.
+       Remove it by making a shadow copy, clearing the original header,
+       then copying all but the removed card back.
+
+              hdr: fits.Header instance
+         keywords: list of keys of cards to be removed
+    '''
+
+    shadow = hdr.copy()
+    hdr.clear()
+    hdr.update([card for card in shadow.cards if card.keyword not in keywords])
+
+def rename_keyword(hdr, oldkeyword, newkeyword):
+
+    '''
+       Rename a card's keyword in the header.
+
+                hdr: a fits.Header instance
+         oldkeyword: old keyword or card index
+         newkeyword: new keyword
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        old = _strip_keyword(oldkeyword)
+        new = _strip_keyword(newkeyword)
+        if new in hdr:
+            raise DARMAError('Cannot rename %s to %s: %s exists!' % (oldkeyword, newkeyword, newkeyword))
+        #FIXME rename_keyword() does not work properly for HIERARCH
+        #FIXME keywords in Astropy/new PyFITS.  Manually rename.
+        #hdr.rename_keyword(oldkeyword=old, newkeyword=new)
+        oldcard = hdr.cards[old]
+        newcard = fits.Card(keyword=newkeyword, value=oldcard.value, comment=oldcard.comment)
+        hdr.insert(old, newcard, useblanks=False)
+        #FIXME The main problem with rename_keyword() method for HIERARCH
+        #FIXME cards is the remove() method.
+        _remove_cards(hdr, [old])
+    else:
+        hdr.rename_key(oldkey=oldkeyword, newkey=newkeyword)
+
+def update_header(hdr, keyword, value, comment=None, before=None, after=None, savecomment=False):
+
+    '''
+       Update one header card.
+
+       If the keyword already exists, it's value and/or comment will
+       be updated.  If it does not exist, a new card will be created
+       and it will be placed before or after the specified location.
+       If no `before` or `after` is specified, it will be appended at
+       the end.
+
+             hdr: a fits.Header instance
+         keyword: keyword of the card to be updated
+           value: value to be used for updating
+         comment: comment to be used for updating
+          before: keyword name/index of the card before which the new
+                  card will be placed (the argument before takes
+                  precedence over after if both specified)
+           after: keyword name/index of the card after which the new
+                  card will be placed
+         savecomment: preserve the current comment for an existing
+                      keyword (takes precedence over comment if both
+                      specified)
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        key = _strip_keyword(keyword)
+        key_in_hdr = key in hdr
+        reference_keyword = ''
+        if before:
+            before = _strip_keyword(before)
+            reference_keyword = before
+            _after = False
+        if after:
+            after = _strip_keyword(after)
+            reference_keyword = after
+            _after = True
+        if savecomment:
+            comment = None
+        else:
+            if not comment and key_in_hdr:
+                comment = hdr.cards[key].comment
+        card = (keyword, value, comment)
+        if reference_keyword:
+            if key_in_hdr:
+                _remove_cards(hdr, [key])
+            hdr.insert(reference_keyword, card, after=_after)
+        else:
+            if key_in_hdr:
+                card = (key, value, comment)
+            hdr.update([card])
+    else:
+        hdr.update(key=keyword, value=value, comment=comment, before=before, after=after, savecomment=savecomment)
+
+def get_cardimage(card):
+
+    '''
+       Return a fits.Card instance image
+
+         card: a fits.Card instance
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        return card.image
+    else:
+        # overcome a HIERARCH keyword image bug in older PyFITS versions
+        if is_hierarch(card):
+            value = card.value
+            if type(value) == str:
+                if len(value) < 8:
+                    value = '%- 8s' % value
+                cardstr = 'HIERARCH %s = \'%s\'' % (card.key, value)
+            else:
+                cardstr = 'HIERARCH %s = %s' % (card.key, card.value)
+            return '%- 80s' % cardstr[:80]
+        return card.ascardimage()
+
+def get_comment(hdr):
+
+    '''
+       Return a list of all COMMENT card contents
+
+         hdr: a fits.Header instance
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        if 'COMMENT' in hdr:
+            return hdr['COMMENT']
+        return []
+    else:
+        return hdr.get_comment()
+
+def get_history(hdr):
+
+    '''
+       Return a list of all HISTORY card contents
+
+         hdr: a fits.Header instance
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        if 'HISTORY' in hdr:
+            return hdr['HISTORY']
+        return []
+    else:
+        return hdr.get_history()
+
+def _get_index(hdr, keyword):
+
+    '''
+       Return index of a keyword in a fits.Header instance
+
+             hdr: a fits.Header instance
+         keyword: the keyword to find the index of
+    '''
+
+    if type(keyword) not in [str, UNICODE_TYPE]:
+        raise DARMAError('keyword for _get_index MUST be a string')
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        key = _strip_keyword(keyword)
+        if key not in hdr:
+            raise DARMAError('header does not contain keyword: %s' % keyword)
+        return hdr.index(key)
+    else:
+        if keyword not in hdr:
+            raise DARMAError('header does not contain keyword: %s' % keyword)
+        return hdr.ascardlist().index_of(keyword)
+
+def get_value(hdr, keyword, default=None):
+
+    '''
+       Return the value of a keyword/index in a fits.Header instance
+
+             hdr: a fits.Header instance
+         keyword: the keyword/index for which to get the value
+         default: the value to return when the keyword/index is missing
+    '''
+
+    if type(keyword) not in [str, UNICODE_TYPE, int]:
+        raise DARMAError('keyword for get_value MUST be a string or int')
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        key = _strip_keyword(keyword)
+        return hdr.get(key, default=default)
+    else:
+        if type(keyword) is int and keyword >= len(hdr.ascardlist()):
+            return default
+        return hdr.get(keyword, default=default)
+
+def add_blank(hdr, value, before=None, after=None):
+
+    '''
+       Add a BLANK card to a fits.Header instance
+
+            hdr: a fits.Header instance
+          value: value of the new blank card
+         before: keyword of the card before which the BLANK card will be
+                 placed
+          after: keyword of the card after which the BLANK card will be
+                 placed
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        if before:
+            before = _strip_keyword(before)
+        if after:
+            after = _strip_keyword(after)
+        hdr.add_blank(value=value, before=before, after=after)
+    else:
+        if not (before or after):
+            if '' in hdr:
+                index = hdr.ascardlist().index_of('')
+                blanks = [card.value for card in hdr.ascardlist() if card.key == '']
+                index += len(blanks)-1
+            elif 'COMMENT' in hdr:
+                index = hdr.ascardlist().index_of('COMMENT')-1
+            elif 'HISTORY' in hdr:
+                index = hdr.ascardlist().index_of('HISTORY')-1
+            else:
+                index = len(hdr.ascardlist())-1
+            after = index
+        hdr.add_blank(value=value, before=before, after=after)
 
