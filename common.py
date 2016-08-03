@@ -4,12 +4,22 @@
 
 __version__ = '@(#)$Revision$'
 
-import math, os
-# Python 2 to 3 comaptibility
+import math, os, sys
+# Python 2 and 3 compatibility
 try:
     from __builtin__ import xrange as range
 except:
     from builtins import range
+if sys.version_info.major < 3:
+    # Refer to existing types in Python 2.
+    long = long
+    unicode = unicode
+else:
+    class long(int):
+        pass
+
+    class unicode(str):
+        pass
 
 # Allow DARMA to be imported even if NumPy is not available.
 _HAS_NUMPY = True
@@ -54,10 +64,6 @@ except:
         pass
 if not _HAS_ASTROPY and not _HAS_PYFITS:
     raise ImportError('Cannot import either AstroPy or PyFITS!')
-
-# Python 3 has no formal unicode type
-# needed for checking str types in Python 2
-UNICODE_TYPE = type(u'')
 
 # default data types
 FLOAT = 'float32'
@@ -1691,17 +1697,16 @@ def _strip_keyword(keyword, fill=False):
             fill: additionally, replace ' ' with '_'
     '''
 
-    if type(keyword) in [str, UNICODE_TYPE]:
+    if isinstance(keyword, (str, unicode)):
         if keyword.startswith('HIERARCH '):
             keyword = keyword[9:]
         if fill:
             keyword = keyword.replace(' ', '_')
         return keyword
-    elif type(keyword) is int:
+    elif isinstance(keyword, int):
         return keyword
     else:
-        print('keyword type: %s' % type(keyword))
-        raise DARMAError('keyword is not of type str or int')
+        raise DARMAError('keyword is not of type str or int: %s' % type(keyword))
 
 def is_hierarch(card):
 
@@ -1853,7 +1858,7 @@ def get_cardimage(card):
         # overcome a HIERARCH keyword image bug in older PyFITS versions
         if is_hierarch(card):
             value = card.value
-            if type(value) == str:
+            if isinstance(value, (str, unicode)):
                 if len(value) < 8:
                     value = '%- 8s' % value
                 cardstr = 'HIERARCH %s = \'%s\'' % (card.key, value)
@@ -1901,7 +1906,7 @@ def _get_index(hdr, keyword):
          keyword: the keyword to find the index of
     '''
 
-    if type(keyword) not in [str, UNICODE_TYPE]:
+    if not isinstance(keyword, (str, unicode)):
         raise DARMAError('keyword for _get_index MUST be a string')
     if _HAS_ASTROPY or _HAS_PYFITS33:
         key = _strip_keyword(keyword)
@@ -1923,13 +1928,13 @@ def get_value(hdr, keyword, default=None):
          default: the value to return when the keyword/index is missing
     '''
 
-    if type(keyword) not in [str, UNICODE_TYPE, int]:
+    if not isinstance(keyword, (str, unicode, int)):
         raise DARMAError('keyword for get_value MUST be a string or int')
     if _HAS_ASTROPY or _HAS_PYFITS33:
         key = _strip_keyword(keyword)
         return hdr.get(key, default=default)
     else:
-        if type(keyword) is int and keyword >= len(hdr.ascardlist()):
+        if isinstance(keyword, int) and keyword >= len(hdr.ascardlist()):
             return default
         return hdr.get(keyword, default=default)
 
