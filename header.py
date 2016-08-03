@@ -3,16 +3,21 @@
 
 __version__ = '@(#)$Revision$'
 
-import pyfits, os
+import os
 
-from astro.util.darma.common import DARMAError, fold_string, pyfits_open
+from .common import fits, DARMAError, fold_string
+from .common import fits_open, is_hierarch, get_cards, get_keyword, rename_keyword, update_header, get_cardimage, range, get_comment, get_history, _strip_keyword, _get_index, get_value, add_blank
+
+# Python 3 has no formal unicode type
+# needed for checking str types in Python 2
+UNICODE_TYPE = type(u'')
 
 class header(object):
 
     '''
        A header object stores the information obtained from a FITS file
        header, a text file containing header cards one per line, a list of
-       header cards, or an existing PyFITS CardList.
+       header card stringss, or a list of fits.Card instances.
 
        The header object also includes value and format validation through
        an on-demand implementation of the PyFITS output verification
@@ -26,7 +31,7 @@ class header(object):
 
     _IS_VERIFIED = False
 
-    def __init__(self, filename=None, extension=0, card_list=None,
+    def __init__(self, filename=None, extension=0, cardlist=None,
                  option='silentfix', *args, **kwargs):
 
         '''
@@ -37,30 +42,26 @@ class header(object):
            is second ImageHDU, etc.).
 
             filename: name of a valid FITS file containing the header
-           card_list: a list of header cards (80 character strings, NULL
-                      terminated), a pyfits.CardList instance, or the name
-                      of a text file containing the header cards
+           extension: extension number of the header to be loaded
+            cardlist: a list of header cards (80 character strings, NULL
+                      terminated), a list of fits.Card instances, or the
+                      name of a text file containing the header cards
               option: option used to verify the header (from PyFITS) should
                       be one of fix, silentfix, ignore, warn, or exception
+                      (ignore disables on-demand verification)
 
-           NOTE: The header cards in the form: key = value / comment
+           NOTE: The header cards in the form: keyword = value / comment
         '''
 
         self.filename   = filename or None
         self.extension  = extension
-        self._card_list = card_list
+        self.cardlist   = cardlist
         self.option     = option
         self._hdr       = None
+        self._cards     = None
 
         # Load header, verify header, and populate header attributes.
         self.load_header()
-
-        if option == 'silentfix' and self.hdr is not None:
-            for k in self.hdr.keys():
-                try:
-                    v = self.hdr[k]
-                except ValueError as e:
-                    del(self.hdr[k])
 
     def load(self):
 
@@ -76,16 +77,16 @@ class header(object):
 
         '''
            Load a header from a FITS file, or an ordinary text file or list.
-           The attributes filename, extension, and card_list must either be
+           The attributes filename, extension, and cardlist must either be
            set during construction or set manually before this method is
            called.
 
-           The method attempts to load cards from a file if card_list is a
-           string, or directly from card_list if it is a list.  If card_list
+           The method attempts to load cards from a file if cardlist is a
+           string, or directly from cardlist if it is a list.  If cardlist
            is not defined, the header is loaded from the FITS file filename.
            Cards are assumed to be in the format:
 
-           KEYWORD =                value / comment
+           keyword =                value / comment
 
            Cards should not exceed 80 characters unless they are COMMENT cards.
            Cards less than 80 characters will be padded as needed.
@@ -94,82 +95,106 @@ class header(object):
         '''
 
         if self._hdr is None:
-            card_list = self._card_list
-            if card_list is not None:
-                if type(card_list) == str:
-                    fd = file(card_list, 'r')
-                    length = self.item_size()
-                    lines = fd.read()
-                    fd.close()
+            cardlist = self.cardlist
+            if cardlist is not None:
+                if type(cardlist) == str:
+                    try:
+                        with open(cardlist, 'r') as fd:
+                            length = self.item_size()
+                            lines = fd.read()
+                    except Exception as e:
+                        raise DARMAError('ERROR -- could not load cardlist %s: %s' % (cardlist, e))
                     # ASCII file.
                     if '\n' in lines:
-                        card_list = [line.strip('\n') for line in lines.split('\n')]
+                        header_card_strings = [line.strip('\n') for line in lines.split('\n') if not line.startswith('END')]
+                        header_cards = [fromstring(string) for string in header_card_strings if len(string)]
                     # Raw FITS file.
                     else:
-                        card_list = [lines[n:n+length] for n in xrange(0, len(lines), length)]
-                if type(card_list) == list:
-                    indexes = [0]
-                    if self.extension != 0:
-                        for i in xrange(len(card_list)):
-                            if card_list[i].startswith('END'):
-                                indexes.append(i+1)
-                            i += 1
-                        # trim the index list
-                        _ = indexes.pop(-1)
-                    header_cards = pyfits.CardList()
-                    if self.extension >= len(indexes):
-                        raise DARMAError('extension %d is not in card_list!' % self.extension)
-                    for card in card_list[indexes[self.extension]:]:
-                        if not card.startswith('END'):
-                            header_cards.append(pyfits.Card().fromstring(card))
+                        header_cards = [fromstring(lines[n:n+length]) for n in range(0, len(lines), length)]
+                elif type(cardlist) == list:
+                    header_cards = [] # list of Card instances
+                    if len(cardlist):
+                        if type(cardlist[0]) in [str, UNICODE_TYPE]:
+                            indexes = [0]
+                            if self.extension != 0:
+                                for i in range(len(cardlist)):
+                                    if cardlist[i].startswith('END'):
+                                        indexes.append(i+1)
+                                    i += 1
+                                # trim the index list
+                                _ = indexes.pop(-1)
+                            if self.extension >= len(indexes):
+                                raise DARMAError('extension %d is not in cardlist!' % self.extension)
+                            for card in cardlist[indexes[self.extension]:]:
+                                if not card.startswith('END'):
+                                    # cast unicode types as strings
+                                    header_cards.append(fromstring(str(card)))
+                                else:
+                                    break
+                        elif type(cardlist[0]) == fits.Card:
+                            header_cards = cardlist
                         else:
-                            break
-                elif type(card_list) == pyfits.CardList:
-                    header_cards = card_list
+                            raise DARMAError('cardlist not in correct format!')
                 else:
-                    raise DARMAError('card_list (or source file) not in correct format!')
-                self._hdr = pyfits.Header(cards=header_cards)
+                    raise DARMAError('source file (or cardlist) not in correct format!')
+                self._hdr = fits.Header(cards=header_cards)
             elif self.filename is not None:
+                # Initialize variables to allow closing file if error
+                hdus, hdu = None, None
                 try:
-                    hdu = pyfits_open(self.filename)[self.extension]
+                    hdus = fits_open(self.filename)
+                    hdu = hdus[self.extension]
                     if hasattr(hdu, '_header'):
                         self._hdr = hdu._header
                     else:
                         self._hdr = hdu.header
-                    del(hdu)
+                    hdus.close()
+                    del hdu, hdus
                 except Exception as e:
+                    if hdus:
+                        hdus.close()
+                        del hdus
+                    if hdu:
+                        del hdu
                     raise DARMAError('Error loading header from %s: %s' % (self.filename, e))
             else:
-                self._hdr = None
+                self._hdr = fits.Header()
+            self._cards = get_cards(self._hdr)
         else:
-            if not isinstance(self._hdr, pyfits.Header):
-                raise DARMAError('%s must be a %s instance!' % (self._hdr, pyfits.Header))
+            if not isinstance(self._hdr, fits.Header):
+                raise DARMAError('%s must be a %s instance!' % (self._hdr, fits.Header))
         self.verify(option=self.option)
+
+    def _set_attributes(self):
+
+        '''
+           Set attribute values from cards in header
+        '''
 
         if self._hdr is not None:
             allowed_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
-            for card in self._hdr.ascardlist():
-                if card.key not in ['COMMENT', 'HISTORY', ''] and not hasattr(self, card.key):
-                    attr = card.key.replace('-', '_')
+            for card in get_cards(self._hdr):
+                attr = get_keyword(card).replace('-', '_')
+                if attr not in ['COMMENT', 'HISTORY', ''] and not hasattr(self, attr):
                     for char in attr.upper():
                         if char not in allowed_chars:
                             attr = attr.replace(char, '_')
-                    #if card.key.startswith('HIERARCH '):
-                    if isinstance(card, pyfits.core._Hierarch):
+                    if is_hierarch(card):
                         attr = 'HIERARCH_%s' % attr
                     setattr(self, attr, card)
 
-    def _get_header(self):
+    def _get_hdr(self):
 
         '''
            header 'getter' method
         '''
         if self._hdr is None:
             self.load()
-        
+        self.verify()
+
         return self._hdr
 
-    def _set_header(self, hdr):
+    def _set_hdr(self, hdr):
 
         '''
            header 'setter' method
@@ -178,50 +203,49 @@ class header(object):
         self._hdr = hdr
         self._IS_VERIFIED = False
 
-    def _del_header(self):
+    def _del_hdr(self):
 
         '''
            header 'deleter' method
         '''
 
-        del(self._hdr)
+        del self._hdr
         self._hdr = None
-        self._IS_VERIFIED = False
 
-    hdr = property(_get_header, _set_header, _del_header,
+    hdr = property(_get_hdr, _set_hdr, _del_hdr,
                    'Attribute to store the header')
 
-    def _get_card_list(self):
+    def _get_cards(self):
 
         '''
-           card_list 'getter' method
+           cards 'getter' method
         '''
 
-        if self.hdr is not None:
-            self._card_list = self.hdr.ascardlist() or []
+        if self._hdr is None:
+            self._cards = get_cards(fits.Header())
         else:
-            self._card_list = []
-        return self._card_list
+            self._cards = get_cards(self.hdr)
+        return self._cards
 
-    def _set_card_list(self, card_list):
-
-        '''
-           card_list 'setter' method
-        '''
-
-        self._card_list = card_list
-        self._IS_VERIFIED = False
-
-    def _del_card_list(self):
+    def _set_cards(self, cards):
 
         '''
-           card_list 'deleter' method
+           cards 'setter' method
         '''
 
-        del(self._card_list)
-        self._card_list = []
+        # cards only ever set from header within _get_cards()
+        pass
 
-    card_list = property(_get_card_list, _set_card_list, _del_card_list,
+    def _del_cards(self):
+
+        '''
+           cards 'deleter' method
+        '''
+
+        del self._cards
+        self._cards = get_cards(fits.Header())
+
+    cards = property(_get_cards, _set_cards, _del_cards,
                          'Attribute to store the list of cards for the header')
 
     def __del__(self):
@@ -230,8 +254,7 @@ class header(object):
            Cleanup headers before destruction
         '''
 
-        del(self.card_list)
-        del(self.hdr)
+        del self.cards, self.hdr
 
     def save(self, filename, raw=True, mode='clobber', dataless=False):
 
@@ -255,6 +278,11 @@ class header(object):
         if mode not in modes:
             raise DARMAError('mode \'%s\' not supported!  Use one of %s instead.' % (mode, modes))
 
+        if mode == 'clobber':
+            mode = {True : 'wb', False :  'w'}
+        if mode == 'append':
+            mode = {True : 'ab', False :  'a'}
+
         hdr = self.copy()
         if hdr.filename is None:
             hdr.filename = filename
@@ -262,30 +290,26 @@ class header(object):
         linelen = hdr.item_size()
         blksize = hdr.block_size()
 
-        if mode == 'clobber':
-            mode = {True : 'wb', False :  'w'}
-        if mode == 'append':
-            mode = {True : 'ab', False :  'a'}
-        crlf = {True :   '', False : '\n'}
-
         if dataless:
-            for n in xrange(1,100):
-                key = 'NAXIS%d' % n
-                if key in hdr:
-                    del hdr[key]
+            for n in range(1,999):
+                keyword = 'NAXIS%d' % n
+                if keyword in hdr:
+                    del hdr[keyword]
                 else:
                     break
             hdr['BITPIX'] = 8
             hdr['NAXIS'] = 0
 
-        cardlist = ['%s%s' % (str(card), crlf[raw]) for card in hdr]
-        cardlist.append('END%s%s' % (' '*(linelen-3), crlf[raw]))
         if raw:
+            cardlist = [get_cardimage(card).encode() for card in hdr.itercards()]
+            cardlist.append(str.encode('END%s' % (' '*(linelen-3))))
             while len(cardlist)*linelen % blksize:
-                cardlist.append(' '*linelen)
-        fd = file(filename, mode[raw])
-        fd.writelines(cardlist)
-        fd.close()
+                cardlist.append(str.encode(' '*linelen))
+        else:
+            cardlist = ['%s\n' % get_cardimage(card) for card in hdr.itercards()]
+            cardlist.append('END%s\n' % (' '*(linelen-3)))
+        with open(filename, mode[raw]) as fd:
+            fd.writelines(cardlist)
 
     def verify(self, option='silentfix'):
 
@@ -295,6 +319,7 @@ class header(object):
 
            option: option used to verify the header (from PyFITS) should be
                    one of fix, silentfix, ignore, warn, or exception
+                   (ignore disables on-demand verification)
 
            NOTE: As this is a dataless header, the BITPIX, NAXIS, and NAXISn
                  values are preserved from the original source, but are only
@@ -303,58 +328,65 @@ class header(object):
                  values and may not match the original values.
         '''
 
+        if self.option == 'ignore':
+            self._IS_VERIFIED = True
+            self._set_attributes()
+            return
         if self._hdr is not None and not self._IS_VERIFIED:
             hdr = self._hdr
+            cards = get_cards(hdr)
             # Primary header keywords.
-            simple, extend = hdr.get('SIMPLE'), hdr.get('EXTEND')
+            extend = None
+            if 'EXTEND' in hdr:
+                extend = cards['EXTEND']
+            simple = get_value(hdr, 'SIMPLE')
             # Extension header keywords.
-            xtension = hdr.get('XTENSION')
+            xtension = get_value(hdr, 'XTENSION')
             # Common keywords.
-            bitpix, naxis = hdr.get('BITPIX'), hdr.get('NAXIS')
-            # Cards to be added back if needed.
-            if extend is not None:
-                extend = hdr.ascardlist()['EXTEND']
+            bitpix, naxis = None, None
+            if 'BITPIX' in hdr:
+                bitpix = cards['BITPIX']
+            if 'NAXIS' in hdr:
+                naxis = cards['NAXIS']
             # Add cards required for PyFITS verification (they will be
             # removed later as necessary).
             ADDED_SIMPLE, ADDED_BITPIX, ADDED_NAXIS = False, False, False
             if simple is None and xtension is None:
-                hdr.update('SIMPLE', True, 'conforms to FITS standard')
-                simple = hdr.get('SIMPLE')
+                update_header(hdr, 'SIMPLE', True, 'conforms to FITS standard')
+                simple = True
                 ADDED_SIMPLE = True
             if bitpix is None:
-                hdr.update('BITPIX', 8, 'array data type')
+                update_header(hdr, 'BITPIX', 8, 'array data type')
+                bitpix = cards['BITPIX']
                 ADDED_BITPIX = True
             if naxis is None:
-                hdr.update('NAXIS', 0, 'number of array dimensions')
+                update_header(hdr, 'NAXIS', 0, 'number of array dimensions')
+                naxis = cards['NAXIS']
                 ADDED_NAXIS = True
-            # Save changeable values.
-            bitpix = hdr.ascardlist()['BITPIX']
-            naxis = hdr.ascardlist()['NAXIS']
             naxisn = []
-            for n in xrange(1,999):
-                if hdr.get('NAXIS%d' % n) is not None:
-                    naxisn.append(hdr.ascardlist()['NAXIS%d' % n])
+            for n in range(1,999):
+                if 'NAXIS%d' % n in hdr:
+                    naxisn.append(cards['NAXIS%d' % n])
                 else:
                     break
             # Load header into appropriate HDU.
             if simple is not None:
-                hdu = pyfits.PrimaryHDU(header=hdr)
+                hdu = fits.PrimaryHDU(header=hdr)
             elif xtension == 'IMAGE':
-                hdu = pyfits.ImageHDU(header=hdr)
+                hdu = fits.ImageHDU(header=hdr)
             elif xtension == 'BINTABLE':
-                hdu = pyfits.BinTableHDU(header=hdr)
+                hdu = fits.BinTableHDU(header=hdr)
             elif xtension == 'TABLE':
-                hdu = pyfits.TableHDU(header=hdr)
+                hdu = fits.TableHDU(header=hdr)
             else:
                 raise DARMAError('Invalid header!  No SIMPLE or XTENSION keywords.')
             # Fix any bad keywords PyFITS won't prior to verification.
-            for card in hdu.header.ascardlist():
-                #if card.key.count(' ') and not card.key.startswith('HIERARCH '):
-                if card.key.count(' ') and not isinstance(card, pyfits.core._Hierarch):
-                    new_key = card.key.replace(' ', '_')
+            for card in get_cards(hdu.header):
+                if get_keyword(card).count(' ') and not is_hierarch(card):
+                    new_keyword = get_keyword(card).replace(' ', '_')
                     if option != 'silentfix':
-                        print('WARNING -- renaming invalid key %s to %s' % (card.key, new_key))
-                    hdu.header.rename_key(card.key, new_key)
+                        print('WARNING -- renaming invalid keyword %s to %s' % (get_keyword(card), new_keyword))
+                    rename_keyword(hdu.header, get_keyword(card), new_keyword)
             # Verify header within the HDU and copy back.
             hdu.verify(option=option)
             hdr = hdu.header
@@ -365,23 +397,32 @@ class header(object):
             if ADDED_BITPIX:
                 hdr.__delitem__('BITPIX')
             else:
-                hdr.update(bitpix.key, bitpix.value, bitpix.comment)
+                update_header(hdr, get_keyword(bitpix), bitpix.value, bitpix.comment)
             if ADDED_NAXIS:
                 hdr.__delitem__('NAXIS')
             else:
-                hdr.update(naxis.key, naxis.value, naxis.comment)
+                update_header(hdr, get_keyword(naxis), naxis.value, naxis.comment)
             n = ''
             if len(naxisn):
                 card = naxisn[0]
-                hdr.update(card.key, card.value, card.comment, after='NAXIS')
+                update_header(hdr, get_keyword(card), card.value, card.comment, after='NAXIS')
                 n = 1
                 for card in naxisn[1:]:
-                    hdr.update(card.key, card.value, card.comment, after='NAXIS%d' % n)
+                    update_header(hdr, get_keyword(card), card.value, card.comment, after='NAXIS%d' % n)
                     n += 1
             if extend is not None:
-                hdr.update(extend.key, extend.value, extend.comment, after='NAXIS%s' % n)
+                update_header(hdr, get_keyword(extend), extend.value, extend.comment, after='NAXIS%s' % n)
             self._hdr = hdr
             self._IS_VERIFIED = True
+        #FIXME find out why this is necessary
+        if option == 'silentfix' and self._hdr is not None:
+            for keyword in self._hdr.keys():
+                try:
+                    value = self._hdr[keyword]
+                except ValueError as e:
+                    self._hdr.__delitem__(keyword)
+        #FIXME
+        self._set_attributes()
 
     def as_eclipse_header(self):
 
@@ -401,9 +442,19 @@ class header(object):
                 value = card.value[:69]
             else:
                 value = card.value
-            e_hdr.append(card.key, value, card.comment)
+            e_hdr.append(get_keyword(card), value, card.comment)
         e_hdr.append('END', '', '')
         return e_hdr
+
+    def index(self, keyword):
+
+        '''
+           Return the integer index of the keyword in this header.
+
+             keyword: a string keyword value
+        '''
+
+        return _get_index(self.hdr, keyword)
 
     def info(self):
 
@@ -437,7 +488,6 @@ class header(object):
         '''
 
         return 80
-        #return self.card_list[0].length
 
     def block_size(self):
 
@@ -447,7 +497,32 @@ class header(object):
         '''
 
         return 2880
-        #return self.item_size*36
+
+    def get_blank(self):
+
+        '''
+           Get all blank cards as a list of string texts.
+        '''
+
+        return [card.value for card in self.itercards() if get_keyword(card) == '']
+
+    def get_blank_cards(self):
+
+        '''
+           Get all blank card values as a list of header cards where
+           applicable (i.e., if no proper header cards exist in the
+           blank card values, the returned card list is empty).
+        '''
+
+        blanks = self.get_blank()
+        cards = []
+        for blank in blanks:
+            try:
+                card = fromstring(blank, verify='exception')
+                cards.append(card)
+            except:
+                pass
+        return cards
 
     def get_comment(self):
 
@@ -455,7 +530,7 @@ class header(object):
            Get all comments as a list of string texts.
         '''
 
-        return self.hdr.get_comment()
+        return get_comment(self.hdr)
 
     def get_comment_cards(self):
 
@@ -465,16 +540,15 @@ class header(object):
            returned card list is empty).
         '''
 
-        comments = self.hdr.get_comment()
+        comments = self.get_comment()
         cards = []
         for comment in comments:
-            card = pyfits.Card().fromstring(comment)
             try:
-                card.verify('exception')
+                card = fromstring(comment, verify='exception')
                 cards.append(card)
             except:
                 pass
-        return pyfits.CardList(cards=cards)
+        return cards
 
     def get_history(self):
 
@@ -482,7 +556,7 @@ class header(object):
            Get all histories as a list of string texts.
         '''
 
-        return self.hdr.get_history()
+        return get_history(self.hdr)
 
     def get_history_cards(self):
 
@@ -492,16 +566,15 @@ class header(object):
            returned card list is empty).
         '''
 
-        historys = self.hdr.get_history()
+        historys = self.get_history()
         cards = []
         for history in historys:
-            card = pyfits.Card().fromstring(history)
             try:
-                card.verify('exception')
+                card = fromstring(history, verify='exception')
                 cards.append(card)
             except:
                 pass
-        return pyfits.CardList(cards=cards)
+        return cards
 
     def add_blank(self, value='', before=None, after=None):
 
@@ -515,9 +588,10 @@ class header(object):
 
         values = fold_string(value, num=72).split('\n')
         if after:
+            # cards are added in reverse order
             values.reverse()
         for value in values:
-            self.hdr.add_blank(value=value, before=before, after=after)
+            add_blank(self._hdr, value=value, before=before, after=after)
         self._IS_VERIFIED = False
 
     def add_comment(self, value, before=None, after=None):
@@ -532,9 +606,10 @@ class header(object):
 
         values = fold_string(value, num=72).split('\n')
         if after:
+            # cards are added in reverse order
             values.reverse()
         for value in values:
-            self.hdr.add_comment(value=value, before=before, after=after)
+            self._hdr.add_comment(value=value, before=before, after=after)
         self._IS_VERIFIED = False
 
     def add_history(self, value, before=None, after=None):
@@ -549,38 +624,56 @@ class header(object):
 
         values = fold_string(value, num=72).split('\n')
         if after:
+            # cards are added in reverse order
             values.reverse()
         for value in values:
-            self.hdr.add_history(value=value, before=before, after=after)
+            self._hdr.add_history(value=value, before=before, after=after)
         self._IS_VERIFIED = False
 
-    def rename_key(self, oldkey, newkey, force=True):
+    def rename_keyword(self, oldkeyword, newkeyword):
 
         '''
            Rename a card's keyword in the header.
 
-           oldkey: old keyword, can be a name or index.
-           newkey: new keyword, must be a string.
-            force: if new key name already exist, force to have duplicate name.
+           oldkeyword: old keyword, can be a name or index.
+           newkeyword: new keyword, must be a string.
         '''
 
-        if oldkey in ['COMMENT', 'HISTORY', '']:
-            raise DARMAError('Cannot rename %s key!' % oldkey)
-        if newkey in ['COMMENT', 'HISTORY', '']:
-            raise DARMAError('Cannot rename %s key!' % newkey)
+        if oldkeyword in ['COMMENT', 'HISTORY', '']:
+            raise DARMAError('Cannot rename existing %s keyword!' % oldkeyword)
+        if newkeyword in ['COMMENT', 'HISTORY', '']:
+            raise DARMAError('Cannot rename to %s keyword!' % newkeyword)
         try:
-            self.hdr.rename_key(oldkey, newkey, force=force)
+            card = getattr(self, oldkeyword.replace(' ', '_'))
+            rename_keyword(self._hdr, oldkeyword, newkeyword)
+            setattr(self, newkeyword.replace(' ', '_'), card)
+            delattr(self, oldkeyword.replace(' ', '_'))
             self._IS_VERIFIED = False
         except Exception as e:
-            raise DARMAError('Error renaming %s in header: %s' % (oldkey, e))
+            raise DARMAError('Error renaming %s in header: %s' % (oldkeyword, e))
+
+    def rename_key(self, oldkey, newkey):
+
+        '''
+           Synonym for rename_keyowrd()
+
+           Rename a card's keyword in the header.
+
+           oldkey: old keyword, can be a name or index.
+           newkey: new keyword, must be a string.
+        '''
+
+        self.rename_keyword(oldkey, newkey)
 
     def dump(self):
 
         '''
-           Dump the contents of the header to the screen.
+           Dump the contents of the header to the screen (less the END
+           card and padding blank cards).
         '''
 
-        print(self.card_list)
+        for card in self.cards:
+            print(get_cardimage(card))
 
     def new(self):
 
@@ -608,16 +701,18 @@ class header(object):
                    > h['BITPIX'] = 8
                    > h._IS_VERIFIED = True  #prevents automatic verification
                    > h['NAXIS'] = 0
-                   > h.card_list
+                   > h.cards
                    SIMPLE  =                    T / conforms to FITS standard
                    BITPIX  =                    8 / array data type
                    NAXIS   =                    0 / number of array dimensions
         '''
 
-        self.hdr = pyfits.Header()
+        #FIXME
+        #FIXME look into returning a new header leaving this one intact
+        #FIXME
+
+        self._hdr = fits.Header()
         self._IS_VERIFIED = True
-        if not self.hdr:
-            raise DARMAError('Error creating new header')
         return self
 
     def default(self, type='primary'):
@@ -643,72 +738,89 @@ class header(object):
         '''
 
         if type is 'primary':
-            self.hdr = pyfits.PrimaryHDU().header
+            self.hdr = fits.PrimaryHDU().header
         elif type is 'image':
-            self.hdr = pyfits.ImageHDU().header
+            self.hdr = fits.ImageHDU().header
         else:
             raise DARMAError('type MUST be either "primary" or "image"!')
-        self._IS_VERIFIED = False
-        if not self.hdr:
+        if not isinstance(self._hdr, fits.Header):
             raise DARMAError('Error creating default header')
+        self._IS_VERIFIED = True
+        self._set_attributes()
         return self
 
-    def add(self, key, value, comment=None):
+    def add(self, keyword, value, comment=None):
 
         '''
            Synonym for append().
         '''
 
-        self.append(key, value, comment)
+        self.append(keyword, value, comment)
 
-    def add_after(self, after, key, value, comment=None):
+    def add_after(self, after, keyword, value, comment=None):
 
         '''
-           Add a new key-value-comment tuple after an existing key.
+           Add a new keyword-value-comment tuple after an existing keyword.
+
+               after: existing keyword to add after
+             keyword: keyword string
+               value: value
+             comment: comment string
         '''
 
         try:
-            if key == 'COMMENT':
-                result.add_comment(value, after=after)
-            elif key == 'HISTORY':
-                result.add_history(value, after=after)
-            elif key == '':
-                result.add_blank(value, after=after)
+            if keyword == 'COMMENT':
+                self.add_comment(value, after=after)
+            elif keyword == 'HISTORY':
+                self.add_history(value, after=after)
+            elif keyword == '':
+                self.add_blank(value, after=after)
             else:
-                self.update(key, value, comment=comment, after=after)
+                self.update(keyword, value, comment=comment, after=after)
         except Exception as e:
-            raise DARMAError('Error adding %s to header: %s' % (repr((key, value, comment)), e))
+            raise DARMAError('Error adding %s to header: %s' % (repr((keyword, value, comment)), e))
 
-    def append(self, key, value, comment=None):
+    def append(self, keyword, value, comment=None, force=False):
 
         '''
-           Append a new key-value-comment card to the end of the header.  If
-           the key exists, it is overwritten.
+           Append a new keyword-value-comment card to the end of the
+           header.  If the keyword exists, it is overwritten.
+
+             keyword: keyword string
+               value: value
+             comment: comment string
+               force: force appending to end of header
+
+           NOTE: By default, Astropy/PyFITS group BLANK, COMMENT and
+                 then HISTORY cards at the end of a header, appending
+                 normal card at the bottom, before these special cards.
+
+                 Force overrides this behavior and appends any card to
+                 the end of the header.
         '''
 
-        # PyFITS does not consider terminal history, comment, or blank cards
-        # when appending and will always add a new keyword before them.  Use
-        # the numeric index to override this.
-        last_key = len(self.card_list)-1
+        last_keyword = None
+        if force:
+            last_keyword = len(self.cards)-1
         try:
-            if key == 'COMMENT':
-                self.add_comment(value, after=last_key)
-            elif key == 'HISTORY':
-                self.add_history(value, after=last_key)
-            elif key == '':
-                self.add_blank(value, after=last_key)
+            if keyword == 'COMMENT':
+                self.add_comment(value, after=last_keyword)
+            elif keyword == 'HISTORY':
+                self.add_history(value, after=last_keyword)
+            elif keyword == '':
+                self.add_blank(value, after=last_keyword)
             else:
-                if self.has_key(key):
-                    del self[key]
-                self.update(key, value, comment=comment, after=last_key)
+                if keyword in self:
+                    del self[keyword]
+                self.update(keyword, value, comment=comment, after=last_keyword)
         except Exception as e:
-            raise DARMAError('Error adding %s to header: %s' % (repr((key, value, comment)), e))
+            raise DARMAError('Error adding %s to header: %s' % (repr((keyword, value, comment)), e))
 
     def fromstring(self, cardstring):
 
         '''
            Append a new standard card from a 80 character card string
-           overwriting when the same named card.key exists:
+           overwriting when the same named card.keyword exists:
 
            'SIMPLE  =                    T / conforms to FITS standard...'
 
@@ -719,56 +831,45 @@ class header(object):
 
            An attempt is made to standardize the cardstring by padding
            appropriately and truncating the comment when necessary.  No
-           attempt is made to correct the key and value beyond capitalizing
-           the key.
+           attempt is made to correct the keyword and value beyond
+           capitalizing the keyword.
         '''
 
-        key, value, comment = '', '', ''
-        index = cardstring.find('=')
-        if index == -1:
-            raise DARMAError('ERROR -- Incorrectly formatted cardstring: no \'=\' !')
-        key, valuecomment = cardstring[:index], cardstring[index+1:]
-        index = valuecomment.find('/')
-        if index != -1:
-            value, comment = valuecomment[:index], valuecomment[index+1:]
-        else:
-            value, comment = valuecomment, ''
-        card = pyfits.Card().fromstring('%-8s= %20s / %-47s' % (key.strip().upper(), value.strip(), comment.strip()[:47]))
-        card.verify(option=self.option)
-        if card.key in self:
-            del self[card.key]
-        self.card_list.append(card)
-        self._IS_VERIFIED = False
+        card = fromstring(cardstring, verify=self.option)
+        if get_keyword(card) in self:
+            del self[get_keyword(card)]
+        self.append(get_keyword(card), card.value, comment=card.comment)
 
-    def modify(self, key, value, comment=None):
+    def modify(self, keyword, value, comment=None):
 
         '''
-           Modify the value and/or comment of an existing key.  If the key does
-           not exist, it is appended to the end of the header.
+           Modify the value and/or comment of an existing keyword.  If
+           the keyword does not exist, it is appended to the end of the
+           header.
 
            Synonym for update without the before and after options.
         '''
 
         try:
-            self.update(key, value, comment=comment)
+            self.update(keyword, value, comment=comment)
         except Exception as e:
             raise DARMAError('Error updating %s in header: %s' % (repr((key, value, comment)), e))
 
-    def update(self, key, value, comment=None, before=None, after=None):
+    def update(self, keyword, value, comment=None, before=None, after=None):
 
         '''
            Update a header keyword.  If the keyword doews not exists, it
            will be appended.
         '''
 
-        if key in ['COMMENT', 'HISTORY', '']:
-            raise DARMAError('Cannot update %s key!' % key)
+        if keyword in ['COMMENT', 'HISTORY', '']:
+            raise DARMAError('Cannot update %s keyword!' % keyword)
         try:
-            self.hdr.update(key, value, comment=comment, before=before,
-                            after=after)
+            update_header(self._hdr, keyword, value, comment=comment,
+                            before=before, after=after)
             self._IS_VERIFIED = False
         except Exception as e:
-            raise DARMAError('Error updating %s in header: %s' % (repr((key, value, comment)), e))
+            raise DARMAError('Error updating %s in header: %s' % (repr((keyword, value, comment)), e))
 
     def copy(self):
 
@@ -780,11 +881,10 @@ class header(object):
         '''
 
         result = header()
-        if self.hdr is not None:
-            result.hdr = self.hdr.copy()
-            result.option = self.option
-            if not result.hdr:
-                raise DARMAError('Error copying header!')
+        result.hdr = self.hdr.copy()
+        result.option = self.option
+        if not isinstance(result.hdr, fits.Header):
+            raise DARMAError('Error copying header!')
         return result
 
     def merge(self, other, clobber=True):
@@ -794,7 +894,7 @@ class header(object):
 
            Returns a new header combining the values of this header with those
            of another header.  Header cards (keyword objects) from other are
-           added to self.  If a card.key already exists in self, it is not
+           added to self.  If a card.keyword already exists in self, it is not
            overwritten unless clobber is True.
         '''
 
@@ -803,37 +903,36 @@ class header(object):
         # remove as the add_blank method requires this to work properly.
         result.append('_DUMMY_', '')
         for card in other:
-            if card.key == 'COMMENT':
+            if get_keyword(card) == 'COMMENT':
                 result.add_comment(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
-            elif card.key == 'HISTORY':
+            elif get_keyword(card) == 'HISTORY':
                 result.add_history(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
-            elif card.key == '':
+            elif get_keyword(card) == '':
                 result.add_blank(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
-            elif not result.hdr.has_key(card.key) or clobber:
-                #if card.key.startswith('HIERARCH '):
-                if isinstance(card, pyfits.core._Hierarch):
-                    key = 'HIERARCH '+card.key
+            elif get_keyword(card) not in result.hdr or clobber:
+                if is_hierarch(card):
+                    keyword = 'HIERARCH '+get_keyword(card)
                 else:
-                    key = card.key
-                result.update(key, card.value, comment=card.comment, before='_DUMMY_')
+                    keyword = get_keyword(card)
+                result.update(keyword, card.value, comment=card.comment, before='_DUMMY_')
                 result._IS_VERIFIED = True
         # Remove temporary keyword.
         del result['_DUMMY_']
         # Make sure unnecessary extension keywords are removed.  This is a
         # primary header, not an extension.
-        ext_keys = ['EXTEND', 'XTENSION', 'EXTNAME', 'EXTVER', 'PCOUNT',
-                    'GCOUNT']
-        for key in ext_keys:
-            if result[key] is not None:
-                if key == 'EXTNAME':
-                    result.rename_key('EXTNAME', '_EXTNAME')
-                if key == 'EXTVER':
-                    result.rename_key('EXTVER', '_EXTVER')
+        ext_keywords = ['EXTEND', 'XTENSION', 'EXTNAME', 'EXTVER', 'PCOUNT',
+                        'GCOUNT']
+        for keyword in ext_keywords:
+            if result[keyword] is not None:
+                if keyword == 'EXTNAME':
+                    result.rename_keyword('EXTNAME', '_EXTNAME')
+                if keyword == 'EXTVER':
+                    result.rename_keyword('EXTVER', '_EXTVER')
                 else:
-                    del result[key]
+                    del result[keyword]
                 result._IS_VERIFIED = True
         # Allow new header to be verified all at once.
         result._IS_VERIFIED = False
@@ -851,13 +950,13 @@ class header(object):
            where necessary if clobber is true.
         '''
 
-        hdu = pyfits_open(filename, mode='update', memmap=1)
-        orig_hdr = header(card_list=hdu[0].header.ascardlist(), option=self.option)
+        hdu = fits_open(filename, mode='update', memmap=1)
+        orig_hdr = header(cardlist=get_cards(hdu[0].header), option=self.option)
         self_hdr = self.copy()
-        naxis_keys = ['NAXIS%d' % val for val in xrange(1, self_hdr['NAXIS']+1)]
-        ignored_keys =  ['SIMPLE', 'BITPIX', 'NAXIS'] + naxis_keys
-        for key in ignored_keys:
-            del self_hdr.hdr[key]
+        naxis_keywords = ['NAXIS%d' % val for val in range(1, self_hdr['NAXIS']+1)]
+        ignored_keywords =  ['SIMPLE', 'BITPIX', 'NAXIS'] + naxis_keywords
+        for keyword in ignored_keywords:
+            del self_hdr._hdr[keyword]
         new_hdr = orig_hdr.merge(self_hdr, clobber=clobber)
         del self_hdr
         if new_hdr['ECLIPSE'] == 1:
@@ -876,36 +975,26 @@ class header(object):
         import signal
         signal.signal(signal.SIGINT,signal.default_int_handler)
 
-    def get_valstr(self, key):
+    def __len__(self):
 
         '''
-           Return a keyword value as a string. DEPRECATED
+           Number of header cards (excludes the END card).
         '''
 
-        return str(self.get_value(key))
+        return len(get_cards(self.hdr))
 
-    def get_commentstr(self, key):
-
-        '''
-           Return a keyword comment as a string.
-        '''
-
-        try:
-            return self.card_list[key].comment
-        except:
-            return None
-
-    def get_value(self, key):
+    def __getitem__(self, keyword):
 
         '''
            Get a keyword value in its native datatype.
         '''
 
-        if self.hdr is not None:
-            value = self.hdr.get(key, default=None)
+        keyword = _strip_keyword(keyword)
+        if self._hdr is not None:
+            value = get_value(self.hdr, keyword, default=None)
         else:
             value = None
-        if isinstance(value, pyfits.Undefined):
+        if isinstance(value, fits.Undefined):
             return 'Undefined'
         else:
             # Allow very long strings to be returned intact.
@@ -915,93 +1004,106 @@ class header(object):
                 value = value[1:-2]
             return value
 
-    def has_key(self, key):
+    def __setitem__(self, keyword, value):
 
         '''
-           Return the evaluation of the existance of a keyword in the header.
+           Add an item from value=value or value=(value, comment),
+           overwriting if it exists.
         '''
 
-        return self.hdr.has_key(key)
-
-    def __len__(self):
-
-        '''
-           Number of header cards (excludes the END card).
-        '''
-
-        return len(self.hdr.items())
-
-    def __getitem__(self, key):
-
-        '''
-           Get a keyword value in its native datatype.
-        '''
-
-        return self.get_value(key)
-
-    def __setitem__(self, key, value):
-
-        '''
-           Add an item from value=value or value=(value, comment), overwriting if
-           it exists.
-        '''
-
-        # Check if incoming key is nonstandard (i.e., should be HIERARCH).
+        # Check if incoming keyword is nonstandard (i.e., should be HIERARCH).
         allowed_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ '
         standard = True
-        for char in key.upper():
+        for char in keyword.upper():
             if char not in allowed_chars:
                 standard = False
                 break
-        if (key.count(' ') or len(key) > 8 or not standard) and \
-           not key.upper().startswith('HIERARCH'):
-            key = 'HIERARCH %s' % key
-
+        if (keyword.count(' ') or len(keyword) > 8 or not standard) and \
+           not keyword.startswith('HIERARCH'):
+            keyword = 'HIERARCH %s' % keyword
         comment = None
         if isinstance(value, tuple):
             value, comment = value
-        if key == 'COMMENT':
+        if keyword == 'COMMENT':
             self.add_comment(value)
-        elif key == 'HISTORY':
+        elif keyword == 'HISTORY':
             self.add_history(value)
-        elif key == '':
+        elif keyword == '':
             self.add_blank(value)
-        elif self.has_key(key):
-            self.modify(key, value, comment)
+        elif keyword in self:
+            self.modify(keyword, value, comment)
         else:
-            self.add(key, value, comment)
-
-        card = self.card_list[key]
-        if card.key not in ['COMMENT', 'HISTORY', '']:
-            attr = card.key.replace('-', '_').replace(' ', '_')
+            self.add(keyword, value, comment)
+        # Prefer the unverified cards for performance.
+        # Astropy/PyFITS does already do some on-demand verification.
+        # This provides a method to trigger it when it does not happen
+        # automatically.
+        keyword = _strip_keyword(keyword)
+        if keyword in self._cards:
+            card = self._cards[keyword]
+        else:
+            card = self.cards[keyword]
+        if get_keyword(card) not in ['COMMENT', 'HISTORY', '']:
+            attr = get_keyword(card).replace('-', '_').replace(' ', '_')
             for char in attr.upper():
                 if char not in allowed_chars:
                     attr = attr.replace(char, '_')
-            #if card.key.startswith('HIERARCH '):
-            if isinstance(card, pyfits.core._Hierarch):
+            if is_hierarch(card):
                 attr = 'HIERARCH_%s' % attr
             setattr(self, attr, card)
-
-    def __delitem__(self, key):
-
-        '''
-           Delete card(s) with the name key.
-        '''
-
-        self.hdr.__delitem__(key)
         self._IS_VERIFIED = False
 
-        if hasattr(self, key):
-            delattr(self, key)
-
-    def __contains__(self, key):
+    def __delitem__(self, keyword):
 
         '''
-           Returns existence of keyword key in header.
+           Delete card(s) with the name keyword.
+        '''
+
+        self._hdr.__delitem__(keyword)
+        self._IS_VERIFIED = False
+
+        if hasattr(self, keyword):
+            delattr(self, keyword)
+
+    #def __getattribute__(self, name):
+
+    #    '''
+    #       x.__getattribute__('name') <==> x.name
+    #    '''
+
+    #    return object.__getattribute__(self, name)
+
+    #def __setattr__(self, name, value):
+
+    #    '''
+    #       x.__setattr__('name', value) <==> x.name = value
+    #    '''
+
+    #    if name.upper() == name:
+    #        self[name] = value
+    #    else:
+    #        object.__setattr__(self, name, value)
+
+    #def __delattr__(self, name):
+
+    #    '''
+    #       x.__delattr__('name') <==> del x.name
+    #    '''
+
+    #    if hasattr(self, keyword):
+    #        delattr(self, keyword)
+    #    if keyword in self._hdr:
+    #        self._hdr.__delitem__(keyword)
+    #    self._IS_VERIFIED = False
+
+    def __contains__(self, keyword):
+
+        '''
+           Returns existence of keyword in header.
            x.__contains__(y) <==> y in x
         '''
 
-        return self.has_key(key)
+        return self.hdr.__contains__(_strip_keyword(keyword))
 
     def __repr__(self):
 
@@ -1009,26 +1111,26 @@ class header(object):
            x.__repr__() <==> repr(x)
         '''
 
-        repr_list = []
-
-        for card in self:
-            if card.key != '' and card.value != '':
-                    repr_list.append(card.__repr__())
-        if len(repr_list):
-            repr_list.append('END%s' % (' '*(self.item_size()-3)))
-
-        return_str = str(self.__class__)+'\n'
-        if len(repr_list) > 23:
-            for repr in repr_list[:10]:
-                return_str += repr+'\n'
-            return_str += '.\n.\n.\n'
-            for repr in repr_list[-10:]:
-                return_str += repr+'\n'
-        else:
-            for repr in repr_list:
-                return_str += repr+'\n'
-
-        return return_str[:-1]
+        return_string = str(self.__class__)+'\n'
+        if self._hdr is None:
+            return return_string[:-1]
+        if len(self.cards):
+            repr_list = []
+            for card in self.itercards():
+                if get_keyword(card) != '' and card.value != '':
+                        repr_list.append(get_cardimage(card))
+            if len(repr_list):
+                repr_list.append('END%s' % (' '*(self.item_size()-3)))
+            if len(repr_list) > 23:
+                for repr in repr_list[:10]:
+                    return_string += repr+'\n'
+                return_string += '.\n.\n.\n'
+                for repr in repr_list[-10:]:
+                    return_string += repr+'\n'
+            else:
+                for repr in repr_list:
+                    return_string += repr+'\n'
+        return return_string[:-1]
 
     def __str__(self):
 
@@ -1036,52 +1138,48 @@ class header(object):
            x.__str__() <==> str(x)
         '''
 
-        string  = self.hdr.__str__()
-        string += '\nEND%s' % (' '*(self.item_size()-3))
-        return string
+        return_string  = ''
+        if self._hdr is None:
+            return return_string
+        if len(self.cards):
+            block_size = self.block_size()
+            for card in self.itercards():
+                return_string += get_cardimage(card)
+            return_string += 'END'
+            remainder = len(return_string) % block_size
+            if remainder != 0:
+                return_string += ' '*(block_size-remainder)
+        return return_string
 
     def __iter__(self):
 
         '''
            x.__iter__() <==> iter(x)
 
-           Iterate over the cards in this header, not just the keywords.
-           Use iterkeywords()/iterkeys() to iterate over the keywords.
+           Iterate over the keywords in this header.
         '''
 
-        return self.card_list.__iter__()
-
-    def items(self, comments=True):
-
-        '''
-           H.items() -> a list of (keyword, value, comment) or (keyword,
-           value) items of H
-
-             comments: include comments in item tuple
-        '''
-
-        if comments:
-            return [(card.key, card.value, card.comment) for card in self]
-        else:
-            return self.hdr.items()
+        if self._hdr is not None:
+            return self.hdr.__iter__()
+        return iter([])
 
     def keys(self):
 
         '''
            H.keys() -> a list of keywords of H
-
-           Synonym for keywords()
         '''
 
-        return self.keywords()
+        return list(self.hdr.keys())
 
     def keywords(self):
 
         '''
-           H.keys() -> a list of keywords of H
+           H.keywords() -> a list of keywords of H
+
+           Synonym for keys()
         '''
 
-        return self.hdr.keys()
+        return self.keys()
 
     def values(self):
 
@@ -1089,7 +1187,21 @@ class header(object):
            H.values() -> a list of values of H
         '''
 
-        return [card.value for card in self]
+        return [card.value for card in self.cards]
+
+    def items(self, comments=True):
+
+        '''
+           H.items() -> a list of (keyword, value, comment) or
+           (keyword, value) items of H
+
+             comments: include comments in item tuple
+        '''
+
+        if comments:
+            return [(get_keyword(card), card.value, card.comment) for card in self.cards]
+        else:
+            return list(self.hdr.items())
 
     def comments(self):
 
@@ -1097,7 +1209,35 @@ class header(object):
            H.comments() -> a list of comments of H
         '''
 
-        return [card.comment for card in self]
+        return [card.comment for card in self.cards]
+
+    def iterkeys(self):
+
+        '''
+           H.iterkeys() -> an iterator over the keywords of H
+
+           Synonym for __iter__()
+        '''
+
+        return self.__iter__()
+
+    def iterkeywords(self):
+
+        '''
+           H.iterkeywords() -> an iterator over the keywords of H
+
+           Synonym for __iter__()
+        '''
+
+        return self.__iter__()
+
+    def itervalues(self):
+
+        '''
+           H.itervalues() -> an iterator over the values of H
+        '''
+
+        return iter(self.values())
 
     def iteritems(self, comments=True):
 
@@ -1108,36 +1248,15 @@ class header(object):
              comments: include comments in item tuple
         '''
 
-        if comments:
-            return iter([(card.key, card.value, card.comment) for card in self])
-        else:
-            return iter(self.hdr.items())
+        return iter(self.items(comments=comments))
 
-    def iterkeys(self):
+    def itercards(self):
 
         '''
-           H.iterkeys() -> an iterator over the keywords of H
-
-           Synonym for iterkeywords()
+           H.itercards() -> an iterator over the cards in H
         '''
 
-        return self.iterkeywords()
-
-    def iterkeywords(self):
-
-        '''
-           H.iterkeywords() -> an iterator over the keywords of H
-        '''
-
-        return iter(self.keys())
-
-    def itervalues(self):
-
-        '''
-           H.itervalues() -> an iterator over the values of H
-        '''
-
-        return iter([card.value for card in self])
+        return iter(get_cards(self.hdr))
 
     def itercomments(self):
 
@@ -1145,15 +1264,15 @@ class header(object):
            H.itercomments() -> an iterator over the comments of H
         '''
 
-        return iter([card.comment for card in self])
+        return iter(self.comments())
 
     def get_all_headers(self):
 
         '''
            The sole purpose of this method is to call the factory function
            get_headers that creates a list of headers from the headers in
-           file that the current header is loaded from (self.filename).  If
-           the file is single-extension or the filename is not specified,
+           the file that the current header is loaded from (self.filename).
+           If the file is single-extension or the filename is not specified,
            this is a list of one header, a copy of the current header.  If
            the file is multi-extension, this is a list of one primary header
            and N extension headers, where N is the number of extensions.
@@ -1168,49 +1287,46 @@ class header(object):
 
 #-----------------------------------------------------------------------
 
-def getval(filename, key, ext=0):
+def getval(filename, keyword, ext=0, use_fits=False):
 
     '''
-       Get a keyword value from an extension.
+       Get a keyword value from an extension of a FITS image, single- or
+       multi-extension.
 
          filename: filename to get the keyword value from
-              key: keyword string
+          keyword: keyword string
               ext: extension number
+         use_fits: use FITS-handler's getval function instead of simple
+                   Python file access method
 
-       Note: If ext=1 and key exists in ext=0, the first value will be
-             returned.  If ext > 1, only that extension will be searched.
+       NOTE: The FITS-handler's methods tend to be slower for extension
+             0/1 access, but may be faster for extension > 1 access.
     '''
 
-    if ext > 1:
-        return pyfits.getval(filename=filename, key=key, ext=ext)
-    fd = file(filename, 'rb')
-    END = False
-    while not END:
+    if use_fits:
+        return fits.getval(filename, keyword, ext=ext)
+    else:
         if ext >= 0:
-            block = fd.read(2880)
-            if ext != 0:
-                if 'END' in block:
-                    ext -= 1
-            if ext == 0:
-                for i in xrange(0,2880,80):
-                    if ext >= 0:
-                        cardstr = block[i:i+80]
-                        if cardstr.startswith(key):
-                            card = pyfits.Card().fromstring(cardstr)
-                            if key.endswith(card.key):
-                                fd.close()
-                                return card.value
-                        if cardstr.startswith('END'):
-                            ext -= 1
-                    else:
-                        END = True
-                        break
-        else:
-            END = True
-    fd.close()
-    return None
+            with open(filename, 'rb') as fd:
+                for i in range(ext+1):
+                    blocks = b''
+                    while b'END' not in blocks:
+                        # FITS standard puts headers at the start of
+                        # blocks of a fixed size.  The first character
+                        # is guaranteed to be that of a keyword and must
+                        # start with an upper case letter, '_', or '-'.
+                        block = fd.read(2880)
+                        if len(block) == 2880:
+                            if block[0] in b'ABCDEFGHIJKLMNOPQRSTUVWXYZ-_':
+                                blocks += block
+                        else:
+                            break
+            for i in range(0,len(blocks),80):
+                cardstr = str(blocks[i:i+80].decode())
+                if cardstr.startswith(keyword):
+                    return fromstring(cardstr).value
 
-def get_headers(filename=None, card_list=None):
+def get_headers(filename=None, cardlist=None):
 
     '''
        The sole purpose of this factory function is to create a list of
@@ -1220,20 +1336,20 @@ def get_headers(filename=None, card_list=None):
        extension headers, where N is the number of extensions.
 
           filename: name of a valid FITS file, single- or multi-extension
-         card_list: a list of header cards (80 character strings, NULL
-                    terminated), a pyfits.CardList instance, or the name
+          cardlist: a list of header cards (80 character strings, NULL
+                    terminated), a list of fits.Card instances, or the name
                     of a text file containing the header cards
     '''
 
     headers = []
     if filename is not None:
-        hdus = pyfits_open(filename, memmap=1)
-        headers = [header(card_list=hdu.header.ascardlist()) for hdu in hdus]
+        hdus = fits_open(filename, memmap=1)
+        headers = [header(cardlist=[card for card in get_cards(hdu.header)]) for hdu in hdus]
         hdus.close()
-    elif card_list is not None:
-        for ext in xrange(1000):
+    elif cardlist is not None:
+        for ext in range(999):
             try:
-                headers.append(header(card_list=card_list, extension=ext))
+                headers.append(header(cardlist=cardlist, extension=ext))
             except DARMAError:
                 break
 
@@ -1265,10 +1381,10 @@ def update_header_in_file(filename, keywords, values, comments=[None]):
     if len(comments) != len(keywords):
         raise DARMAError('Input comments list of wrong length!')
 
-    hdus = pyfits_open(filename, mode='update', memmap=1)
+    hdus = fits_open(filename, mode='update', memmap=1)
 
-    for key, val, com in zip(keywords, values, comments):
-        hdus[0].header.update(key, val, com)
+    for keyword, value, comment in zip(keywords, values, comments):
+        update_header(hdus[0].header, keyword, value, comment)
 
     hdus.close(output_verify='fix')
 
@@ -1278,4 +1394,196 @@ def update_header_in_file(filename, keywords, values, comments=[None]):
     # handler to its original state, which is omitted in PyFits.
     import signal
     signal.signal(signal.SIGINT,signal.default_int_handler)
+
+def _is_card_length(card_string):
+    '''
+       str <= 80 characters
+    '''
+
+    return isinstance(card_string, (str, UNICODE_TYPE)) and len(card_string) <= 80
+
+def _has_equals(card_string):
+    '''
+       '=' in str
+    '''
+
+    return '=' in card_string
+
+def _has_spaces(keyword_string):
+    '''
+       ' ' in str
+    '''
+
+    return ' ' in keyword_string
+
+def _has_only_allowed_chars(keyword_string):
+    '''
+       keyword contains only 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'
+    '''
+    allowed_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'
+    for char in keyword_string:
+        if char not in allowed_chars:
+            return False
+    return True
+
+def _is_standard_form(card_string):
+    '''
+       AKEYWORD=                value / comment
+       keyword is all caps, numeric, '-', or '_'
+       '=' at index 8
+       optional ' / ' after value followed by comment
+    '''
+    msg = ''
+    if not _is_card_length(card_string):
+        msg += 'not a string of length <= 80 characters, '
+    if not _has_equals(card_string):
+        msg += 'not a string containing \'=\', '
+    if card_string.split('=') == 2:
+        keyword, value_comment = card_string.split('=')
+        if not _has_only_allowed_chars(keyword.strip()):
+            msg += 'keyword contains disallowed characters, '
+        compressed_value_comment = ''.join(value_comment.split())
+        if compressed_value_comment == '':
+            msg += 'no value (or comment) found, '
+    if not ('=' in card_string and card_string.index('=') == 8):
+        msg += '\'=\' not at index 8 (9th character), '
+    msg = msg[:-2]
+    if msg:
+        return False, msg
+    return True, msg
+
+def _is_hierarch_form(card_string):
+    '''
+       HIERARCH keyword with spaces = value
+       begins with 'HIERARCH '
+       contains '=' between keyword and value
+       comment ignored
+    '''
+    msg = ''
+    if not _is_card_length(card_string):
+        msg += 'not a string of length <= 80 characters, '
+    if not card_string.upper().startswith('HIERARCH '):
+        msg += 'does not start with \'HIERARCH \', '
+    if not _has_equals(card_string):
+        msg += 'not a string containing \'=\', '
+    if card_string.split('=') == 2:
+        keyword, value = card_string.split('=')
+        compressed_keyword = ''.join(keyword.strip().split())
+        if not _has_only_allowed_chars(compressed_keyword):
+            msg += 'keyword contains disallowed characters, '
+        if not _has_spaces(keyword):
+            msg += 'keyword has no spaces, '
+        compressed_value = ''.join(value.split())
+        if compressed_value == '':
+            msg += 'no value found, '
+    msg = msg[:-2]
+    if msg:
+        return False, msg
+    return True, msg
+
+def _is_blank_form(card_string):
+    '''
+       begins with '        ' followed by anything
+    '''
+    msg = ''
+    if not _is_card_length(card_string):
+        msg += 'not a string of length <= 80 characters, '
+    if not card_string.startswith('        '):
+        msg += 'not enough leading spaces for a BLANK card, '
+    msg = msg[:-2]
+    if msg:
+        return False, msg
+    return True, msg
+
+def _is_comment_form(card_string):
+    '''
+       begins with 'COMMENT ' followed by anything
+    '''
+    msg = ''
+    if not _is_card_length(card_string):
+        msg += 'not a string of length <= 80 characters, '
+    if not card_string.upper().startswith('COMMENT '):
+        msg += 'does not start with \'COMMENT \', '
+    msg = msg[:-2]
+    if msg:
+        return False, msg
+    return True, msg
+
+def _is_history_form(card_string):
+    '''
+       begins with 'HISTORY ' followed by anything
+    '''
+    msg = ''
+    if not _is_card_length(card_string):
+        msg += 'not a string of length <= 80 characters, '
+    if not card_string.upper().startswith('HISTORY '):
+        msg += 'does not start with \'HISTORY \', '
+    msg = msg[:-2]
+    if msg:
+        return False, msg
+    return True, msg
+
+def _is_continue_form(card_string):
+    '''
+       begins with 'CONTINUE ' followed by anything
+    '''
+    msg = ''
+    if not _is_card_length(card_string):
+        msg += 'not a string of length <= 80 characters, '
+    if not card_string.upper().startswith('CONTINUE '):
+        msg += 'does not start with \'CONTINUE \', '
+    msg = msg[:-2]
+    if msg:
+        return False, msg
+    return True, msg
+
+def fromstring(cardstring, verify='silentfix'):
+
+    '''
+       Return a new card from a <=80 character card string:
+
+       "KEYWORD =           'value   ' / standard FITS card comment    "
+       "HIERAERCH ESO card = 'value'                                   "
+       "        blank card                                             "
+       "COMMENT card                                                   "
+       "HISTORY card                                                   "
+       "CONTINUE 'card'                                                "
+
+       A standard card has the form of no more than 8 capital letters,
+       numbers, or underscores, a padding of spaces, = at the 9th column,
+       a space followed by a value, a ' / ', then the comment.  A
+       standard card string will have exactly 80 columns (padded by the
+       parser if necessary).  Other types of cards are shown above below
+       the standard card.
+
+       Astonishingly, no version of either PyFITS or Astropy raises an
+       exception upon parsing the cardstring or verifying the resultant
+       card with option 'exception' when not following one of these
+       forms!  At best, a warning is given.  Therefore, this function
+       attempts to determine poor formatting and raises an exception
+       when the cardstring does not match the criteria for any known card
+       format.
+    '''
+
+    # valid cards have:
+    # 1. '=' at index 8 or          # standard KEYWORD card
+    std, stdmsg = _is_standard_form(cardstring)
+    # 2. begin with 'HIERARCH ' or  # HIERARCH keyword card
+    hei, heimsg = _is_hierarch_form(cardstring)
+    # 3. begin with '        ' or   # BLANK card
+    bla, blamsg = _is_blank_form(cardstring)
+    # 4. begin with 'COMMENT ' or   # COMMENT card
+    com, commsg = _is_comment_form(cardstring)
+    # 5. begin with 'HISTORY ' or   # HISTORY card
+    his, hismsg = _is_history_form(cardstring)
+    # 6. begin with 'CONTINUE'      # CONTINUE card
+    con, conmsg = _is_continue_form(cardstring)
+    if not (std or hei or bla or com or his or con):
+        msglist = [stdmsg, heimsg, blamsg, commsg, hismsg, conmsg]
+        msglist = [msg for msg in msglist if msg]
+        raise DARMAError('ERROR -- Incorrectly formatted cardstring (%s): %s' % (cardstring, ', '.join(msglist)))
+    card = fits.Card().fromstring(cardstring)
+    card.verify(option=verify)
+
+    return card
 
