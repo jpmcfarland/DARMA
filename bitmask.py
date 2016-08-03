@@ -6,9 +6,9 @@ __version__ = '@(#)$Revision$'
 
 import pyfits, os
 
-from astro.util.darma.common import Array, pyfits_open
-from astro.util.darma.common import DARMAError, DataStruct, _adjust_index
-from astro.util.darma.pixelmap import pixelmap
+from .common import Array, fits_open
+from .common import DARMAError, DataStruct, _adjust_index
+from .pixelmap import pixelmap
 try:
     range = xrange # Python 2
 except NameError:
@@ -102,8 +102,8 @@ class bitmask(DataStruct):
                 if filename is not None:
                     try:
                         log('bitmask load_bitmask from file: filename=%s, memmap=%s, extension=%s' % (filename, memmap, extension), 'debug')
-                        #self._data = pyfits.getdata(filename, extension)
-                        self._data = pyfits_open(filename, memmap=memmap)[extension].data
+                        #self._data = fits.getdata(filename, extension)
+                        self._data = fits_open(filename, memmap=memmap)[extension].data
                         if datatype and self._data.dtype.name != datatype:
                             log('bitmask load_bitmask convert datatype', 'debug')
                             self._data = self._data.astype(datatype)

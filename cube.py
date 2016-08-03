@@ -4,12 +4,12 @@
 
 __version__ = '@(#)$Revision$'
 
-import pyfits, os
+import os
 
-from astro.util.darma.common import DataStruct, Array, FLOAT, INT, LONG, pyfits_open
-from astro.util.darma.common import DARMAError, _HAS_NUMPY, _datamd5, _update_datamd5
-from astro.util.darma.image import image
-from astro.util.darma.pixelmap import pixelmap
+from .common import fits, DataStruct, Array, FLOAT, INT, fits_open
+from .common import DARMAError, _HAS_NUMPY, _datamd5, _update_datamd5
+from .image import image
+from .pixelmap import pixelmap
 
 class cube(DataStruct):
 
@@ -90,8 +90,8 @@ class cube(DataStruct):
 
             if filename is not None:
                 try:
-                    #_data = pyfits.getdata(filename, extension)
-                    _data = pyfits_open(filename, memmap=memmap)[extension].data
+                    #_data = fits.getdata(filename, extension)
+                    _data = fits_open(filename, memmap=memmap)[extension].data
                 except Exception as e:
                     raise DARMAError('Unable to load data from %s : %s' % (filename, e))
             elif data:
@@ -181,7 +181,7 @@ class cube(DataStruct):
         if not self.data.flags.contiguous:
             self.data = Array.ascontiguousarray(self.data)
 
-        pyfits.writeto(filename=filename, data=self.data, header=hdr,
+        fits.writeto(filename=filename, data=self.data, header=hdr,
                            ext=extension, clobber=clobber)
 
         if update_datamd5:

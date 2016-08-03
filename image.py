@@ -3,13 +3,13 @@
 
 __version__ = '@(#)$Revision$'
 
-import pyfits, math, os
+import math, os
 
-#from astro.util.darma.common import Array, Arrayfft, Arrayfilters
-from astro.util.darma.common import Array, Arrayfft, pyfits_open
-from astro.util.darma.common import DARMAError, _HAS_NUMPY, DataStruct, StatStruct, FLOAT
-from astro.util.darma.pixelmap import pixelmap
-from astro.util.darma.bitmask import bitmask
+#from .common import Array, Arrayfft, Arrayfilters
+from .common import fits, Array, Arrayfft, fits_open
+from .common import DARMAError, _HAS_NUMPY, DataStruct, StatStruct, FLOAT
+from .pixelmap import pixelmap
+from .bitmask import bitmask
 try:
     range = xrange # Python 2
 except NameError:
@@ -278,8 +278,8 @@ class image(DataStruct):
             if filename is not None:
                 try:
                     log('image load_image from file: filename=%s, memmap=%s, extension=%s' % (filename, memmap, extension), 'debug')
-                    #self._data = pyfits.getdata(filename, extension)
-                    self._data = pyfits_open(filename, memmap=memmap)[extension].data
+                    #self._data = fits.getdata(filename, extension)
+                    self._data = fits_open(filename, memmap=memmap)[extension].data
                 except Exception as e:
                     raise DARMAError('Error loading image from %s: %s' % (filename, e))
         else:
@@ -1405,12 +1405,12 @@ def convert(filename, bitpix=16):
              -32 : 'float32',
              -64 : 'float64',
             }
-    np = pyfits.np
+    np = fits.np
     # incorrect/unsupported bitpix value
     if bitpix not in bpmap:
         raise DARMAError('Unsupported bitpix value!  Must be one of %s' % list(bpmap.keys()))
     # open HDUList
-    hdus = pyfits.open(filename, mode='update', memmap=True)
+    hdus = fits_open(filename, mode='update', memmap=True)
     if len(hdus) == 1:
         # SEF
         hdulist = hdus

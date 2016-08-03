@@ -3,15 +3,15 @@
 
 __version__ = '@(#)$Revision$'
 
-import pyfits, math, os
+import math, os
 
-from astro.util.darma.common import Array
-from astro.util.darma.common import DARMAError, _HAS_NUMPY, pyfits_open
-from astro.util.darma.header import header
+from .common import fits, Array
+from .common import DARMAError, _HAS_NUMPY, fits_open, get_cards
+from .header import header
 
 datatypes = {
-             'ascii'  : pyfits.TableHDU,
-             'binary' : pyfits.BinTableHDU,
+             'ascii'  : fits.TableHDU,
+             'binary' : fits.BinTableHDU,
             }
 
 fits_format = {
@@ -83,9 +83,9 @@ class columns(object):
         if self.table is None:
             if self.filename is not None:
                 try:
-                    self.hdus = pyfits_open(self.filename, memmap=self.memmap)
+                    self.hdus = fits_open(self.filename, memmap=self.memmap)
                     self.table = self.hdus[self._name]
-                    self.header = header(card_list=self.table.header.ascardlist())
+                    self.header = header(cardlist=get_cards(self.table.header))
                 except Exception as e:
                     raise DARMAError('Error loading table from %s: %s' % (self.filename, e))
             for name in self.names:
@@ -148,7 +148,7 @@ class columns(object):
             if hasattr(self, attrname):
                 self.__setattr__(attrname, value)
             else:
-                self.table.column.add_col(pyfits.Column(name, fits_format[value.dtype.name], array=value))
+                self.table.column.add_col(fits.Column(name, fits_format[value.dtype.name], array=value))
                 setattr(self, attrname, name)
 
     def __delattr__(self, name):
@@ -352,7 +352,7 @@ class tables(list):
         if self._tables == []:
             if self.filename is not None:
                 try:
-                    hdus = pyfits_open(self.filename, memmap=self.memmap)
+                    hdus = fits_open(self.filename, memmap=self.memmap)
                     if self.table_ids:
                         hdu_names = [hdu.name for hdu in hdus][1:]
                         table_names = [id for id in self.table_ids if id in hdu_names]
