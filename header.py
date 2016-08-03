@@ -97,7 +97,7 @@ class header(object):
         if self._hdr is None:
             cardlist = self.cardlist
             if cardlist is not None:
-                if type(cardlist) == str:
+                if isinstance(cardlist, str):
                     try:
                         with open(cardlist, 'r') as fd:
                             length = self.item_size()
@@ -111,10 +111,10 @@ class header(object):
                     # Raw FITS file.
                     else:
                         header_cards = [fromstring(lines[n:n+length]) for n in range(0, len(lines), length)]
-                elif type(cardlist) == list:
+                elif isinstance(cardlist, list):
                     header_cards = [] # list of Card instances
                     if len(cardlist):
-                        if type(cardlist[0]) in [str, UNICODE_TYPE]:
+                        if isinstance(cardlist[0], (str, UNICODE_TYPE)):
                             indexes = [0]
                             if self.extension != 0:
                                 for i in range(len(cardlist)):
@@ -131,7 +131,7 @@ class header(object):
                                     header_cards.append(fromstring(str(card)))
                                 else:
                                     break
-                        elif type(cardlist[0]) == fits.Card:
+                        elif isinstance(cardlist[0], fits.Card):
                             header_cards = cardlist
                         else:
                             raise DARMAError('cardlist not in correct format!')
@@ -902,7 +902,7 @@ class header(object):
         # Temporary keyword to act as a marker for the last keyword.  Do not
         # remove as the add_blank method requires this to work properly.
         result.append('_DUMMY_', '')
-        for card in other:
+        for card in other.cards:
             if get_keyword(card) == 'COMMENT':
                 result.add_comment(card.value, before='_DUMMY_')
                 result._IS_VERIFIED = True
@@ -998,7 +998,7 @@ class header(object):
             return 'Undefined'
         else:
             # Allow very long strings to be returned intact.
-            if type(value) == str and value.count('CONTINUE'):
+            if isinstance(value, str) and value.count('CONTINUE'):
                 while value.count('CONTINUE'):
                     value = '%s%s' % (value[:value.find('CONTINUE')-3], value[value.find('CONTINUE')+11:])
                 value = value[1:-2]
