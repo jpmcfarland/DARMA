@@ -5,9 +5,9 @@ __version__ = '@(#)$Revision$'
 
 import math
 
-from astro.util.darma.common import Array, Arrayrandom
-from astro.util.darma.common import DARMAError, _HAS_NUMPY
-from astro.util.darma.image import image
+from .common import Array, Arrayrandom
+from .common import DARMAError, _HAS_NUMPY
+from .image import image
 
 class image_generator:
 
