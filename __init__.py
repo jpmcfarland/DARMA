@@ -3,10 +3,10 @@
 DARMA
 ==========================================================================
 
-A Data Access, Representation, and MAnipulation interface using PyFITS for
-FITS input/ouput and NumPy for Array manipulation, adapted from ESO's
-Eclipse library Python interface and some of its C-code
-(http://www.eso.org/eclipse/).
+A Data Access, Representation, and MAnipulation interface using
+AstroPy/PyFITS for FITS input/ouput and NumPy for Array manipulation,
+adapted from ESO's Eclipse library Python interface and some of its
+C-code (http://www.eso.org/eclipse/).
 
 --------------------------------------------------------------------------
 
@@ -25,11 +25,13 @@ Author: John P. McFarland <mcfarland@astro.rug.nl>
 ==========================================================================
 
 This package provides a number of modules currently interfacing with the
-PyFITS module to represent many forms of FITS data.  The PyFITS module was
-developed by Space Telescope Science Institute (STScI) and provides an
-interface between FITS images and NumPy arrays.  NumPy was also developed
-by STScI.
+AstroPy.io.fits/PyFITS module to represent many forms of FITS data.  The
+PyFITS module was developed by Space Telescope Science Institute (STScI)
+and provides an interface between FITS images and NumPy arrays.  The
+AstroPy.io.fits module is a port of the PyFITS module by the AstroPy
+project.  NumPy was also developed by STScI.
 
+http://www.astropy.org/
 http://www.stsci.edu/resources/software_hardware/pyfits
 http://numpy.scipy.org/
 
@@ -67,5 +69,5 @@ In addition the package provides:
 
 __version__ = '@(#)$Revision$'
 
-from astro.util.darma import bitmask, common, cube, header, image, image_generator, pixelmap, tables
+from . import bitmask, common, cube, header, image, image_generator, pixelmap, tables
 
