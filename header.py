@@ -944,7 +944,7 @@ class header(object):
         '''
 
         hdu = fits_open(filename, mode='update', memmap=1)
-        orig_hdr = header(cardlist=get_cards(hdu[0].header), option=self.option)
+        orig_hdr = header(cardlist=list(get_cards(hdu[0].header)), option=self.option)
         self_hdr = self.copy()
         naxis_keywords = ['NAXIS%d' % val for val in range(1, self_hdr['NAXIS']+1)]
         ignored_keywords =  ['SIMPLE', 'BITPIX', 'NAXIS'] + naxis_keywords
@@ -959,7 +959,6 @@ class header(object):
 
         hdu[0].header = new_hdr.hdr
         hdu[0].update_header()
-        self.hdr = hdu[0].header
         hdu.close(output_verify=self.option)
         # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
         # Under certain circumstances the signal handler is redefined to
@@ -1012,7 +1011,7 @@ class header(object):
                 standard = False
                 break
         if (keyword.count(' ') or len(keyword) > 8 or not standard) and \
-           not keyword.startswith('HIERARCH'):
+           not keyword.startswith('HIERARCH '):
             keyword = 'HIERARCH %s' % keyword
         comment = None
         if isinstance(value, tuple):
