@@ -28,7 +28,7 @@ class header(object):
     _IS_VERIFIED = False
 
     def __init__(self, filename=None, extension=0, cardlist=None,
-                 option='silentfix', *args, **kwargs):
+                 option='silentfix'):
 
         '''
            Create a new header object.
@@ -155,11 +155,11 @@ class header(object):
                     raise DARMAError('Error loading header from %s: %s' % (self.filename, e))
             else:
                 self._hdr = fits.Header()
-            self._cards = get_cards(self._hdr)
         else:
             if not isinstance(self._hdr, fits.Header):
                 raise DARMAError('%s must be a %s instance!' % (self._hdr, fits.Header))
-        self.verify(option=self.option)
+        # Set the initial _cards attribute from the verified header property
+        self._cards = get_cards(self.hdr)
 
     def _set_attributes(self):
 
@@ -186,7 +186,7 @@ class header(object):
         '''
         if self._hdr is None:
             self.load()
-        self.verify()
+        self.verify(option=self.option)
 
         return self._hdr
 
@@ -205,7 +205,7 @@ class header(object):
            header 'deleter' method
         '''
 
-        del self._hdr
+        del self._hdr, self.cards
         self._hdr = None
 
     hdr = property(_get_hdr, _set_hdr, _del_hdr,
@@ -684,18 +684,14 @@ class header(object):
            these minimum values will be overwritten automatically when the
            header is paired with data anyway.
 
-
            WARNING: A minimum of SIMPLE or XTENSION, in addition to BITPIX and
                     NAXIS must be appended to this header object before it is
-                    valid.  Unfortunately, on-demand verification makes this a
-                    little tricky:
+                    valid.
 
                    > h = darma.header.header()
                    > h = h.new()
                    > h['SIMPLE'] = True
-                   > h._IS_VERIFIED = True  #prevents automatic verification
                    > h['BITPIX'] = 8
-                   > h._IS_VERIFIED = True  #prevents automatic verification
                    > h['NAXIS'] = 0
                    > h.cards
                    SIMPLE  =                    T / conforms to FITS standard
@@ -707,8 +703,9 @@ class header(object):
         #FIXME look into returning a new header leaving this one intact
         #FIXME
 
-        self._hdr = fits.Header()
-        self._IS_VERIFIED = True
+        self.hdr = fits.Header()
+        # Set the initial _cards attribute from the verified header property
+        self._cards = get_cards(self.hdr)
         return self
 
     def default(self, type='primary'):
@@ -741,8 +738,8 @@ class header(object):
             raise DARMAError('type MUST be either "primary" or "image"!')
         if not isinstance(self._hdr, fits.Header):
             raise DARMAError('Error creating default header')
-        self._IS_VERIFIED = True
-        self._set_attributes()
+        # Set the initial _cards attribute from the verified header property
+        self._cards = get_cards(self.hdr)
         return self
 
     def add(self, keyword, value, comment=None):
@@ -902,34 +899,16 @@ class header(object):
             keyword = get_keyword(card)
             if keyword == 'COMMENT':
                 result.add_comment(card.value, before='_DUMMY_')
-                result._IS_VERIFIED = True
             elif keyword == 'HISTORY':
                 result.add_history(card.value, before='_DUMMY_')
-                result._IS_VERIFIED = True
             elif keyword == '':
                 result.add_blank(card.value, before='_DUMMY_')
-                result._IS_VERIFIED = True
             elif keyword not in result._hdr or clobber:
                 if is_hierarch(card):
                     keyword = 'HIERARCH '+keyword
                 result.update(keyword, card.value, comment=card.comment, before='_DUMMY_')
-                result._IS_VERIFIED = True
         # Remove temporary keyword.
         del result['_DUMMY_']
-        # Make sure unnecessary extension keywords are removed.  This is a
-        # primary header, not an extension.
-        ext_keywords = ['XTENSION', 'EXTNAME', 'EXTVER']
-        for keyword in ext_keywords:
-            if result[keyword] is not None:
-                if keyword == 'EXTNAME':
-                    result.rename_keyword('EXTNAME', '_EXTNAME')
-                if keyword == 'EXTVER':
-                    result.rename_keyword('EXTVER', '_EXTVER')
-                else:
-                    del result[keyword]
-                result._IS_VERIFIED = True
-        # Allow new header to be verified all at once.
-        result._IS_VERIFIED = False
         result.verify()
         return result
 
@@ -949,14 +928,10 @@ class header(object):
         naxis_keywords = ['NAXIS%d' % val for val in range(1, self_hdr['NAXIS']+1)]
         ignored_keywords =  ['SIMPLE', 'BITPIX', 'NAXIS'] + naxis_keywords
         for keyword in ignored_keywords:
-            del self_hdr._hdr[keyword]
+            if keyword in self_hdr._hdr:
+                del self_hdr._hdr[keyword]
         new_hdr = orig_hdr.merge(self_hdr, clobber=clobber)
         del self_hdr
-        if new_hdr['ECLIPSE'] == 1:
-            del new_hdr['ECLIPSE']
-        if new_hdr['ORIGIN'] == 'eclipse':
-            del new_hdr['ORIGIN']
-
         hdu[0].header = new_hdr.hdr
         hdu[0].update_header()
         hdu.close(output_verify=self.option)
@@ -1010,8 +985,7 @@ class header(object):
             if char not in allowed_chars:
                 standard = False
                 break
-        if (keyword.count(' ') or len(keyword) > 8 or not standard) and \
-           not keyword.startswith('HIERARCH '):
+        if (len(keyword) > 8 or not standard) and not keyword.startswith('HIERARCH '):
             keyword = 'HIERARCH %s' % keyword
         comment = None
         if isinstance(value, tuple):
@@ -1031,12 +1005,14 @@ class header(object):
         # This provides a method to trigger it when it does not happen
         # automatically.
         keyword = _strip_keyword(keyword)
-        if keyword in self._cards:
-            card = self._cards[keyword]
+        if keyword in self._hdr:
+            card = get_cards(self._hdr)[keyword]
         else:
             card = self.cards[keyword]
+        #XXX explore setting COMMENT, HISTORY, and BLANK cards to the
+        #XXX corresponding attribute
         if get_keyword(card) not in ['COMMENT', 'HISTORY', '']:
-            attr = get_keyword(card).replace('-', '_').replace(' ', '_')
+            attr = get_keyword(card).replace('-', '_')
             for char in attr.upper():
                 if char not in allowed_chars:
                     attr = attr.replace(char, '_')
