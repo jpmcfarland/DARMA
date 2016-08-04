@@ -1314,7 +1314,7 @@ class header_read_getval_test(unittest.TestCase):
 
     def test_read_getval(self):
         # default ext=0
-        simple = getval(SINGLE1, 'SIMPLE')
+        simple = getval(SINGLE1, 'SIMPLE', use_fits=False)
         self.assertTrue(simple, msg='returned SIMPLE value is incorrect')
         bitpix = getval(SINGLE1, 'BITPIX')
         self.assertEqual(bitpix, -32, msg='returned BITPIX value is incorrect')
@@ -1322,7 +1322,7 @@ class header_read_getval_test(unittest.TestCase):
         self.assertEqual(naxis, 2, msg='returned NAXIS value is not True')
         extend = getval(SINGLE1, 'EXTEND')
         self.assertTrue(extend, msg='returned EXTEND value is not True')
-        simple = getval(MULTI1, 'SIMPLE')
+        simple = getval(MULTI1, 'SIMPLE', use_fits=False)
         self.assertTrue(simple, msg='returned SIMPLE value is incorrect')
         bitpix = getval(MULTI1, 'BITPIX')
         self.assertEqual(bitpix, 8, msg='returned BITPIX value is incorrect')
@@ -1331,7 +1331,7 @@ class header_read_getval_test(unittest.TestCase):
         extend = getval(MULTI1, 'EXTEND')
         self.assertTrue(extend, msg='returned EXTEND value is not True')
         # ext >= 0
-        bitpix = getval(MULTI1, 'BITPIX', ext=0)
+        bitpix = getval(MULTI1, 'BITPIX', ext=0, use_fits=False)
         self.assertEqual(bitpix, 8, msg='returned BITPIX value is incorrect')
         bitpix = getval(MULTI1, 'BITPIX', ext=1)
         self.assertEqual(bitpix, -32, msg='returned BITPIX value is incorrect')
@@ -1345,7 +1345,16 @@ class header_read_getval_test(unittest.TestCase):
         self.assertEqual(xtension, 'IMAGE', msg='returned BITPIX value is incorrect')
         xtension = getval(MULTI1, 'XTENSION', ext=2)
         self.assertEqual(xtension, 'IMAGE', msg='returned BITPIX value is incorrect')
-        xtension = getval(MULTI1, 'XTENSION', ext=3)
+        xtension = getval(MULTI1, 'XTENSION', ext=3, use_fits=False)
+        self.assertEqual(xtension, 'IMAGE', msg='returned BITPIX value is incorrect')
+        # use_fits
+        simple = getval(SINGLE1, 'SIMPLE', use_fits=True)
+        self.assertTrue(simple, msg='returned SIMPLE value is incorrect')
+        bitpix = getval(MULTI1, 'BITPIX', use_fits=True)
+        self.assertTrue(simple, msg='returned SIMPLE value is incorrect')
+        bitpix = getval(MULTI1, 'BITPIX', ext=0, use_fits=True)
+        self.assertEqual(bitpix, 8, msg='returned BITPIX value is incorrect')
+        xtension = getval(MULTI1, 'XTENSION', ext=3, use_fits=True)
         self.assertEqual(xtension, 'IMAGE', msg='returned BITPIX value is incorrect')
 
 ########################################################################
@@ -1364,7 +1373,7 @@ class header_write_fits_keywords_dict_test(unittest.TestCase):
         self.new = header().new()
 
     def tearDown(self):
-        pass
+        del self.new
 
     def test_write_fits_keywords_dict(self):
         # new (empty internal header)
@@ -1427,15 +1436,27 @@ class header_write_hierarch_keywords_dict_test(unittest.TestCase):
         pri['HIERARCH DARMA Hierarch Card 1'] = 'one'
         pri['HIERARCH DARMA Hierarch Card 2'] = 2
         pri['HIERARCH DARMA Hierarch Card 3'] = 3.0
+        pri['verylongkeyword'] = 'verylongkeywordvalue'
+        pri['keyword with spaces'] = 'keyword with spaces value'
+        pri['|<37W0R>'] = 'non-standard characters value'
         self.assertEqual(pri['DARMA Hierarch Card 1'], 'one', msg='HIERARCH card 1 keyword value incorrect')
         self.assertEqual(pri['DARMA Hierarch Card 2'], 2, msg='HIERARCH card 2 keyword value incorrect')
         self.assertEqual(pri['DARMA Hierarch Card 3'], 3.0, msg='HIERARCH card 3 keyword value incorrect')
+        self.assertEqual(pri['verylongkeyword'], 'verylongkeywordvalue', msg='long keyword value incorrect')
+        self.assertEqual(pri['keyword with spaces'], 'keyword with spaces value', msg='spaces keyword value incorrect')
+        self.assertEqual(pri['|<37W0R>'], 'non-standard characters value', msg='non-standard keyword value incorrect')
         self.assertEqual(pri['HIERARCH DARMA Hierarch Card 1'], 'one', msg='HIERARCH card 1 keyword value incorrect')
         self.assertEqual(pri['HIERARCH DARMA Hierarch Card 2'], 2, msg='HIERARCH card 2 keyword value incorrect')
         self.assertEqual(pri['HIERARCH DARMA Hierarch Card 3'], 3.0, msg='HIERARCH card 3 keyword value incorrect')
+        self.assertEqual(pri['HIERARCH verylongkeyword'], 'verylongkeywordvalue', msg='long keyword value incorrect')
+        self.assertEqual(pri['HIERARCH keyword with spaces'], 'keyword with spaces value', msg='spaces keyword value incorrect')
+        self.assertEqual(pri['HIERARCH |<37W0R>'], 'non-standard characters value', msg='non-standard keyword value incorrect')
         self.assertEqual(getattr(pri, 'HIERARCH_DARMA_Hierarch_Card_1').value, 'one', msg='HIERARCH card 1 attribute value incorrect')
         self.assertEqual(getattr(pri, 'HIERARCH_DARMA_Hierarch_Card_2').value, 2, msg='HIERARCH card 2 attribute value incorrect')
         self.assertEqual(getattr(pri, 'HIERARCH_DARMA_Hierarch_Card_3').value, 3.0, msg='HIERARCH card 3 attribute value incorrect')
+        self.assertEqual(getattr(pri, 'HIERARCH_verylongkeyword').value, 'verylongkeywordvalue', msg='long attribute value incorrect')
+        self.assertEqual(getattr(pri, 'HIERARCH_keyword_with_spaces').value, 'keyword with spaces value', msg='spaces attribute value incorrect')
+        self.assertEqual(getattr(pri, 'HIERARCH___37W0R_').value, 'non-standard characters value', msg='non-standard attribute value incorrect')
 
 class header_write_hierarch_keywords_attr_test(unittest.TestCase):
 
@@ -1893,6 +1914,9 @@ class header_write_merge_test(unittest.TestCase):
         self.assertEqual(getattr(mer, 'HIERARCH_Keyword_2').value, 2.0, msg='HIERARCH_Keyword_2 attribute not in merged header')
         self.assertEqual(mer['XTENSION'], None, msg='XTENSION in merged header')
         self.assertEqual(mer['EXTNAME'], None, msg='EXTNAME in merged header')
+        self.assertEqual(mer['EXTVER'], None, msg='EXTVER in merged header')
+        self.assertEqual(mer['PCOUNT'], None, msg='PCOUNT in merged header')
+        self.assertEqual(mer['GCOUNT'], None, msg='GCOUNT in merged header')
         mer = pri.merge(ext)
         self.assertEqual(mer['KEYWORD1'], 1.0, msg='KEYWORD1 not in merged header')
         self.assertEqual(mer['HIERARCH Keyword 1'], 'one', msg='HIERARCH Keyword 1 not in merged header')
@@ -1908,37 +1932,37 @@ class header_write_merge_into_file_test(unittest.TestCase):
     '''
 
     def setUp(self):
-        build_test_data_sef()
-        self.pri = header().default()
+        build_test_data_mef()
+        self.ext = header(filename=MULTI1, extension=1)
 
     def tearDown(self):
         delete_test_data()
-        del self.pri
+        del self.ext
 
     def test_write_merge_into_file(self):
-        pri = self.pri
-        pri['KEYWORD1'] = 1.0
-        pri['KEYWORD2'] = 2
-        pri['HIERARCH Keyword 1'] = 'one'
-        pri['HIERARCH Keyword 2'] = 2.0
-        pri.merge_into_file(SINGLE1)
-        sef = header(filename=SINGLE1)
+        ext = self.ext
+        ext['KEYWORD1'] = 1.0
+        ext['KEYWORD2'] = 2
+        ext['HIERARCH Keyword 1'] = 'one'
+        ext['HIERARCH Keyword 2'] = 2.0
+        ext.merge_into_file(MULTI1)
+        sef = header(filename=MULTI1)
         self.assertEqual(sef['KEYWORD1'], 1.0, msg='KEYWORD1 not in merged header')
         self.assertEqual(sef['KEYWORD2'], 2, msg='KEYWORD2 not in merged header')
         self.assertEqual(sef['HIERARCH Keyword 1'], 'one', msg='HIERARCH Keyword 1 not in merged header')
         self.assertEqual(sef['HIERARCH Keyword 2'], 2.0, msg='HIERARCH Keyword 2 not in merged header')
-        pri['KEYWORD1'] = 'one'
-        pri['KEYWORD2'] = 2.0
-        pri['HIERARCH Keyword 1'] = 1
-        pri['HIERARCH Keyword 2'] = 'two'
-        pri.merge_into_file(SINGLE1, clobber=False)
-        sef = header(filename=SINGLE1)
+        ext['KEYWORD1'] = 'one'
+        ext['KEYWORD2'] = 2.0
+        ext['HIERARCH Keyword 1'] = 1
+        ext['HIERARCH Keyword 2'] = 'two'
+        ext.merge_into_file(MULTI1, clobber=False)
+        sef = header(filename=MULTI1)
         self.assertEqual(sef['KEYWORD1'], 1.0, msg='KEYWORD1 not in merged header')
         self.assertEqual(sef['KEYWORD2'], 2, msg='KEYWORD2 not in merged header')
         self.assertEqual(sef['HIERARCH Keyword 1'], 'one', msg='HIERARCH Keyword 1 not in merged header')
         self.assertEqual(sef['HIERARCH Keyword 2'], 2.0, msg='HIERARCH Keyword 2 not in merged header')
-        pri.merge_into_file(SINGLE1, clobber=True)
-        sef = header(filename=SINGLE1)
+        ext.merge_into_file(MULTI1, clobber=True)
+        sef = header(filename=MULTI1)
         self.assertEqual(sef['KEYWORD1'], 'one', msg='KEYWORD1 not in merged header')
         self.assertEqual(sef['KEYWORD2'], 2.0, msg='KEYWORD2 not in merged header')
         self.assertEqual(sef['HIERARCH Keyword 1'], 1, msg='HIERARCH Keyword 1 not in merged header')
