@@ -1302,7 +1302,7 @@ def getval(filename, keyword, ext=0, use_fits=False):
             with open(filename, 'rb') as fd:
                 for i in range(ext+1):
                     blocks = b''
-                    while b'END' not in blocks:
+                    while b'END     ' not in blocks:
                         # FITS standard puts headers at the start of
                         # blocks of a fixed size.  The first character
                         # is guaranteed to be that of a keyword and must
