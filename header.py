@@ -13,10 +13,10 @@ class header(object):
     '''
        A header object stores the information obtained from a FITS file
        header, a text file containing header cards one per line, a list of
-       header card stringss, or a list of fits.Card instances.
+       header card strings, or a list of fits.Card instances.
 
        The header object also includes value and format validation through
-       an on-demand implementation of the PyFITS output verification
+       an on-demand implementation of the Astropy/PyFITS output verification
        mechanism.  This guarantees that the header and its cards will
        always have the proper form.  See:
 
@@ -46,7 +46,9 @@ class header(object):
                       be one of fix, silentfix, ignore, warn, or exception
                       (ignore disables on-demand verification)
 
-           NOTE: The header cards in the form: keyword = value / comment
+           NOTE: Standard header cards are in the form:
+
+                 keyword = value / comment
         '''
 
         self.filename   = filename or None
@@ -1000,15 +1002,7 @@ class header(object):
             self.modify(keyword, value, comment)
         else:
             self.add(keyword, value, comment)
-        # Prefer the unverified cards for performance.
-        # Astropy/PyFITS does already do some on-demand verification.
-        # This provides a method to trigger it when it does not happen
-        # automatically.
-        keyword = _strip_keyword(keyword)
-        if keyword in self._hdr:
-            card = get_cards(self._hdr)[keyword]
-        else:
-            card = self.cards[keyword]
+        card = get_cards(self._hdr)[_strip_keyword(keyword)]
         #XXX explore setting COMMENT, HISTORY, and BLANK cards to the
         #XXX corresponding attribute
         if get_keyword(card) not in ['COMMENT', 'HISTORY', '']:
@@ -1255,7 +1249,7 @@ class header(object):
 
 #-----------------------------------------------------------------------
 
-def getval(filename, keyword, ext=0, use_fits=False):
+def getval(filename, keyword, default=None, ext=0, use_fits=False):
 
     '''
        Get a keyword value from an extension of a FITS image, single- or
@@ -1263,6 +1257,7 @@ def getval(filename, keyword, ext=0, use_fits=False):
 
          filename: filename to get the keyword value from
           keyword: keyword string
+          default: the value to return when the keyword is missing
               ext: extension number
          use_fits: use FITS-handler's getval function instead of simple
                    Python file access method
@@ -1272,7 +1267,7 @@ def getval(filename, keyword, ext=0, use_fits=False):
     '''
 
     if use_fits:
-        return fits.getval(filename, keyword, ext=ext)
+        return fits.getval(filename, keyword, ext=ext) or default
     else:
         if ext >= 0:
             with open(filename, 'rb') as fd:
@@ -1293,6 +1288,7 @@ def getval(filename, keyword, ext=0, use_fits=False):
                 cardstr = str(blocks[i:i+80].decode())
                 if cardstr.startswith(keyword):
                     return fromstring(cardstr).value
+    return default
 
 def get_headers(filename=None, cardlist=None):
 
