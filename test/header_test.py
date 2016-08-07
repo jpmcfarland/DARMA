@@ -47,8 +47,11 @@ ASCII1 = 'ASCII1.fits'
 ASCII2 = 'ASCII2.fits'
 #ASCIIS = [ASCII1, ASCII2]
 ASCIIS = [ASCII1]
-#FILENAMES = [SINGLE1, SINGLE2, MULTI1, MULTI2, ASCII1, ASCII2]
-FILENAMES = [SINGLE1, MULTI1, ASCII1]
+RAW1 = 'RAW1.fits'
+RAW2 = 'RAW2.fits'
+#RAWS = [RAW1, RAW2]
+RAWS = [RAW1]
+FILENAMES = SINGLES+MULTIS+ASCIIS+RAWS
 PRIMARY = [
     '''SIMPLE  =                    T / conforms to FITS standard                      ''',
     '''BITPIX  =                    8 / array data type                                ''',
@@ -133,6 +136,13 @@ def build_test_data_mef():
         hdus = fits.HDUList([hdu0, hdu1, hdu2, hdu3])
         hdus.writeto(filename, output_verify='silentfix', clobber=True)
         hdus.close()
+
+def build_test_data_raw():
+    '''
+       This function builds RAW header files to be used in testing
+    '''
+    for filename in RAWS:
+        fits.PrimaryHDU().writeto(filename, output_verify='silentfix', clobber=True)
 
 def build_test_data_ascii():
     '''
@@ -234,6 +244,10 @@ class header_load_empty_test(unittest.TestCase):
         self.assertEqual(len(new), 0, msg='new header is wrong length')
         self.assertIsInstance(hdr, header, msg='emptied header not a header instance')
         self.assertEqual(len(hdr), 0, msg='emptied header is wrong length')
+        hdr = header().default()
+        del hdr.hdr
+        self.assertIsInstance(hdr, header, msg='deleted header not a header instance')
+        self.assertEqual(len(hdr), 0, msg='deleted header is wrong length')
 
 class header_load_filename_test(unittest.TestCase):
 
@@ -339,6 +353,7 @@ class header_load_cardlist_file_test(unittest.TestCase):
     '''
 
     def setUp(self):
+        build_test_data_raw()
         build_test_data_ascii()
 
     def tearDown(self):
@@ -349,6 +364,9 @@ class header_load_cardlist_file_test(unittest.TestCase):
         hdr = header(cardlist=ASCII1)
         self.assertIsInstance(hdr, header, msg='ASCII header not a header instance')
         self.assertEqual(len(hdr), 4, msg='incorrect number of cards for ASCII header')
+        hdr = header(cardlist=RAW1)
+        self.assertIsInstance(hdr, header, msg='RAW header not a header instance')
+        self.assertEqual(len(hdr), 4, msg='incorrect number of cards for RAW header')
 
 class header_load_all_headers_test(unittest.TestCase):
 
