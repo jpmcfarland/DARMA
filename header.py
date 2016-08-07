@@ -98,17 +98,17 @@ class header(object):
                 if isinstance(cardlist, (str, unicode)):
                     try:
                         with open(cardlist, 'r') as fd:
-                            length = self.item_size()
                             lines = fd.read()
                     except Exception as e:
                         raise DARMAError('ERROR -- could not load cardlist %s: %s' % (cardlist, e))
                     # ASCII file.
                     if '\n' in lines:
-                        header_card_strings = [line.strip('\n') for line in lines.split('\n') if not line.startswith('END')]
-                        header_cards = [fromstring(string) for string in header_card_strings if len(string)]
+                        header_card_strings = [line.strip('\n') for line in lines.split('\n') if not line.startswith('END     ')]
                     # Raw FITS file.
                     else:
-                        header_cards = [fromstring(lines[n:n+length]) for n in range(0, len(lines), length)]
+                        length = self.item_size()
+                        header_card_strings = [lines[n:n+length] for n in range(0, len(lines), length) if not lines[n:n+length].startswith('END     ')]
+                    header_cards = [fromstring(string) for string in header_card_strings if not (string.startswith(' ') or not len(string))]
                 elif isinstance(cardlist, list):
                     header_cards = [] # list of Card instances
                     if len(cardlist):
@@ -142,10 +142,8 @@ class header(object):
                 try:
                     hdus = fits_open(self.filename)
                     hdu = hdus[self.extension]
-                    if hasattr(hdu, '_header'):
-                        self._hdr = hdu._header
-                    else:
-                        self._hdr = hdu.header
+                    # Use _header to get the raw header of the HDU
+                    self._hdr = hdu._header
                     hdus.close()
                     del hdu, hdus
                 except Exception as e:
@@ -207,7 +205,7 @@ class header(object):
            header 'deleter' method
         '''
 
-        del self._hdr, self.cards
+        del self._hdr, self._cards
         self._hdr = None
 
     hdr = property(_get_hdr, _set_hdr, _del_hdr,
