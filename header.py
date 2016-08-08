@@ -5,8 +5,10 @@ __version__ = '@(#)$Revision$'
 
 import os
 
-from .common import fits, DARMAError, fold_string
-from .common import fits_open, is_hierarch, get_cards, get_keyword, rename_keyword, update_header, get_cardimage, range, get_comment, get_history, _strip_keyword, _get_index, get_value, add_blank, unicode
+from .common import fits, DARMAError, range, unicode, fits_open, is_hierarch
+from .common import _strip_keyword, _get_index, get_history, get_value
+from .common import fold_string, add_blank, rename_keyword, update_header
+from .common import get_cards, get_keyword, get_cardimage, get_comment
 
 class header(object):
 
@@ -106,8 +108,8 @@ class header(object):
                         header_card_strings = [line.strip('\n') for line in lines.split('\n') if not line.startswith('END     ')]
                     # Raw FITS file.
                     else:
-                        length = self.item_size()
-                        header_card_strings = [lines[n:n+length] for n in range(0, len(lines), length) if not lines[n:n+length].startswith('END     ')]
+                        size = self.item_size()
+                        header_card_strings = [lines[i:i+size] for i in range(0, len(lines), size) if not lines[i:i+size].startswith('END     ')]
                     header_cards = [fromstring(string) for string in header_card_strings if not (string.startswith(' ') or not len(string))]
                 elif isinstance(cardlist, list):
                     header_cards = [] # list of Card instances
@@ -116,10 +118,9 @@ class header(object):
                             indexes = [0]
                             if self.extension != 0:
                                 for i in range(len(cardlist)):
-                                    if cardlist[i].startswith('END'):
+                                    if cardlist[i].startswith('END     '):
                                         indexes.append(i+1)
-                                    i += 1
-                                # trim the index list
+                                # remove location of last END card
                                 _ = indexes.pop(-1)
                             if self.extension >= len(indexes):
                                 raise DARMAError('extension %d is not in cardlist!' % self.extension)
@@ -205,7 +206,7 @@ class header(object):
            header 'deleter' method
         '''
 
-        del self._hdr, self._cards
+        del self._hdr, self.cards
         self._hdr = None
 
     hdr = property(_get_hdr, _set_hdr, _del_hdr,
@@ -250,7 +251,7 @@ class header(object):
            Cleanup headers before destruction
         '''
 
-        del self.cards, self.hdr
+        del self.hdr # also deletes self.cards
 
     def save(self, filename, raw=True, mode='clobber', dataless=False):
 
@@ -377,12 +378,30 @@ class header(object):
             else:
                 raise DARMAError('Invalid header!  No SIMPLE or XTENSION keywords.')
             # Fix any bad keywords PyFITS won't prior to verification.
-            for card in get_cards(hdu.header):
-                if get_keyword(card).count(' ') and not is_hierarch(card):
-                    new_keyword = get_keyword(card).replace(' ', '_')
-                    if option != 'silentfix':
-                        print('WARNING -- renaming invalid keyword %s to %s' % (get_keyword(card), new_keyword))
-                    rename_keyword(hdu.header, get_keyword(card), new_keyword)
+            for card in list(get_cards(hdu.header)):
+                keyword = get_keyword(card)
+                value = card.value
+                comment = card.comment
+                if keyword.count(' ') and not is_hierarch(card):
+                    if option == 'fix':
+                        key = keyword.replace(' ', '_')
+                        print('WARNING -- renaming invalid keyword %s to %s' % (keyword, key))
+                        if key in hdu.header:
+                            update_header(hdu.header, key, value, comment)
+                            #del hdu.header[keyword] # unnecessary?
+                        else:
+                            rename_keyword(hdu.header, keyword, key)
+                    elif option == 'silentfix':
+                        key = keyword.replace(' ', '_')
+                        if key in hdu.header:
+                            update_header(hdu.header, key, value, comment)
+                            #del hdu.header[keyword] # unnecessary?
+                        else:
+                            rename_keyword(hdu.header, keyword, key)
+                    elif option == 'warn':
+                        print('WARNING -- found invalid keyword %s' % keyword)
+                    elif option == 'exception':
+                        raise DARMAError('Found invalid keyword %s' % keyword)
             # Verify header within the HDU and copy back.
             hdu.verify(option=option)
             hdr = hdu.header
