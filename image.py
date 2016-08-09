@@ -8,6 +8,7 @@ import math, os
 #from .common import Array, Arrayfft, Arrayfilters
 from .common import fits, Array, Arrayfft, fits_open
 from .common import DARMAError, _HAS_NUMPY, DataStruct, StatStruct, FLOAT
+from .common import update_header
 from .pixelmap import pixelmap
 from .bitmask import bitmask
 try:
@@ -1443,8 +1444,8 @@ def convert(filename, bitpix=16):
             hdu.data += -bzero # to avoid out of range error for BZERO = +32768a
             if bscale != 1.0:
                 hdu.data /= bscale
-            hdu.header.update('BZERO', bzero, comment='physical=stored*BSCALE+BZERO', after='NAXIS2')
-            hdu.header.update('BSCALE', bscale, comment='physical=stored*BSCALE+BZERO', after='NAXIS2')
+            update_header(hdu.header, 'BZERO', bzero, comment='physical=stored*BSCALE+BZERO', after='NAXIS2')
+            update_header(hdu.header, 'BSCALE', bscale, comment='physical=stored*BSCALE+BZERO', after='NAXIS2')
             # convert to new datatype
             hdu.data = np.array(np.around(hdu.data), dtype=bpmap[bitpix])
             hdu.header['BITPIX'] = bitpix
