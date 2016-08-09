@@ -1393,7 +1393,7 @@ def _datamd5(filename, regions=None, buffer_blocks=32):
     if not os.path.exists(filename):
         raise DARMAError('No FITS file (%s) to calcualte MD5SUM from!' % filename)
 
-    fitsfile = fits_open(filename, mode='readonly', memmap=1)
+    fitsfile = fits_open(filename, mode='readonly', memmap=True)
     md5sum   = md5.md5()
 
     block  = 2880
@@ -1432,7 +1432,7 @@ def _update_datamd5(filename, datamd5):
     if len(datamd5) != 32:
         raise DARMAError('%s does not appear to be a valid MD5SUM.' % datamd5)
 
-    fitsfile = fits_open(filename, mode='update', memmap=1)
+    fitsfile = fits_open(filename, mode='update', memmap=True)
     fitsfile[0].header.update('DATAMD5', datamd5, comment='MD5 checksum of all data regions')
     fitsfile.close()
     # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
@@ -1659,7 +1659,7 @@ def fits_open(*args, **kwargs):
     return fits.open(ignore_missing_end=True, *args, **kwargs)
 
 
-def new_table(columns=[], header=None, nrows=0, fill=False, tbtype='BinTableHDU'):
+def new_table(columns=[], hdr=None, nrows=0, fill=False, tbtype='BinTableHDU'):
 
     '''
        In PyFITS >= 3.3 pyfits.new_table() is deprecated.  Use
@@ -1673,7 +1673,7 @@ def new_table(columns=[], header=None, nrows=0, fill=False, tbtype='BinTableHDU'
 
          columns: sequence of Column or ColDefs objects to create a
                   table from
-          header: fits.Header instance to be used to populate the non-
+             hdr: a fits.Header instance to be used to populate the non-
                   required keywords
            nrows: umber of rows in the new table
             fill: fill all cells with zeros or blanks
@@ -1682,11 +1682,11 @@ def new_table(columns=[], header=None, nrows=0, fill=False, tbtype='BinTableHDU'
 
     if _HAS_ASTROPY or _HAS_PYFITS33:
         if tbtype == 'BinTableHDU':
-            return fits.BinTableHDU.from_columns(columns=columns, header=header, nrows=nrows, fill=fill)
+            return fits.BinTableHDU.from_columns(columns=columns, header=hdr, nrows=nrows, fill=fill)
         if tbtype == 'TableHDU':
-            return fits.TableHDU.from_columns(columns=columns, header=header, nrows=nrows, fill=fill)
+            return fits.TableHDU.from_columns(columns=columns, header=hdr, nrows=nrows, fill=fill)
     else:
-        return fits.new_table(input=columns, header=header, nrows=nrows, fill=fill, tbtype='BinTableHDU')
+        return fits.new_table(input=columns, header=hdr, nrows=nrows, fill=fill, tbtype='BinTableHDU')
 
 def _strip_keyword(keyword, fill=False):
 
@@ -1753,15 +1753,29 @@ def _remove_cards(hdr, keywords):
     '''
        Astropy/new PyFITS cannot remove a HIERARCH keyword card properly.
        Remove it by making a shadow copy, clearing the original header,
-       then copying all but the removed card back.
+       then copying all but the removed cards back.
 
-              hdr: fits.Header instance
+              hdr: a fits.Header instance (Astropy.new PyFITS only)
          keywords: list of keys of cards to be removed
     '''
 
     shadow = hdr.copy()
     hdr.clear()
     hdr.update([card for card in shadow.cards if card.keyword not in keywords])
+
+def clear_header(hdr):
+
+    '''
+       Remove all card from the header.
+
+         hdr: a fits.Header instance
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        hdr.clear()
+    else:
+        for key in hdr:
+            del hdr[key]
 
 def rename_keyword(hdr, oldkeyword, newkeyword):
 
