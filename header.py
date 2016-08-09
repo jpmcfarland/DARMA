@@ -9,6 +9,7 @@ from .common import fits, DARMAError, range, unicode, fits_open, is_hierarch
 from .common import _strip_keyword, _get_index, get_history, get_value
 from .common import fold_string, add_blank, rename_keyword, update_header
 from .common import get_cards, get_keyword, get_cardimage, get_comment
+from .common import clear_header
 
 class header(object):
 
@@ -44,9 +45,10 @@ class header(object):
             cardlist: a list of header cards (80 character strings, NULL
                       terminated), a list of fits.Card instances, or the
                       name of a text file containing the header cards
-              option: option used to verify the header (from PyFITS) should
-                      be one of fix, silentfix, ignore, warn, or exception
-                      (ignore disables on-demand verification)
+              option: option used to verify the header (from
+                      Astropy/PyFITS) should be one of fix, silentfix,
+                      ignore, warn, or exception (ignore disables
+                      on-demand verification)
 
            NOTE: Standard header cards are in the form:
 
@@ -404,7 +406,7 @@ class header(object):
                         raise DARMAError('Found invalid keyword %s' % keyword)
             # Verify header within the HDU and copy back.
             hdu.verify(option=option)
-            hdr = hdu.header
+            hdr = hdu._header
             del hdu
             # Remove temporary cards and add changeable values back.
             if ADDED_SIMPLE:
@@ -941,7 +943,7 @@ class header(object):
               clobber: overwrite existing keywords in file
         '''
 
-        hdu = fits_open(filename, mode='update', memmap=1)
+        hdu = fits_open(filename, mode='update', memmap=True)
         orig_hdr = header(cardlist=list(get_cards(hdu[0].header)), option=self.option)
         self_hdr = self.copy()
         naxis_keywords = ['NAXIS%d' % val for val in range(1, self_hdr['NAXIS']+1)]
@@ -1324,7 +1326,7 @@ def get_headers(filename=None, cardlist=None):
 
     headers = []
     if filename is not None:
-        hdus = fits_open(filename, memmap=1)
+        hdus = fits_open(filename, memmap=True)
         headers = [header(cardlist=[card for card in get_cards(hdu.header)]) for hdu in hdus]
         hdus.close()
     elif cardlist is not None:
@@ -1336,10 +1338,10 @@ def get_headers(filename=None, cardlist=None):
 
     return headers
 
-def update_header_in_file(filename, keywords, values, comments=[None]):
+def update_header_in_file(filename, keywords=[], values=[], comments=[], ext=0, cards=[], option='silentfix', empty=False):
 
     '''
-       This is a utility function to update the header of a file "in place".
+       This is a utility function to update a header of a file "in place".
 
        When the FITS file is very large, rewriting the whole thing to update
        some header items is very inefficient.  This function updates the
@@ -1350,24 +1352,51 @@ def update_header_in_file(filename, keywords, values, comments=[None]):
          keywords: matched list of header keywords
            values: matched list of values
          comments: matched list of comments (optional)
+              ext: extension to update
+            cards: replace keywords, values, comments with a list of
+                   fits.Card instances (overrides components if set)
+           option: option used to verify the header (from Astropy/PyFITS)
+                   should be one of fix, silentfix, ignore, warn, or
+                   exception
+            empty: first empty the header of any optional keywords
 
-       This function assumes the primary header will be updated and that any
-       existing keyword values will be overwritten.
+       NOTE: This function assumes that any existing keyword values will
+             be overwritten.
     '''
 
-    if len(keywords) != len(values):
-        raise DARMAError('Input keywords and values lists of different length!')
-    if len(comments) == 1 and len(keywords) != 1:
-        comments = comments*len(keywords)
-    if len(comments) != len(keywords):
-        raise DARMAError('Input comments list of wrong length!')
-
-    hdus = fits_open(filename, mode='update', memmap=1)
-
-    for keyword, value, comment in zip(keywords, values, comments):
-        update_header(hdus[0].header, keyword, value, comment)
-
-    hdus.close(output_verify='fix')
+    card_tuples = []
+    if cards:
+        for card in cards:
+            card_tuples.append((get_keyword(card), card.value, card.comment))
+    else:
+        if not len(comments) and len(keywords):
+            comments = [None]*len(keywords)
+        if len(values) != len(keywords):
+            raise DARMAError('Input keywords and values lists of different length!')
+        if len(comments) != len(keywords):
+            raise DARMAError('Input keywords and comments lists of different length!')
+        for keyword, value, comment in zip(keywords, values, comments):
+            card_tuples.append((keyword, value, comment))
+    # Disable memmaping to avoid FS performance hit.
+    hdus = fits_open(filename, mode='update', memmap=False)
+    hdu = hdus[ext]
+    hdr = hdu.header
+    if empty:
+        required = ['SIMPLE', 'BITPIX', 'NAXIS', 'XTENSION']
+        for key in hdr:
+            if key not in required and not key.startswith('NAXIS'):
+                del hdr[key]
+    for keyword, value, comment in card_tuples:
+        if keyword == '':
+            hdr.add_blank(value)
+        if keyword == 'COMMENT':
+            hdr.add_comment(value)
+        if keyword == 'HISTORY':
+            hdr.add_history(value)
+        else:
+            update_header(hdr, keyword, value, comment)
+    hdu.update_header()
+    hdus.close(output_verify=option)
 
     # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
     # Under certain circumstances the signal handler is redefined to
