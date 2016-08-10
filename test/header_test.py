@@ -4,27 +4,22 @@ Unit test for DARMA header
 
 __version__ = '@(#)$Revision$'
 
-from ..common import DARMAError, fits as darma_fits, Array as darma_array, unicode
-darma_fits_version = darma_fits.__version__
-darma_array_version = darma_array.__version__
-del darma_fits, darma_array
-from ..header import header, getval, get_headers, update_header_in_file, get_keyword
+from ..common import DARMAError, unicode
+from ..header import header, getval, get_headers, get_keyword
+from ..header import update_header_in_file
+from .common_test import fits, Array
 
-import unittest, os, collections, numpy as Array
+import unittest, os, collections
 
 # AstroPy/PyFITS compatibility
 try:
     if 'DARMA_PYFITS' in os.environ:
         raise Exception()
-    from astropy.io import fits
-    from astropy import __version__
-    fits.__version__ = __version__
+    import astropy
     get_cardlist = lambda hdr: hdr.cards
     get_cardimage = lambda card: card.image
     update_header = lambda hdr, keyword, value: hdr.update([(keyword, value)])
-    print('DARMA header test using Astropy version %s and NumPy version %s' % (fits.__version__, Array.__version__))
 except:
-    import pyfits as fits
     if fits.__version__ < '3.3':
         get_cardlist = lambda hdr: hdr.ascardlist()
         get_cardimage = lambda card: card.ascardimage()
@@ -33,7 +28,6 @@ except:
         get_cardlist = lambda hdr: hdr.cards
         get_cardimage = lambda card: card.image
         update_header = lambda hdr, keyword, value: hdr.update([(keyword, value)])
-    print('DARMA header test using PyFITS version %s and NumPy version %s' % (fits.__version__, Array.__version__))
 
 SINGLE1 = 'SEF1.fits'
 SINGLE2 = 'SEF2.fits'
