@@ -62,20 +62,24 @@ class pixelmap(DataStruct):
            Load the pixelmap from a file or from the given data Array.
         '''
 
-        if self._data is None:
+        data = self._data
+        _data = None
+        if data is None:
             if self.filename is not None:
                 try:
-                    #self._data = fits.getdata(self.filename, self.extension).astype('bool')
-                    self._data = fits_open(self.filename, memmap=self.memmap)[self.extension].data.astype('bool')
+                    #_data = fits.getdata(self.filename, self.extension)
+                    _data = fits_open(self.filename, memmap=self.memmap)[self.extension].data
+                    if _data is not None:
+                        _data.astype('bool')
                 except Exception as e:
                     raise DARMAError('Error loading pixelmap from %s: %s' % (self.filename, e))
         else:
-            self._data = Array.asanyarray(self._data, dtype='bool')
-            if not self._data.flags.contiguous:
-                self._data = Array.ascontiguousarray(self._data, dtype='bool')
-
-        if self._data is not None and len(self._data.shape) == 3:
-            self._data = self._data[self.plane]
+            _data = Array.asanyarray(data, dtype='bool')
+            if not _data.flags.contiguous:
+                _data = Array.ascontiguousarray(_data, dtype='bool')
+        if _data is not None and len(_data.shape) == 3:
+            _data = _data[self.plane]
+        self._data = _data
 
     def dump_pixelmap(self, filename):
 

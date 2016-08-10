@@ -286,7 +286,7 @@ class image(DataStruct):
         else:
             log('image load_image from data array: data=%s, dtype=%s' % (self._data, datatype), 'debug')
             self._data = Array.asanyarray(self._data, dtype=datatype)
-        if not self._data.flags.contiguous:
+        if self._data is not None and not self._data.flags.contiguous:
             log('image load_image make contiguous', 'debug')
             self._data = Array.ascontiguousarray(self._data, dtype=datatype)
             if self.bmask is not None:
