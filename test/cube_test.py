@@ -4,235 +4,152 @@ Unit test for DARMA cube
 
 __version__ = '@(#)$Revision$'
 
-from ..common import DARMAError
-from .. import image, cube, image_generator
+from ..common import DARMAError, unicode
+from ..cube import cube
+from .common_test import fits, Array
 
-import unittest, os
+import unittest, os, collections
 
-def build_test_data():
+SINGLE1 = 'SEF1.fits'
+SINGLE2 = 'SEF2.fits'
+#SINGLES = [SINGLE1, SINGLE2]
+SINGLES = [SINGLE1]
+MULTI1 = 'MEF1.fits'
+MULTI2 = 'MEF2.fits'
+#MULTIS = [MULTI1, MULTI2]
+MULTIS = [MULTI1]
+EMPTY1 = 'EMPTY1.fits'
+EMPTY2 = 'EMPTY2.fits'
+#EMPTYS = [EMPTY1, EMPTY2]
+EMPTYS = [EMPTY1]
+ZERO1 = 'ZERO1.fits'
+ZERO2 = 'ZERO2.fits'
+#ZEROS = [ZERO1, ZERO2]
+ZEROS = [ZERO1]
+ONE1 = 'ONE1.fits'
+ONE2 = 'ONE2.fits'
+#ONES = [ONE1, ONE2]
+ONES = [ONE1]
+FILENAMES = SINGLES+MULTIS+EMPTYS+ZEROS+ONES
+
+def build_test_data_sef():
+    '''
+       This function builds SEF files to be used in testing
+    '''
+    data = Array.asanyarray([
+        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
+        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
+        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
+        ])
+    for filename in SINGLES:
+        fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
+
+def build_test_data_mef():
+    '''
+       This function builds MEF files to be used in testing
+    '''
+    data = Array.asanyarray([
+        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
+        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
+        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
+        ])
+    for filename in MULTIS:
+        hdu0 = fits.PrimaryHDU()
+        hdu1 = fits.ImageHDU(data=data)
+        update_header(hdu1.header, 'EXTNAME', 'EXT1')
+        hdu2 = fits.ImageHDU(data=data)
+        update_header(hdu2.header, 'EXTNAME', 'EXT2')
+        hdu3 = fits.ImageHDU(data=data)
+        update_header(hdu3.header, 'EXTNAME', 'EXT3')
+        hdus = fits.HDUList([hdu0, hdu1, hdu2, hdu3])
+        hdus.writeto(filename, output_verify='silentfix', clobber=True)
+        hdus.close()
+
+def build_test_data_empty():
+    '''
+       This function builds dataless files to be used in testing
+    '''
+    for filename in EMPTYS:
+        fits.PrimaryHDU().writeto(filename, output_verify='silentfix', clobber=True)
+
+def build_test_data_zero():
+    '''
+       This function builds SEF files with all zero data array to be
+       used in testing
+    '''
+    data = Array.asanyarray([
+        Array.zeros((32, 16), dtype='int32'),
+        Array.zeros((32, 16), dtype='int32'),
+        Array.zeros((32, 16), dtype='int32'),
+        ])
+    for filename in ZEROS:
+        fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
+
+def build_test_data_one():
+    '''
+       This function builds SEF files with all one data array to be
+       used in testing
+    '''
+    data = Array.asanyarray([
+        Array.ones((32, 16), dtype='int32'),
+        Array.ones((32, 16), dtype='int32'),
+        Array.ones((32, 16), dtype='int32'),
+        ])
+    for filename in ONES:
+        fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
+
+def delete_test_data():
+    '''
+       This function deletes fits files used in testing
+    '''
+    for filename in FILENAMES:
+        if os.path.exists(filename):
+            os.remove(filename)
+
+########################################################################
+#                                                                      #
+#                           cube load tests                            #
+#                                                                      #
+########################################################################
+
+class cube_load_error_test(unittest.TestCase):
 
     '''
-       This function builds fits files to be used in testing
-
-       The function returns a list of names of generated files
+       Do cubes loaded from bogus sources raise errors?
     '''
 
-    name_list = []
+    def setUp(self):
+        build_test_data_zero()
+        build_test_data_one()
 
-    print('Generating testdata...')
+    def tearDown(self):
+        delete_test_data()
 
-    ig = image_generator.image_generator(128, 128)
-    for i in range(1,6):
-        name = 'IM%02d.fits' % i
-        ig.generate_random_gauss(0.5*i, 1.0*i).save(name)
-        name_list.append(name)
+    def test_load_error(self):
+        print(self.__class__.__name__)
+        self.assertRaises(DARMAError, cube, filename='Unknown.fits')
+        cub = cube(filename=ZERO1, extension=1)
+        self.assertRaises(DARMAError, cub.load)
 
-    ig = image_generator.image_generator(129, 129)
-    ig.generate_random_gauss(0.5*i, 1.0*i).save('IM01.large.fits')
-    name_list.append('IM01.large.fits')
-    return name_list
-
-def delete_test_data(name_list):
+class cube_load_empty_test(unittest.TestCase):
 
     '''
-       Clean up the mess
+       Are cubes loaded without data empty?
     '''
 
-    for filename in name_list:
-        os.remove(filename)
-
-
-class cube_tests(unittest.TestCase):
-
     def setUp(self):
-        self.im_list = [image.image('IM01.fits'),
-                        image.image('IM02.fits'),
-                        image.image('IM03.fits'),
-                        image.image('IM04.fits')]
-        self.cube = cube.cube(image_list=self.im_list)
+        build_test_data_empty()
 
     def tearDown(self):
-        self.im_list = None
-        self.cube = None
+        delete_test_data()
 
-    def test_indexing(self):
-        for ima1, ima2 in zip(self.cube, self.im_list):
-            self.assertTrue(ima1 is ima2)
-
-    def test_append(self):
-        self.cube.append(image.image('IM01.fits'))
-        st1 = self.cube[0].stat()
-        st2 = self.cube[-1].stat()
-        self.assertEqual(st1.median, st2.median)
-
-class cube_arithmetic_tests(unittest.TestCase):
-
-    def setUp(self):
-        self.cube = cube.cube(image_list=[image.image('IM01.fits'),
-                                          image.image('IM02.fits'),
-                                          image.image('IM03.fits'),
-                                          image.image('IM04.fits')])
-        self.ima = image.image('IM05.fits')
-
-    def tearDown(self):
-        self.cube = None
-        self.ima = None
-
-    def test_add_cst(self):
-        res = self.cube+2
-
-    def test_iadd_cst(self):
-        self.cube+=2
-
-    def test_sub_cst(self):
-        res = self.cube-2
-
-    def test_isub_cst(self):
-        self.cube-=2
-
-    def test_mul_cst(self):
-        res = self.cube*2
-
-    def test_imul_cst(self):
-        self.cube*=2
-
-    def test_div_cst(self):
-        res = self.cube/2
-
-    def test_idiv_cst(self):
-        self.cube/=2
-
-    def test_pow_cst(self):
-        res = self.cube ** 2
-
-    def test_ipow_cst(self):
-        self.cube **= 2
-
-    def test_add_ima(self):
-        res = self.cube+self.ima
-
-    def test_iadd_ima(self):
-        self.cube+=self.ima
-
-    def test_sub_ima(self):
-        res = self.cube-self.ima
-
-    def test_isub_ima(self):
-        self.cube-=self.ima
-
-    def test_mul_ima(self):
-        res = self.cube*self.ima
-
-    def test_imul_ima(self):
-        self.cube*=self.ima
-
-    def test_div_ima(self):
-        res = self.cube/self.ima
-
-    def test_idiv_ima(self):
-        self.cube/=self.ima
-
-    def test_add_cube(self):
-        res = self.cube+self.cube
-
-    def test_iadd_cube(self):
-        self.cube+=self.cube
-
-    def test_sub_cube(self):
-        res = self.cube-self.cube
-
-    def test_isub_cube(self):
-        self.cube-=self.cube
-
-    def test_mul_cube(self):
-        res = self.cube*self.cube
-
-    def test_imul_cube(self):
-        self.cube*=self.cube
-
-    def test_div_cube(self):
-        res = self.cube/self.cube
-
-    def test_idiv_cube(self):
-        self.cube/=self.cube
-
-class cube_norm_tests(unittest.TestCase):
-
-    def setUp(self):
-        self.cube = cube.cube(image_list=[image.image('IM01.fits'),
-                                          image.image('IM02.fits')])
-    def tearDown(self):
-        self.cube = None
-
-    def test_normalize_mean(self):
-        self.cube.normalize_mean()
-        st = self.cube[0].stat()
-        self.assertTrue(abs(st.avg_pix-1.0) < 0.0001)
-
-    def test_normalize_median(self):
-        self.cube.normalize_median()
-        st = self.cube[0].stat()
-        self.assertTrue(abs(st.median-1.0) < 0.0001)
-
-    def test_normalize_flux(self):
-        self.cube.normalize_flux()
-        st = self.cube[0].stat()
-        self.assertTrue(abs(st.flux-1.0) < 0.0001)
-
-    def test_normalize_absolute_flux(self):
-        self.cube.normalize_absolute_flux()
-        st = self.cube[0].stat()
-        self.assertTrue(abs(st.absflux-1.0) < 0.0001)
-
-    def test_normalize_range(self):
-        self.cube.normalize_range()
-        st = self.cube[0].stat()
-        self.assertTrue(abs(st.max_pix-1.0) < 0.0001)
-        self.assertTrue(abs(st.min_pix) < 0.0001)
-
-class cube2image_tests(unittest.TestCase):
-    def setUp(self):
-        self.cube = cube.cube(image_list=[image.image('IM01.fits'),
-                                          image.image('IM02.fits'),
-                                          image.image('IM03.fits'),
-                                          image.image('IM04.fits')])
-
-    def tearDown(self):
-        self.cube = None
-
-    def test_sum(self):
-        sum = self.cube.sum()
-
-    def test_average(self):
-        avg = self.cube.average()
-
-    def test_median(self):
-        med = self.cube.median()
-
-    def test_stdev(self):
-        stdev = self.cube.stdev()
-
-    # Tests feature that is currently unimplemented.
-    def test_average_rej(self):
-        avg = self.cube.average_with_rejection(0, 1)
-
-    # Tests feature that is currently unimplemented.
-    def test_average_sigclip(self):
-        avg = self.cube.average_with_sigma_clip(2, 1, 0,0,3.0, -999, 0.0, 1.0)
-
-test_suite = unittest.TestSuite()
-test_suite.addTest(unittest.makeSuite(cube_tests))
-test_suite.addTest(unittest.makeSuite(cube_arithmetic_tests))
-test_suite.addTest(unittest.makeSuite(cube_norm_tests))
-test_suite.addTest(unittest.makeSuite(cube2image_tests))
+    def test_load_empty(self):
+        print(self.__class__.__name__)
+        cub = cube()
+        self.assertIsNone(cub.data, msg='data array from empty cube not None')
+        cub = cube(filename=EMPTY1)
+        self.assertIsNone(cub.data, msg='data array from dataless FITS not None')
 
 if __name__ == '__main__':
-    name_list = build_test_data()
-
-    test_runner = unittest.TextTestRunner()
-
-    print('Testing images...')
-    test_runner.run(test_suite)
-
-    delete_test_data(name_list)
+    unittest.main()
 
