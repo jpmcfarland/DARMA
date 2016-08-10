@@ -87,7 +87,6 @@ class cube(DataStruct):
             index      = self.index
             readonly   = self.readonly
             memmap     = self.memmap
-
             if filename is not None:
                 try:
                     #_data = fits.getdata(filename, extension)
@@ -99,18 +98,20 @@ class cube(DataStruct):
                 del data
             elif image_list:
                 _data = Array.concatenate([ima.data for ima in image_list]).reshape(len(image_list), ima.data.shape[0], ima.data.shape[1])
-
-            shape = _data.shape
-            if len(shape) == 1:
-                _data = _data.reshape(1,1,shape[0])
-            elif len(shape) == 2:
-                _data = _data.reshape(1,shape[0],shape[1])
-            elif len(shape) == 3:
-                pass
-            elif len(shape) == 4:
-                _data = _data[index]
             else:
-                raise DARMAError('Cubes with %d dimensions are not supported!' % len(shape))
+                _data = None
+            if _data is not None:
+                shape = _data.shape
+                if len(shape) == 1:
+                    _data = _data.reshape(1,1,shape[0])
+                elif len(shape) == 2:
+                    _data = _data.reshape(1,shape[0],shape[1])
+                elif len(shape) == 3:
+                    pass
+                elif len(shape) == 4:
+                    _data = _data[index]
+                else:
+                    raise DARMAError('Cubes with %d dimensions are not supported!' % len(shape))
             self._data = _data
 
     def as_image_list(self):
