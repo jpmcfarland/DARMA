@@ -1406,7 +1406,6 @@ def convert(filename, bitpix=16):
              -32 : 'float32',
              -64 : 'float64',
             }
-    np = fits.np
     # incorrect/unsupported bitpix value
     if bitpix not in bpmap:
         raise DARMAError('Unsupported bitpix value!  Must be one of %s' % list(bpmap.keys()))
@@ -1431,8 +1430,8 @@ def convert(filename, bitpix=16):
             # check the dynamic range (flat the shape temporarily to save memory)
             dims = hdu.data.shape
             hdu.data.shape = hdu.data.size
-            min = np.minimum.reduce(hdu.data)
-            max = np.maximum.reduce(hdu.data)
+            min = Array.minimum.reduce(hdu.data)
+            max = Array.maximum.reduce(hdu.data)
             hdu.data.shape = dims
             # adjust for negative values
             if min < 0:
@@ -1447,7 +1446,7 @@ def convert(filename, bitpix=16):
             update_header(hdu.header, 'BZERO', bzero, comment='physical=stored*BSCALE+BZERO', after='NAXIS2')
             update_header(hdu.header, 'BSCALE', bscale, comment='physical=stored*BSCALE+BZERO', after='NAXIS2')
             # convert to new datatype
-            hdu.data = np.array(np.around(hdu.data), dtype=bpmap[bitpix])
+            hdu.data = Array.array(Array.around(hdu.data), dtype=bpmap[bitpix])
             hdu.header['BITPIX'] = bitpix
         # don't scale data for floats (ever?)
         if bitpix < 0:
