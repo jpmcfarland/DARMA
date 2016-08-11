@@ -1649,36 +1649,120 @@ def get_tmpbase(suffix='', prefix='tmp', dir=None):
 # Astropy/PyFITS compatibility code #
 #####################################
 
-def fits_open(*args, **kwargs):
+def fits_open(name, mode='readonly', memmap=None, save_backup=False, cache=True, **kwargs):
 
     '''
        Wrapper around fits.open() method to allow arbitrary extra
        arguments common to all open commands, e.g., ignore_missing_end.
+
+   Docstring from Astropy.io.fits.open()
+   ---------------------------------------------------------------------
+
+    Factory function to open a FITS file and return an `HDUList` object.
+
+    Parameters
+    ----------
+    name : file path, file object, file-like object or pathlib.Path object
+        File to be opened.
+
+    mode : str, optional
+        Open mode, 'readonly' (default), 'update', 'append', 'denywrite', or
+        'ostream'.
+
+        If ``name`` is a file object that is already opened, ``mode`` must
+        match the mode the file was opened with, readonly (rb), update (rb+),
+        append (ab+), ostream (w), denywrite (rb)).
+
+    memmap : bool, optional
+        Is memory mapping to be used?
+
+    save_backup : bool, optional
+        If the file was opened in update or append mode, this ensures that a
+        backup of the original file is saved before any changes are flushed.
+        The backup has the same name as the original file with ".bak" appended.
+        If "file.bak" already exists then "file.bak.1" is used, and so on.
+
+    cache : bool, optional
+        If the file name is a URL, `~astropy.utils.data.download_file` is used
+        to open the file.  This specifies whether or not to save the file
+        locally in Astropy's download cache (default: `True`).
+
+    kwargs : dict, optional
+        additional optional keyword arguments, possible values are:
+
+        - **uint** : bool
+
+            Interpret signed integer data where ``BZERO`` is the
+            central value and ``BSCALE == 1`` as unsigned integer
+            data.  For example, ``int16`` data with ``BZERO = 32768``
+            and ``BSCALE = 1`` would be treated as ``uint16`` data.
+            This is enabled by default so that the pseudo-unsigned
+            integer convention is assumed.
+
+            Note, for backward compatibility, the kwarg **uint16** may
+            be used instead.  The kwarg was renamed when support was
+            added for integers of any size.
+
+        - **ignore_missing_end** : bool
+
+            Do not issue an exception when opening a file that is
+            missing an ``END`` card in the last header.
+
+        - **checksum** : bool, str
+
+            If `True`, verifies that both ``DATASUM`` and
+            ``CHECKSUM`` card values (when present in the HDU header)
+            match the header and data of all HDU's in the file.  Updates to a
+            file that already has a checksum will preserve and update the
+            existing checksums unless this argument is given a value of
+            'remove', in which case the CHECKSUM and DATASUM values are not
+            checked, and are removed when saving changes to the file.
+
+        - **disable_image_compression** : bool
+
+            If `True`, treats compressed image HDU's like normal
+            binary table HDU's.
+
+        - **do_not_scale_image_data** : bool
+
+            If `True`, image data is not scaled using BSCALE/BZERO values
+            when read.
+
+        - **ignore_blank** : bool
+
+            If `True`, the BLANK keyword is ignored if present.
+
+        - **scale_back** : bool
+
+            If `True`, when saving changes to a file that contained scaled
+            image data, restore the data to the original type and reapply the
+            original BSCALE/BZERO values.  This could lead to loss of accuracy
+            if scaling back to integer values after performing floating point
+            operations on the data.
+
+    Returns
+    -------
+        hdulist : an `HDUList` object
+            `HDUList` containing all of the header data units in the
+            file.
     '''
 
-    # New PyFITS has a bug that improperly detects a filename as a URL
-    # if it contains a colon.  Replace the colons with underscores for
-    # loading.
-    if _HAS_PYFITS33:
-        newargs = []
-        for arg in args:
-            if ':' in arg:
-                oldname = arg
-                newname = oldname.replace(':', '_')
-                if os.path.exists(newname):
-                    if not os.path.samefile(newname, oldname):
-                        msg = 'Cannot load file %s.  The given filename has a '
-                        msg += 'colon in it and the replacement filename %s '
-                        msg += 'is used by another file.'
-                        raise DARMAError(msg % (oldname, newname))
-                else:
-                    os.symlink(oldname, newname)
-                newargs.append(newname)
-            else:
-                newargs.append(arg)
-        args = tuple(newargs)
-    return fits.open(ignore_missing_end=True, *args, **kwargs)
-
+    try:
+        hdus = fits.open(name, mode=mode, memmap=memmap, save_backup=save_backup, cache=cache, ignore_missing_end=True, **kwargs)
+    except:
+        # New PyFITS has a bug that improperly detects a filename as a URL
+        # if it contains a colon.  Open the file for it.
+        modes = {
+            'readonly'    : 'rb',
+            'update'      : 'rb+',
+            'append'      : 'ab+',
+            'ostream'     : 'w',
+            'denywrite'   : 'rb',
+            'copyonwrite' : 'rb',
+            }
+        name = open(name, mode=modes[mode])
+        hdus = fits.open(name, mode=mode, memmap=memmap, save_backup=save_backup, cache=cache, ignore_missing_end=True, **kwargs)
+    return hdus
 
 def new_table(columns=[], hdr=None, nrows=0, fill=False, tbtype='BinTableHDU'):
 
