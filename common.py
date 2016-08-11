@@ -1656,6 +1656,27 @@ def fits_open(*args, **kwargs):
        arguments common to all open commands, e.g., ignore_missing_end.
     '''
 
+    # New PyFITS has a bug that improperly detects a filename as a URL
+    # if it contains a colon.  Replace the colons with underscores for
+    # loading.
+    if _HAS_PYFITS33:
+        newargs = []
+        for arg in args:
+            if ':' in arg:
+                oldname = arg
+                newname = oldname.replace(':', '_')
+                if os.path.exists(newname):
+                    if not os.path.samefile(newname, oldname):
+                        msg = 'Cannot load file %s.  The given filename has a '
+                        msg += 'colon in it and the replacement filename %s '
+                        msg += 'is used by another file.'
+                        raise DARMAError(msg % (oldname, newname))
+                else:
+                    os.symlink(oldname, newname)
+                newargs.append(newname)
+            else:
+                newargs.append(arg)
+        args = tuple(newargs)
     return fits.open(ignore_missing_end=True, *args, **kwargs)
 
 
