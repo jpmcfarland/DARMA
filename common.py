@@ -1747,11 +1747,14 @@ def fits_open(name, mode='readonly', memmap=None, save_backup=False, cache=True,
             file.
     '''
 
+    # New PyFITS has a bug that improperly detects a filename as a URL
+    # if it contains a colon.  Adding the local path to a filename with
+    # a colon works around this URL bug 
+    if os.path.basename(name) == name:
+        name = './%s' % name
     try:
         hdus = fits.open(name, mode=mode, memmap=memmap, save_backup=save_backup, cache=cache, ignore_missing_end=True, **kwargs)
     except:
-        # New PyFITS has a bug that improperly detects a filename as a URL
-        # if it contains a colon.  Open the file for it.
         modes = {
             'readonly'    : 'rb',
             'update'      : 'rb+',
