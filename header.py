@@ -943,8 +943,8 @@ class header(object):
               clobber: overwrite existing keywords in file
         '''
 
-        hdu = fits_open(filename, mode='update', memmap=True)
-        orig_hdr = header(cardlist=list(get_cards(hdu[0].header)), option=self.option)
+        hdus = fits_open(filename, mode='update', memmap=True)
+        orig_hdr = header(cardlist=list(get_cards(hdus[0].header)), option=self.option)
         self_hdr = self.copy()
         naxis_keywords = ['NAXIS%d' % val for val in range(1, self_hdr['NAXIS']+1)]
         ignored_keywords =  ['SIMPLE', 'BITPIX', 'NAXIS'] + naxis_keywords
@@ -953,9 +953,9 @@ class header(object):
                 del self_hdr._hdr[keyword]
         new_hdr = orig_hdr.merge(self_hdr, clobber=clobber)
         del self_hdr
-        hdu[0].header = new_hdr.hdr
-        hdu[0].update_header()
-        hdu.close(output_verify=self.option)
+        hdus[0].header = new_hdr.hdr
+        hdus[0].update_header()
+        hdus.close(output_verify=self.option)
         # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
         # Under certain circumstances the signal handler is redefined to
         # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
@@ -1397,7 +1397,6 @@ def update_header_in_file(filename, keywords=[], values=[], comments=[], ext=0, 
             update_header(hdr, keyword, value, comment)
     hdu.update_header()
     hdus.close(output_verify=option)
-
     # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
     # Under certain circumstances the signal handler is redefined to
     # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
