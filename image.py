@@ -786,7 +786,7 @@ class image(DataStruct):
 #               'mean5':    [1.0]*25,
 #               'dx':       [-1.0, 0.0, 1.0, -1.0, 0.0, 1.0, -1.0, 0.0, 1.0],
 #               'dy':       [-1.0, -1.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0],
-#               'dx2':      [1.0, -2.0, 1.0, 1.0, -2.0, 1.0, 1.0, -2.0, 1.0], 
+#               'dx2':      [1.0, -2.0, 1.0, 1.0, -2.0, 1.0, 1.0, -2.0, 1.0],
 #               'dy2':      [1.0, 1.0, 1.0, -2.0, -2.0, -2.0, 1.0, 1.0, 1.0],
 #               'contour1': [1.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0],
 #               'contour2': [-1.0, 0.0, 1.0, 2.0, 0.0, -2.0, -1.0, 0.0, 1.0],
@@ -827,7 +827,7 @@ class image(DataStruct):
 #        if xsize==3 and ysize==3:
 #            return self._apply_filter('mean3')
 #        if xsize==5 and ysize==5:
-#            return self._apply_filter('mean5') 
+#            return self._apply_filter('mean5')
 #
 #        result = image()
 #        result.p_ima = c_eclipse.image_rectangle_filter_flat(self.p_ima,
@@ -1300,7 +1300,7 @@ class image(DataStruct):
            Unimplemented
         '''
 
-#        '''Quality control tool  
+#        '''Quality control tool
 #
 #        This test is useful the see the number of pixel out a fixed
 #        threshold. It can produce two different output: the sum of all
@@ -1328,7 +1328,7 @@ class image(DataStruct):
            Unimplemented
         '''
 
-#        '''Tool for fitting surface  
+#        '''Tool for fitting surface
 #
 #        The common technique for obtaining smoothness in
 #        two-dimensional interpolation is the bicubic spline.
@@ -1375,7 +1375,7 @@ class image(DataStruct):
 #        Arguments
 #
 #        lv - low  value
-#        hv - high value 
+#        hv - high value
 #        sl - low  new value
 #        sh - high new value
 #

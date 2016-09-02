@@ -1749,7 +1749,7 @@ def fits_open(name, mode='readonly', memmap=None, save_backup=False, cache=True,
 
     # New PyFITS has a bug that improperly detects a filename as a URL
     # if it contains a colon.  Adding the local path to a filename with
-    # a colon works around this URL bug 
+    # a colon works around this URL bug
     if os.path.basename(name) == name:
         name = './%s' % name
     try:

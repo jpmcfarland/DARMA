@@ -30,7 +30,7 @@ class cube(DataStruct):
        image or a pixelmap.
     '''
 
-    def __init__(self, filename=None, extension=0, data=None, image_list=None, 
+    def __init__(self, filename=None, extension=0, data=None, image_list=None,
                  index=0, readonly=0, memmap=1, datatype=FLOAT, *args,
                  **kwargs):
 
@@ -472,7 +472,7 @@ class cube(DataStruct):
 #           Procedure takes in input a cube and run n_cycle times a rejection
 #           excluding pixels value large than (thresh*sigma).  Sigma is given
 #           by sigma=sqrt((rn/gain)^2 + median/gain).
-# 
+#
 #           Arguments
 #             n_cycle  -- number of iterations
 #             nmin     -- minimum number of pixels used for final average
