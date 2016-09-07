@@ -8,7 +8,9 @@ from ..common import DARMAError, unicode
 from ..image import image
 from .common_test import fits, Array
 
-import unittest, os, collections
+import unittest
+import os
+import collections
 
 SINGLE1 = 'SEF1.fits'
 SINGLE2 = 'SEF2.fits'
@@ -34,21 +36,23 @@ ONE1 = 'ONE1.fits'
 ONE2 = 'ONE2.fits'
 #ONES = [ONE1, ONE2]
 ONES = [ONE1]
-FILENAMES = SINGLES+MULTIS+CUBES+EMPTYS+ZEROS+ONES
+FILENAMES = SINGLES + MULTIS + CUBES + EMPTYS + ZEROS + ONES
+
 
 def build_test_data_sef():
     '''
        This function builds SEF files to be used in testing
     '''
-    data = Array.random.normal(1.0, 0.5, (32,16)).astype('float32')
+    data = Array.random.normal(1.0, 0.5, (32, 16)).astype('float32')
     for filename in SINGLES:
         fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
+
 
 def build_test_data_mef():
     '''
        This function builds MEF files to be used in testing
     '''
-    data = Array.random.normal(1.0, 0.5, (32,16)).astype('float32')
+    data = Array.random.normal(1.0, 0.5, (32, 16)).astype('float32')
     for filename in MULTIS:
         hdu0 = fits.PrimaryHDU()
         hdu1 = fits.ImageHDU(data=data)
@@ -60,16 +64,17 @@ def build_test_data_mef():
         hdus = fits.HDUList([hdu0, hdu1, hdu2, hdu3])
         hdus.writeto(filename, output_verify='silentfix', clobber=True)
         hdus.close()
+
 
 def build_test_data_mef_cube():
     '''
        This function builds MEF files to be used in testing
     '''
     data = Array.asanyarray([
-        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
-        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
-        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
-        ])
+        Array.random.normal(1.0, 0.5, (32, 16)).astype('float32'),
+        Array.random.normal(1.0, 0.5, (32, 16)).astype('float32'),
+        Array.random.normal(1.0, 0.5, (32, 16)).astype('float32'),
+    ])
     for filename in MULTIS:
         hdu0 = fits.PrimaryHDU()
         hdu1 = fits.ImageHDU(data=data)
@@ -81,6 +86,7 @@ def build_test_data_mef_cube():
         hdus = fits.HDUList([hdu0, hdu1, hdu2, hdu3])
         hdus.writeto(filename, output_verify='silentfix', clobber=True)
         hdus.close()
+
 
 def build_test_data_empty():
     '''
@@ -88,6 +94,7 @@ def build_test_data_empty():
     '''
     for filename in EMPTYS:
         fits.PrimaryHDU().writeto(filename, output_verify='silentfix', clobber=True)
+
 
 def build_test_data_zero():
     '''
@@ -98,6 +105,7 @@ def build_test_data_zero():
     for filename in ZEROS:
         fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
 
+
 def build_test_data_one():
     '''
        This function builds SEF files with all one data array to be
@@ -106,6 +114,7 @@ def build_test_data_one():
     data = Array.ones((32, 16), dtype='float32')
     for filename in ONES:
         fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
+
 
 def delete_test_data():
     '''
@@ -120,6 +129,7 @@ def delete_test_data():
 #                          image load tests                            #
 #                                                                      #
 ########################################################################
+
 
 class image_load_error_test(unittest.TestCase):
 
@@ -138,6 +148,7 @@ class image_load_error_test(unittest.TestCase):
         self.assertRaises(DARMAError, image, filename='Unknown.fits')
         img = image(filename=SINGLE1, extension=1)
         self.assertRaises(DARMAError, img.load)
+
 
 class image_load_empty_test(unittest.TestCase):
 
@@ -160,4 +171,3 @@ class image_load_empty_test(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

@@ -4,7 +4,9 @@
 
 __version__ = '@(#)$Revision$'
 
-import math, os, sys
+import math
+import os
+import sys
 # Python 2 and 3 compatibility
 try:
     from __builtin__ import xrange as range
@@ -31,6 +33,7 @@ try:
     #import numpy.nd_image.filters as Arrayfilter
 except:
     Arrayrandom = Arrayfft = None
+
     class ArrayClass():
         __version__ = ''
     Array = ArrayClass()
@@ -67,24 +70,26 @@ if not _HAS_ASTROPY and not _HAS_PYFITS:
 
 # default data types
 FLOAT = 'float32'
-INT   = 'int64'
+INT = 'int64'
 
 # log levels
-NONE    = 0
-NORMAL  = 1 << 0
+NONE = 0
+NORMAL = 1 << 0
 VERBOSE = 1 << 1
-DEBUG   = 1 << 2
+DEBUG = 1 << 2
 
 loglevel = {
-            'none'    : NONE,
-            'normal'  : NORMAL,
-            'verbose' : NORMAL+VERBOSE,
-            'debug'   : NORMAL+VERBOSE+DEBUG
-           }
+    'none': NONE,
+    'normal': NORMAL,
+    'verbose': NORMAL + VERBOSE,
+    'debug': NORMAL + VERBOSE + DEBUG
+}
+
 
 class DARMAError(Exception):
 
     pass
+
 
 class StatStruct:
 
@@ -108,27 +113,25 @@ class StatStruct:
     '''
 
     def __init__(self, stat_tuple):
-
         '''
            Just assign the values.
         '''
 
-        self.min_pix = stat_tuple[ 0]
-        self.max_pix = stat_tuple[ 1]
-        self.avg_pix = stat_tuple[ 2]
-        self.median  = stat_tuple[ 3]
-        self.stdev   = stat_tuple[ 4]
-        self.energy  = stat_tuple[ 5]
-        self.flux    = stat_tuple[ 6]
-        self.absflux = stat_tuple[ 7]
-        self.min_x   = stat_tuple[ 8]
-        self.min_y   = stat_tuple[ 9]
-        self.max_x   = stat_tuple[10]
-        self.max_y   = stat_tuple[11]
-        self.npix    = stat_tuple[12]
+        self.min_pix = stat_tuple[0]
+        self.max_pix = stat_tuple[1]
+        self.avg_pix = stat_tuple[2]
+        self.median = stat_tuple[3]
+        self.stdev = stat_tuple[4]
+        self.energy = stat_tuple[5]
+        self.flux = stat_tuple[6]
+        self.absflux = stat_tuple[7]
+        self.min_x = stat_tuple[8]
+        self.min_y = stat_tuple[9]
+        self.max_x = stat_tuple[10]
+        self.max_y = stat_tuple[11]
+        self.npix = stat_tuple[12]
 
     def show(self):
-
         '''
            Print out all statistics values.
         '''
@@ -148,12 +151,12 @@ class StatStruct:
         print('npix   : %s' % self.npix)
 
     def dump(self):
-
         '''
            Synonym for show().
         '''
 
         self.show()
+
 
 class DataStruct(object):
 
@@ -165,7 +168,6 @@ class DataStruct(object):
     verbose = NONE
 
     def __init__(self, *args, **kwargs):
-
         '''
            Abstract constructor.
 
@@ -181,7 +183,6 @@ class DataStruct(object):
         self.log('DataStruct constructor', 'debug')
 
     def log(self, msg, level='normal'):
-
         '''
            Print a log statement
 
@@ -195,7 +196,6 @@ class DataStruct(object):
                 print(msg)
 
     def load(self):
-
         '''
            Abstract load method.  All sub-classes should call their load_...()
            method from this method.
@@ -207,7 +207,6 @@ class DataStruct(object):
         self._data = None
 
     def _get_data(self):
-
         '''
            data 'getter' method
         '''
@@ -217,17 +216,15 @@ class DataStruct(object):
         return self._data
 
     def _set_data(self, data):
-
         '''
            data 'setter' method
         '''
 
         self.log('DataStruct data setter', 'debug')
-        #FIXME this does not appear to work as expected
+        # FIXME this does not appear to work as expected
         self._data = data
 
     def _del_data(self):
-
         '''
            data 'deleter' method
         '''
@@ -240,7 +237,6 @@ class DataStruct(object):
                     'Attribute to store the data')
 
     def _get_shape(self):
-
         '''
         '''
 
@@ -252,7 +248,6 @@ class DataStruct(object):
     shape = property(_get_shape)
 
     def _get_size(self):
-
         '''
            The total number of elements in the data array.
         '''
@@ -265,7 +260,6 @@ class DataStruct(object):
     size = property(_get_size)
 
     def _get_itemsize(self):
-
         '''
            Return the item size (in bytes) of self.data.
         '''
@@ -278,7 +272,6 @@ class DataStruct(object):
     itemsize = property(_get_itemsize)
 
     def _get_datatype(self):
-
         '''
         '''
 
@@ -288,7 +281,6 @@ class DataStruct(object):
         return self._datatype
 
     def _set_datatype(self, datatype):
-
         '''
         '''
 
@@ -296,7 +288,6 @@ class DataStruct(object):
         self._datatype = datatype
 
     def _del_datatype(self):
-
         '''
         '''
 
@@ -306,7 +297,6 @@ class DataStruct(object):
     datatype = property(_get_datatype, _set_datatype, _del_datatype)
 
     def __del__(self):
-
         '''
            Cleanup data array before destruction
         '''
@@ -315,7 +305,6 @@ class DataStruct(object):
         del(self.data)
 
     def copy(self, datatype=None):
-
         '''
            Copy the data to a new object.
 
@@ -342,7 +331,6 @@ class DataStruct(object):
 
     def save(self, filename=None, hdr=None, datatype='float32', clobber=True,
              update_datamd5=True, option='silentfix'):
-
         '''
            Save the data to a file.
 
@@ -365,7 +353,8 @@ class DataStruct(object):
 
         if not filename:
             if not self.filename:
-                raise DARMAError('Neither filename (%s) nor self.filename (%s) contain a valid file name!' % (filename, self.filename))
+                raise DARMAError('Neither filename (%s) nor self.filename (%s) contain a valid file name!' %
+                                 (filename, self.filename))
             else:
                 filename = self.filename
         else:
@@ -385,12 +374,12 @@ class DataStruct(object):
             if self.datatype is datatype:
                 self.log('DataStruct save: fits.writeto', 'debug')
                 fits.writeto(filename, data=self.data, header=hdr,
-                               clobber=clobber, output_verify=option)
+                             clobber=clobber, output_verify=option)
             else:
                 self.log('DataStruct save: fits.writeto astype(%s)' % datatype, 'debug')
                 fits.writeto(filename, data=self.data.astype(datatype),
-                               header=hdr, clobber=clobber,
-                               output_verify=option)
+                             header=hdr, clobber=clobber,
+                             output_verify=option)
         except Exception as e:
             raise DARMAError(e)
 
@@ -399,7 +388,6 @@ class DataStruct(object):
             _update_datamd5(filename, _datamd5(filename))
 
     def display(self, viewer='skycat', filename=None):
-
         '''
            Display this image in an external viewer, saved to filename if
            filename is not None.
@@ -435,7 +423,6 @@ class DataStruct(object):
         os.remove(filename)
 
     def bin(self, xbin=2, ybin=2, datatype=None, old=False):
-
         '''
            Return with a binned version of the data.  Negative binning factors
            are allowed.  If a negative binning factor is used, this has the
@@ -466,8 +453,8 @@ class DataStruct(object):
 
         if x_bin != 1 or y_bin != 1:
             if old:
-                xindex  = 1
-                yindex  = 1
+                xindex = 1
+                yindex = 1
                 # PyFITS Array axes are reversed.
                 # XXX bitmask support should probably be included here for
                 #     completeness
@@ -478,17 +465,17 @@ class DataStruct(object):
                     dtype = self.datatype
                     data = self
                 halfbin = data.__class__(data=Array.zeros(shape=(data.ysize(),
-                                         data.xsize()/x_bin), dtype=dtype))
-                fullbin = data.__class__(data=Array.zeros(shape=(data.ysize()/y_bin,
-                                         data.xsize()/x_bin), dtype=dtype))
+                                                                 data.xsize() / x_bin), dtype=dtype))
+                fullbin = data.__class__(data=Array.zeros(shape=(data.ysize() / y_bin,
+                                                                 data.xsize() / x_bin), dtype=dtype))
 
                 self.log('DataStruct bin: starting halfbin', 'debug')
-                for i in range(1, fullbin.xsize()+1):
+                for i in range(1, fullbin.xsize() + 1):
                     for j in range(x_bin):
                         halfbin[i, :] += data[xindex, :]
                         xindex += 1
                 self.log('DataStruct bin: starting fullbin', 'debug')
-                for i in range(1, fullbin.ysize()+1):
+                for i in range(1, fullbin.ysize() + 1):
                     for j in range(y_bin):
                         fullbin[:, i] += halfbin[:, yindex]
                         yindex += 1
@@ -498,7 +485,7 @@ class DataStruct(object):
                 # PyFITS Array axes are reversed.
                 # XXX bitmask support should probably be included here for
                 #     completeness
-                shape = (self.ysize()/y_bin, self.xsize()/x_bin)
+                shape = (self.ysize() / y_bin, self.xsize() / x_bin)
                 if datatype:
                     data = self.data.astype(datatype)
                 else:
@@ -524,25 +511,22 @@ class DataStruct(object):
         return fullbin
 
     def flip(self):
-
         '''
            Return a copy with the Y-axis flipped (top to bottom).
         '''
 
         self.log('DataStruct flip', 'verbose')
-        return self.bin(1,-1)
+        return self.bin(1, -1)
 
     def flop(self):
-
         '''
            Return a copy with the X-axis flipped (left to right).
         '''
 
         self.log('DataStruct flop', 'verbose')
-        return self.bin(-1,1)
+        return self.bin(-1, 1)
 
     def reshape(self, shape):
-
         '''
            Set the shape of the image's data array to shape.
 
@@ -559,7 +543,6 @@ class DataStruct(object):
             self.data = self.data.reshape(shape[::-1])
 
     def swapaxes(self):
-
         '''
            Swap NAXIS1 and NAXIS2 inplace.
         '''
@@ -568,11 +551,10 @@ class DataStruct(object):
         if self.data is not None:
             if self.has_bitmask():
                 self.log('DataStruct swapaxes bmask', 'debug')
-                self.bmask.swapaxes(0,1)
-            self.data = self.data.swapaxes(0,1)
+                self.bmask.swapaxes(0, 1)
+            self.data = self.data.swapaxes(0, 1)
 
     def extract_region(self, x0, y0, x1, y1):
-
         '''
            Extract a sub-region from this image/pixelmap
 
@@ -587,7 +569,8 @@ class DataStruct(object):
 
         self.log('DataStruct extract_region', 'verbose')
         if x0 < 1 or y0 < 1 or x1 > self.xsize() or y1 > self.ysize():
-            raise DARMAError('Cannot extract region %s: region not contained completely within the %s!' % (repr((x0, y0, x1, y1)), self.__class__.__name__))
+            raise DARMAError('Cannot extract region %s: region not contained completely within the %s!' %
+                             (repr((x0, y0, x1, y1)), self.__class__.__name__))
 
         return self[x0:x1, y0:y1]
 
@@ -597,15 +580,14 @@ class DataStruct(object):
     #
 
     def info(self):
-
         '''
            Show general information on this image/pixelmap.
         '''
 
         # Acquire attributes.
-        size             = self.size
-        item_size        = self.itemsize
-        data_size        = size * item_size
+        size = self.size
+        item_size = self.itemsize
+        data_size = size * item_size
         if hasattr(self, 'bmask'):
             has_nonnumbers = self.has_nonnumbers()
         else:
@@ -614,38 +596,35 @@ class DataStruct(object):
             bitmask_size = self.bmask.size * self.bmask.itemsize
         else:
             bitmask_size = 0
-        total_size       = data_size + bitmask_size
+        total_size = data_size + bitmask_size
         # Print them out.
-        print('   image class: %s'       %  self.__class__)
-        print('         shape: %s'       % repr(self.shape))
-        print('       npixels: %s'       %  size)
-        print('      datatype: %s'       %  self.datatype)
-        print('      itemsize: %s bytes' %  item_size)
-        print('      datasize: %s bytes' %  data_size)
-        print('has nonnumbers: %s'       %  has_nonnumbers)
-        print('  bitmask size: %s bytes' %  bitmask_size)
-        print('    total size: %s bytes' %  total_size)
+        print('   image class: %s' % self.__class__)
+        print('         shape: %s' % repr(self.shape))
+        print('       npixels: %s' % size)
+        print('      datatype: %s' % self.datatype)
+        print('      itemsize: %s bytes' % item_size)
+        print('      datasize: %s bytes' % data_size)
+        print('has nonnumbers: %s' % has_nonnumbers)
+        print('  bitmask size: %s bytes' % bitmask_size)
+        print('    total size: %s bytes' % total_size)
 
     def xsize(self):
-
         '''
            The length of the x-axis data.
         '''
 
         if self.data is not None:
-            return self.data.shape[1] # PyFITS Array axes are reversed.
+            return self.data.shape[1]  # PyFITS Array axes are reversed.
 
     def ysize(self):
-
         '''
            The length of the y-axis data.
         '''
 
         if self.data is not None:
-            return self.data.shape[0] # PyFITS Array axes are reversed.
+            return self.data.shape[0]  # PyFITS Array axes are reversed.
 
     def has_bitmask(self):
-
         '''
            Determine if a bitmask exists for this object and is set.
         '''
@@ -656,7 +635,6 @@ class DataStruct(object):
             return False
 
     def get_bitmask(self):
-
         '''
            Return the bitmask for this object if it exists
         '''
@@ -667,7 +645,6 @@ class DataStruct(object):
             return None
 
     def __len__(self):
-
         '''
            Total number of elements in the data array.
            x.__len__() <==> len(self)
@@ -676,7 +653,6 @@ class DataStruct(object):
         return self.size
 
     def __getitem__(self, key):
-
         '''
            Get an item from the data array using FITS convention indexes.
            x.__getitem__(i) <==> x[i]
@@ -697,7 +673,6 @@ class DataStruct(object):
             return self.__class__()
 
     def __setitem__(self, key, value):
-
         '''
            Set an item to the data array using FITS convention indexes.
            x.__setitem__(i, y) <==> x[i] = y
@@ -713,7 +688,6 @@ class DataStruct(object):
             raise DARMAError('Cannot set item.  Data array does not exist!')
 
     def __contains__(self, value):
-
         '''
            Return existence of value in self.
            x.__contains__(y) <==> y in x
@@ -722,7 +696,7 @@ class DataStruct(object):
         self.log('DataStruct __contains__: %s' % value, 'debug')
         return value in self.data
 
-    #def __repr__(self):
+    # def __repr__(self):
 
     #    '''
     #       Show representation.
@@ -744,7 +718,6 @@ class DataStruct(object):
     #
 
     def _arith_op_(self, op, other, *args, **kwargs):
-
         '''
            Provide a common interface for operations on images by other images
            and non-images.
@@ -753,19 +726,21 @@ class DataStruct(object):
         self.log('DataStruct _arith_op_', 'verbose')
         if isinstance(other, DataStruct):
             if other.data is not None:
-                self.log('DataStruct _arith_op_ DataStruct: op=%s, data=%s, args=%s, kwargs=%s' % (op, other.data, args, kwargs), 'debug')
+                self.log('DataStruct _arith_op_ DataStruct: op=%s, data=%s, args=%s, kwargs=%s' %
+                         (op, other.data, args, kwargs), 'debug')
                 return self.__class__(data=op(other.data, *args, **kwargs),
                                       bmask=self.get_bitmask())
             else:
-                self.log('DataStruct _arith_op_ DataStruct no data: op=%s, args=%s, kwargs=%s' % (op, args, kwargs), 'debug')
+                self.log('DataStruct _arith_op_ DataStruct no data: op=%s, args=%s, kwargs=%s' %
+                         (op, args, kwargs), 'debug')
                 return self.copy()
         else:
-            self.log('DataStruct _arith_op_ non-DataStruct: op=%s, data=%s, args=%s, kwargs=%s' % (op, other, args, kwargs), 'debug')
+            self.log('DataStruct _arith_op_ non-DataStruct: op=%s, data=%s, args=%s, kwargs=%s' %
+                     (op, other, args, kwargs), 'debug')
             return self.__class__(data=op(other, *args, **kwargs),
                                   bmask=self.get_bitmask())
 
     def _inplace_op_(self, op, other, *args, **kwargs):
-
         '''
            Provide a common interface for in-place operations on images by
            other images and non-images.
@@ -774,12 +749,15 @@ class DataStruct(object):
         self.log('DataStruct _inplace_op_', 'verbose')
         if isinstance(other, DataStruct):
             if other.data is not None:
-                self.log('DataStruct _inplace_op_ DataStruct: op=%s, data=%s, args=%s, kwargs=%s' % (op, other.data, args, kwargs), 'debug')
+                self.log('DataStruct _inplace_op_ DataStruct: op=%s, data=%s, args=%s, kwargs=%s' %
+                         (op, other.data, args, kwargs), 'debug')
                 self.data = op(other.data, *args, **kwargs)
             else:
-                self.log('DataStruct _inplace_op_ DataStruct no data: op=%s, args=%s, kwargs=%s' % (op, args, kwargs), 'debug')
+                self.log('DataStruct _inplace_op_ DataStruct no data: op=%s, args=%s, kwargs=%s' %
+                         (op, args, kwargs), 'debug')
         else:
-            self.log('DataStruct _inplace_op_ non-DataStruct: op=%s, data=%s, args=%s, kwargs=%s' % (op, other, args, kwargs), 'debug')
+            self.log('DataStruct _inplace_op_ non-DataStruct: op=%s, data=%s, args=%s, kwargs=%s' %
+                     (op, other, args, kwargs), 'debug')
             self.data = op(other, *args, **kwargs)
         return self
 
@@ -789,7 +767,6 @@ class DataStruct(object):
     #
 
     def __lt__(self, other):
-
         '''
            Less than comparison.
            x.__lt__(y) <==> x < y
@@ -798,7 +775,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__lt__, other)
 
     def __le__(self, other):
-
         '''
            Less than equal to comparison.
            x.__le__(y) <==> x <= y
@@ -807,7 +783,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__le__, other)
 
     def __eq__(self, other):
-
         '''
            Equal to comparison.
            x.__eq__(y) <==> x == y
@@ -816,7 +791,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__eq__, other)
 
     def __ne__(self, other):
-
         '''
            Not equal to comparison.
            x.__ne__(y) <==> x != y
@@ -825,7 +799,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__ne__, other)
 
     def __gt__(self, other):
-
         '''
            Greater than comparison.
            x.__gt__(y) <==> x > y
@@ -834,7 +807,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__gt__, other)
 
     def __ge__(self, other):
-
         '''
            Greater than equal to comparison.
            x.__ge__(y) <==> x >= y
@@ -848,7 +820,6 @@ class DataStruct(object):
     #
 
     def __add__(self, other):
-
         '''
            Add binary operation.
            x.__add__(y) <==> x + y
@@ -857,7 +828,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__add__, other)
 
     def __sub__(self, other):
-
         '''
            Subtract binary operation.
            x.__sub__(y) <==> x - y
@@ -866,7 +836,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__sub__, other)
 
     def __mul__(self, other):
-
         '''
            Multiply binary operation.
            x.__mul__(y) <==> x * y
@@ -875,7 +844,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__mul__, other)
 
     def __floordiv__(self, other):
-
         '''
            Floor divide binary operation.
            x.__floordiv__(y) <==> x // y
@@ -884,7 +852,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__div__, other)
 
     def __mod__(self, other):
-
         '''
            Modulus binary operation.
            x.__mod__(y) <==> x % y
@@ -893,7 +860,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__mod__, other)
 
     def __divmod__(self, other):
-
         '''
            Divide modulus binary operation.
            x.__divmod__(y) <==> divmod(x, y)
@@ -902,7 +868,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__divmod__, other)
 
     def __pow__(self, other):
-
         '''
            Power binary operation.
            x.__pow__(y) <==> pow(x, y) or x ** y
@@ -911,7 +876,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__pow__, other)
 
     def __lshift__(self, other):
-
         '''
            Left shift binary operation.
            x.__lshift__(y) <==> x << y
@@ -920,7 +884,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__lshift__, other)
 
     def __rshift__(self, other):
-
         '''
            Right shift binary operation.
            x.__rshift__(y) <==> x >> y
@@ -929,7 +892,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rshift__, other)
 
     def __and__(self, other):
-
         '''
            AND binary operation.
            x.__and__(y) <==> x & y
@@ -938,7 +900,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__and__, other)
 
     def __xor__(self, other):
-
         '''
            XOR binary operation.
            x.__xor__(y) <==> x ^ y
@@ -947,7 +908,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__xor__, other)
 
     def __or__(self, other):
-
         '''
            OR binary operation.
            x.__or__(y) <==> x | y
@@ -956,7 +916,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__or__, other)
 
     def __div__(self, other):
-
         '''
            Divide binary operation.
            x.__div__(y) <==> x / y
@@ -964,9 +923,7 @@ class DataStruct(object):
 
         return self._arith_op_(self.data.__div__, other)
 
-
     def __truediv__(self, other):
-
         '''
            True divide binary operation.  Replaces __div__() when
            __future__.division is in effect.
@@ -981,7 +938,6 @@ class DataStruct(object):
     #
 
     def __iadd__(self, other):
-
         '''
            Add in place binary operation.
            x = x.__iadd__(y) <==> x += y
@@ -990,7 +946,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__iadd__, other)
 
     def __isub__(self, other):
-
         '''
            Subtract in place binary operation.
            x = x.__isub__(y) <==> x -= y
@@ -999,7 +954,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__isub__, other)
 
     def __imul__(self, other):
-
         '''
            Multiply in place binary operation.
            x = x.__imul__(y) <==> x *= y
@@ -1008,7 +962,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__imul__, other)
 
     def __idiv__(self, other):
-
         '''
            Divide in place binary operation.
            x = x.__idiv__(y) <==> x /= y
@@ -1017,7 +970,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__idiv__, other)
 
     def __itruediv__(self, other):
-
         '''
            True divide in place binary operation.  Replaces __idiv__() when
            __future__.division is in effect.
@@ -1027,7 +979,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__itruediv__, other)
 
     def __ifloordiv__(self, other):
-
         '''
            Floor divide in place binary operation.
            x = x.__ifloordiv__(y) <==> x //= y
@@ -1036,7 +987,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__ifloordiv__, other)
 
     def __imod__(self, other):
-
         '''
            Modulus in place binary operation.
            x = x.__imod__(y) <==> x %= y
@@ -1045,7 +995,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__imod__, other)
 
     def __ipow__(self, other):
-
         '''
            Power in place binary operation.
            x = x.__ipow__(y) <==> x **= y
@@ -1054,7 +1003,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__ipow__, other)
 
     def __ilshift__(self, other):
-
         '''
            Left shift in place binary operation.
            x = x.__ilshift__(y) <==> x <<= y
@@ -1063,7 +1011,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__ilshift__, other)
 
     def __irshift__(self, other):
-
         '''
            Right shift in place binary operation.
            x = x.__irshift__(y) <==> x >>= y
@@ -1072,7 +1019,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__irshift__, other)
 
     def __iand__(self, other):
-
         '''
            AND in place binary operation.
            x = x.__iand__(y) <==> x &= y
@@ -1081,7 +1027,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__iand__, other)
 
     def __ixor__(self, other):
-
         '''
            XOR in place binary operation.
            x = x.__ixor__(y) <==> x ^= y
@@ -1090,7 +1035,6 @@ class DataStruct(object):
         return self._inplace_op_(self.data.__ixor__, other)
 
     def __ior__(self, other):
-
         '''
            OR in place binary operation.
            x = x.__ior__(y) <==> x |= y
@@ -1104,7 +1048,6 @@ class DataStruct(object):
     #
 
     def __radd__(self, other):
-
         '''
            Add reflected (swapped operands) binary operation.
            x.__radd__(y) <==> y + x
@@ -1113,7 +1056,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__radd__, other)
 
     def __rsub__(self, other):
-
         '''
            Subtract reflected (swapped operands) binary operation.
            x.__rsub__(y) <==> y - x
@@ -1122,7 +1064,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rsub__, other)
 
     def __rmul__(self, other):
-
         '''
            Multiply reflected (swapped operands) binary operation.
            x.__rmul__(y) <==> y * x
@@ -1131,7 +1072,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rmul__, other)
 
     def __rdiv__(self, other):
-
         '''
            Divide reflected (swapped operands) binary operation.
            x.__rdiv__(y) <==> y / x
@@ -1140,7 +1080,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rdiv__, other)
 
     def __rtruediv__(self, other):
-
         '''
            True divide reflected (swapped operands) binary operation.  Replaces
            __rdiv__() when __future__.division is in effect.
@@ -1150,7 +1089,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rtruediv__, other)
 
     def __rfloordiv__(self, other):
-
         '''
            Floor divide reflected (swapped operands) binary operation.
            x.__r__(y) <==> y // x
@@ -1159,7 +1097,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rfloordiv__, other)
 
     def __rmod__(self, other):
-
         '''
            Modulus reflected (swapped operands) binary operation.
            x.__rmod__(y) <==> y % x
@@ -1168,7 +1105,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rmod__, other)
 
     def __rdivmod__(self, other):
-
         '''
            Divide modulus reflected (swapped operands) binary operation.
            x.__rdivmod__(y) <==> divmod(y, x)
@@ -1177,7 +1113,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rdivmod__, other)
 
     def __rpow__(self, other):
-
         '''
            Power reflected (swapped operands) binary operation.
            x.__rpow__(y) <==> pow(y, x) or y ** x
@@ -1186,7 +1121,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rpow__, other)
 
     def __rlshift__(self, other):
-
         '''
            Left shift reflected (swapped operands) binary operation.
            x.__rlshift__(y) <==> y << x
@@ -1195,7 +1129,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rlshift__, other)
 
     def __rrshift__(self, other):
-
         '''
            Right shift reflected (swapped operands) binary operation.
            x.__rrshift__(y) <==> y >> x
@@ -1204,7 +1137,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rrshift__, other)
 
     def __rand__(self, other):
-
         '''
            AND reflected (swapped operands) binary operation.
            x.__rand__(y) <==> y & x
@@ -1213,7 +1145,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rand__, other)
 
     def __rxor__(self, other):
-
         '''
            XOR reflected (swapped operands) binary operation.
            x.__rxor__(y) <==> y ^ x
@@ -1222,7 +1153,6 @@ class DataStruct(object):
         return self._arith_op_(self.data.__rxor__, other)
 
     def __ror__(self, other):
-
         '''
            OR reflected (swapped operands) binary operation.
            x.__ror__(y) <==> y | x
@@ -1236,7 +1166,6 @@ class DataStruct(object):
     #
 
     def __neg__(self):
-
         '''
            Negative unary operation.
            x.__neg__() <==> -x
@@ -1250,7 +1179,6 @@ class DataStruct(object):
             return self
 
     def __pos__(self):
-
         '''
            Positive unary operation.
            x.__pos__() <==> +x
@@ -1264,7 +1192,6 @@ class DataStruct(object):
             return self
 
     def __abs__(self):
-
         '''
            Absolute value unary operation.
            x.__abs__() <==> abs(x)
@@ -1278,7 +1205,6 @@ class DataStruct(object):
             return self
 
     def __invert__(self):
-
         '''
            Invert unary operation.
            x.__invert__() <==> ~x
@@ -1299,7 +1225,6 @@ class DataStruct(object):
     #
 
     def __int__(self):
-
         '''
            Integer datatype conversion.  Return with the data converted to an
            integer representation (%s).
@@ -1314,7 +1239,6 @@ class DataStruct(object):
             return self
 
     def __float__(self):
-
         '''
            Float datatype conversion.  Return with the data converted to a
            float64 representation (PyFITS converts 16 and -32 BITPIX data into
@@ -1329,7 +1253,6 @@ class DataStruct(object):
             return self
 
     def astype(self, datatype=FLOAT):
-
         '''
            Return with the data converted to an arbitrary Array datatype
            (uint8, float32, etc.).
@@ -1351,7 +1274,6 @@ class DataStruct(object):
     #
 
     def set_val(self, value=0):
-
         '''
            Set all elements of the data in this image to an arbitrary value.
 
@@ -1363,7 +1285,6 @@ class DataStruct(object):
         self.data.fill(value)
 
     def set_zero(self):
-
         '''
            Set all elements of the data in this image to zero.
         '''
@@ -1377,8 +1298,8 @@ class DataStruct(object):
     # Utility functions
     #
 
-def _datamd5(filename, regions=None, buffer_blocks=32):
 
+def _datamd5(filename, regions=None, buffer_blocks=32):
     '''
        Calculate the MD5SUM of all data regions of a FITS file.
 
@@ -1388,37 +1309,38 @@ def _datamd5(filename, regions=None, buffer_blocks=32):
        buffer_blocks: read only this many FITS blocks at a time
     '''
 
-    import os, md5
+    import os
+    import md5
 
     if not os.path.exists(filename):
         raise DARMAError('No FITS file (%s) to calcualte MD5SUM from!' % filename)
 
     fitsfile = fits_open(filename, mode='readonly', memmap=True)
-    md5sum   = md5.md5()
+    md5sum = md5.md5()
 
-    block  = 2880
+    block = 2880
     number = buffer_blocks
     if regions is None:
         regions = list(range(len(fitsfile)))
     for index in regions:
         hdu = fitsfile[index]
-        start  = hdu._datLoc
+        start = hdu._datLoc
         length = hdu._datSpan
         hdu._file.seek(start)
         while length > 0:
-            if length < number*block:
+            if length < number * block:
                 buffer_size = length
             else:
-                buffer_size = number*block
+                buffer_size = number * block
             md5sum.update(hdu._file.read(buffer_size))
-            length -= number*block
+            length -= number * block
 
     fitsfile.close()
 
     return md5sum.hexdigest()
 
-def _update_datamd5(filename, datamd5):
 
+def _update_datamd5(filename, datamd5):
     '''
        Update (or add) the DATAMD5 keyword in the header with datamd5.
 
@@ -1440,10 +1362,10 @@ def _update_datamd5(filename, datamd5):
     # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
     # handler to its original state, which is omitted in PyFits.
     import signal
-    signal.signal(signal.SIGINT,signal.default_int_handler)
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+
 
 def _adjust_index(key):
-
     '''
        Function to take array index keys (integers or slices) and adjust them
        from FITS convention to PyFITS/Array convention (i.e., unity-indexed
@@ -1485,13 +1407,15 @@ def _adjust_index(key):
         # Slice modification for first index.
         if isinstance(key0, slice):
             start = key0.start
-            stop  = key0.stop
-            step  = key0.step
+            stop = key0.stop
+            step = key0.step
             if start == 0 or stop == 0:
                 raise DARMAError('Slice [%d:%d, _] not in FITS convention!' % (start, stop))
             # Rectify negative indexes.
-            if start is not None and start < 0: start += 1
-            if stop  is not None and stop  < 0: stop  += 1
+            if start is not None and start < 0:
+                start += 1
+            if stop is not None and stop < 0:
+                stop += 1
             # Shift indexes for zero-indexed array.
             if step is None or step >= 0:
                 if start is not None:
@@ -1505,19 +1429,22 @@ def _adjust_index(key):
             if key0 == 0:
                 raise DARMAError('Index [%d, _] not in FITS convention!' % key0)
             # Rectify negative indexes.
-            if key0 is not None and key0 < 0: key0 += 1
+            if key0 is not None and key0 < 0:
+                key0 += 1
             # Shift indexes for zero-indexed array.
             key0 -= 1
         # Slice modification for second index.
         if isinstance(key1, slice):
             start = key1.start
-            stop  = key1.stop
-            step  = key1.step
+            stop = key1.stop
+            step = key1.step
             if start == 0 or stop == 0:
                 raise DARMAError('Slice [_, %d:%d] not in FITS convention!' % (start, stop))
             # Rectify negative indexes.
-            if start is not None and start < 0: start += 1
-            if stop  is not None and stop  < 0: stop  += 1
+            if start is not None and start < 0:
+                start += 1
+            if stop is not None and stop < 0:
+                stop += 1
             # Shift indexes for zero-indexed array.
             if step is None or step >= 0:
                 if start is not None:
@@ -1531,23 +1458,26 @@ def _adjust_index(key):
             if key1 == 0:
                 raise DARMAError('Index [_, %d] not in FITS convention!' % key1)
             # Rectify negative indexes.
-            if key1 is not None and key1 < 0: key1 += 1
+            if key1 is not None and key1 < 0:
+                key1 += 1
             # Shift indexes for zero-indexed array.
             key1 -= 1
-        return (key1, key0) # PyFITS Array axes are reversed.
+        return (key1, key0)  # PyFITS Array axes are reversed.
     # If one index.
     else:
         key0 = key
         # Slice modification.
         if isinstance(key0, slice):
             start = key0.start
-            stop  = key0.stop
-            step  = key0.step
+            stop = key0.stop
+            step = key0.step
             if start == 0 or stop == 0:
                 raise DARMAError('Slice [%d:%d] not in FITS convention!' % (start, stop))
             # Rectify negative indexes.
-            if start is not None and start < 0: start += 1
-            if stop  is not None and stop  < 0: stop  += 1
+            if start is not None and start < 0:
+                start += 1
+            if stop is not None and stop < 0:
+                stop += 1
             # Shift indexes for zero-indexed array.
             if step is None or step >= 0:
                 if start is not None:
@@ -1561,13 +1491,14 @@ def _adjust_index(key):
             if key0 == 0:
                 raise DARMAError('Index [%d] not in FITS convention!' % key0)
             # Rectify negative indexes.
-            if key0 is not None and key0 < 0: key0 += 1
+            if key0 is not None and key0 < 0:
+                key0 += 1
             # Shift indexes for zero-indexed array.
             key0 -= 1
         return key0
 
-def fold_string(string, num=80, char='', newline='\n'):
 
+def fold_string(string, num=80, char='', newline='\n'):
     '''
        Fold the given string string at num characters if len(string) > num.
        If char is specified, prefer splitting after nearest previous
@@ -1582,14 +1513,14 @@ def fold_string(string, num=80, char='', newline='\n'):
     output = ''
     buffer = ''
     for c in string:
-        if len(buffer)+1 < num:
+        if len(buffer) + 1 < num:
             buffer += c
         else:
             buffer += c
             if char and char in buffer:
                 index = buffer.rfind(char)
-                output += '%s%s' % (buffer[:index+1], newline)
-                buffer = buffer[index+1:]
+                output += '%s%s' % (buffer[:index + 1], newline)
+                buffer = buffer[index + 1:]
             else:
                 output += '%s%s' % (buffer, newline)
                 buffer = ''
@@ -1599,8 +1530,8 @@ def fold_string(string, num=80, char='', newline='\n'):
         output = output[:-len(newline)]
     return output
 
-def get_tmpbase(suffix='', prefix='tmp', dir=None):
 
+def get_tmpbase(suffix='', prefix='tmp', dir=None):
     '''
        Return a basename for a temporary filename.
 
@@ -1649,8 +1580,8 @@ def get_tmpbase(suffix='', prefix='tmp', dir=None):
 # Astropy/PyFITS compatibility code #
 #####################################
 
-def fits_open(name, mode='readonly', memmap=None, save_backup=False, cache=True, **kwargs):
 
+def fits_open(name, mode='readonly', memmap=None, save_backup=False, cache=True, **kwargs):
     '''
        Wrapper around fits.open() method to allow arbitrary extra
        arguments common to all open commands, e.g., ignore_missing_end.
@@ -1753,22 +1684,24 @@ def fits_open(name, mode='readonly', memmap=None, save_backup=False, cache=True,
     if os.path.basename(name) == name:
         name = './%s' % name
     try:
-        hdus = fits.open(name, mode=mode, memmap=memmap, save_backup=save_backup, cache=cache, ignore_missing_end=True, **kwargs)
+        hdus = fits.open(name, mode=mode, memmap=memmap, save_backup=save_backup,
+                         cache=cache, ignore_missing_end=True, **kwargs)
     except:
         modes = {
-            'readonly'    : 'rb',
-            'update'      : 'rb+',
-            'append'      : 'ab+',
-            'ostream'     : 'w',
-            'denywrite'   : 'rb',
-            'copyonwrite' : 'rb',
-            }
+            'readonly': 'rb',
+            'update': 'rb+',
+            'append': 'ab+',
+            'ostream': 'w',
+            'denywrite': 'rb',
+            'copyonwrite': 'rb',
+        }
         name = open(name, mode=modes[mode])
-        hdus = fits.open(name, mode=mode, memmap=memmap, save_backup=save_backup, cache=cache, ignore_missing_end=True, **kwargs)
+        hdus = fits.open(name, mode=mode, memmap=memmap, save_backup=save_backup,
+                         cache=cache, ignore_missing_end=True, **kwargs)
     return hdus
 
-def new_table(columns=[], hdr=None, nrows=0, fill=False, tbtype='BinTableHDU'):
 
+def new_table(columns=[], hdr=None, nrows=0, fill=False, tbtype='BinTableHDU'):
     '''
        In PyFITS >= 3.3 pyfits.new_table() is deprecated.  Use
        pyfits.BinTableHDU.from_columns() for new BINARY tables or
@@ -1796,8 +1729,8 @@ def new_table(columns=[], hdr=None, nrows=0, fill=False, tbtype='BinTableHDU'):
     else:
         return fits.new_table(input=columns, header=hdr, nrows=nrows, fill=fill, tbtype='BinTableHDU')
 
-def _strip_keyword(keyword, fill=False):
 
+def _strip_keyword(keyword, fill=False):
     '''
        Return a keyword stripped of 'HIERARCH ' if a string.
 
@@ -1816,8 +1749,8 @@ def _strip_keyword(keyword, fill=False):
     else:
         raise DARMAError('keyword is not of type str or int: %s' % type(keyword))
 
-def is_hierarch(card):
 
+def is_hierarch(card):
     '''
        Return if a fits.Card instance is a HIERARCH card.
 
@@ -1829,8 +1762,8 @@ def is_hierarch(card):
     else:
         return isinstance(card, fits.core._Hierarch)
 
-def get_cards(hdr):
 
+def get_cards(hdr):
     '''
        Return the card list (dictionary-like object, actually) of a
        fits.Header instance.
@@ -1843,8 +1776,8 @@ def get_cards(hdr):
     else:
         return hdr.ascardlist()
 
-def get_keyword(card):
 
+def get_keyword(card):
     '''
        Return the keyword of a fits.Card instance.
 
@@ -1856,8 +1789,8 @@ def get_keyword(card):
     else:
         return card.key
 
-def _remove_cards(hdr, keywords):
 
+def _remove_cards(hdr, keywords):
     '''
        Astropy/new PyFITS cannot remove a HIERARCH keyword card properly.
        Remove it by making a shadow copy, clearing the original header,
@@ -1871,8 +1804,8 @@ def _remove_cards(hdr, keywords):
     hdr.clear()
     hdr.update([card for card in shadow.cards if card.keyword not in keywords])
 
-def clear_header(hdr):
 
+def clear_header(hdr):
     '''
        Remove all card from the header.
 
@@ -1885,8 +1818,8 @@ def clear_header(hdr):
         for key in hdr:
             del hdr[key]
 
-def rename_keyword(hdr, oldkeyword, newkeyword):
 
+def rename_keyword(hdr, oldkeyword, newkeyword):
     '''
        Rename a card's keyword in the header.
 
@@ -1900,20 +1833,20 @@ def rename_keyword(hdr, oldkeyword, newkeyword):
         new = _strip_keyword(newkeyword)
         if new in hdr:
             raise DARMAError('Cannot rename %s to %s: %s exists!' % (oldkeyword, newkeyword, newkeyword))
-        #FIXME rename_keyword() does not work properly for HIERARCH
-        #FIXME keywords in Astropy/new PyFITS.  Manually rename.
+        # FIXME rename_keyword() does not work properly for HIERARCH
+        # FIXME keywords in Astropy/new PyFITS.  Manually rename.
         #hdr.rename_keyword(oldkeyword=old, newkeyword=new)
         oldcard = hdr.cards[old]
         newcard = fits.Card(keyword=newkeyword, value=oldcard.value, comment=oldcard.comment)
         hdr.insert(old, newcard, useblanks=False)
-        #FIXME The main problem with rename_keyword() method for HIERARCH
-        #FIXME cards is the remove() method.
+        # FIXME The main problem with rename_keyword() method for HIERARCH
+        # FIXME cards is the remove() method.
         _remove_cards(hdr, [old])
     else:
         hdr.rename_key(oldkey=oldkeyword, newkey=newkeyword)
 
-def update_header(hdr, keyword, value, comment=None, before=None, after=None, savecomment=False):
 
+def update_header(hdr, keyword, value, comment=None, before=None, after=None, savecomment=False):
     '''
        Update one header card.
 
@@ -1966,8 +1899,8 @@ def update_header(hdr, keyword, value, comment=None, before=None, after=None, sa
     else:
         hdr.update(key=keyword, value=value, comment=comment, before=before, after=after, savecomment=savecomment)
 
-def get_cardimage(card):
 
+def get_cardimage(card):
     '''
        Return a fits.Card instance image
 
@@ -1989,8 +1922,8 @@ def get_cardimage(card):
             return '%- 80s' % cardstr[:80]
         return card.ascardimage()
 
-def get_comment(hdr):
 
+def get_comment(hdr):
     '''
        Return a list of all COMMENT card contents
 
@@ -2004,8 +1937,8 @@ def get_comment(hdr):
     else:
         return hdr.get_comment()
 
-def get_history(hdr):
 
+def get_history(hdr):
     '''
        Return a list of all HISTORY card contents
 
@@ -2019,8 +1952,8 @@ def get_history(hdr):
     else:
         return hdr.get_history()
 
-def _get_index(hdr, keyword):
 
+def _get_index(hdr, keyword):
     '''
        Return index of a keyword in a fits.Header instance
 
@@ -2040,8 +1973,8 @@ def _get_index(hdr, keyword):
             raise DARMAError('header does not contain keyword: %s' % keyword)
         return hdr.ascardlist().index_of(keyword)
 
-def get_value(hdr, keyword, default=None):
 
+def get_value(hdr, keyword, default=None):
     '''
        Return the value of a keyword/index in a fits.Header instance
 
@@ -2060,8 +1993,8 @@ def get_value(hdr, keyword, default=None):
             return default
         return hdr.get(keyword, default=default)
 
-def add_blank(hdr, value, before=None, after=None):
 
+def add_blank(hdr, value, before=None, after=None):
     '''
        Add a BLANK card to a fits.Header instance
 
@@ -2084,13 +2017,12 @@ def add_blank(hdr, value, before=None, after=None):
             if '' in hdr:
                 index = hdr.ascardlist().index_of('')
                 blanks = [card.value for card in hdr.ascardlist() if card.key == '']
-                index += len(blanks)-1
+                index += len(blanks) - 1
             elif 'COMMENT' in hdr:
-                index = hdr.ascardlist().index_of('COMMENT')-1
+                index = hdr.ascardlist().index_of('COMMENT') - 1
             elif 'HISTORY' in hdr:
-                index = hdr.ascardlist().index_of('HISTORY')-1
+                index = hdr.ascardlist().index_of('HISTORY') - 1
             else:
-                index = len(hdr.ascardlist())-1
+                index = len(hdr.ascardlist()) - 1
             after = index
         hdr.add_blank(value=value, before=before, after=after)
-

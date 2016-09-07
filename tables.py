@@ -3,28 +3,30 @@
 
 __version__ = '@(#)$Revision$'
 
-import math, os
+import math
+import os
 
 from .common import fits, Array
 from .common import DARMAError, _HAS_NUMPY, fits_open, get_cards
 from .header import header
 
 datatypes = {
-             'ascii'  : fits.TableHDU,
-             'binary' : fits.BinTableHDU,
-            }
+    'ascii': fits.TableHDU,
+    'binary': fits.BinTableHDU,
+}
 
 fits_format = {
-               'bool'       : 'L',
-               'int16'      : 'I',
-               'int32'      : 'J',
-               'int64'      : 'K',
-               'string8'    : 'A',
-               'float32'    : 'E',
-               'float64'    : 'D',
-               'complex64'  : 'C',
-               'complex128' : 'M',
-              }
+    'bool': 'L',
+    'int16': 'I',
+    'int32': 'J',
+    'int64': 'K',
+    'string8': 'A',
+               'float32': 'E',
+               'float64': 'D',
+               'complex64': 'C',
+               'complex128': 'M',
+}
+
 
 class columns(object):
 
@@ -34,7 +36,6 @@ class columns(object):
 
     def __init__(self, filename=None, name=None, datatype='binary',
                  readonly=1, memmap=0):
-
         '''
               filename: The name of a FITS file
                   name: Name of the table to be loaded from filename
@@ -52,19 +53,18 @@ class columns(object):
         if not _HAS_NUMPY:
             raise DARMAError('DARMA table functionality not possible: cannot import module numpy')
 
-        self.filename   = filename
-        self._name      = name
-        self.datatype   = datatype
-        self.readonly   = readonly
-        self.memmap     = memmap
-        self.table      = None
+        self.filename = filename
+        self._name = name
+        self.datatype = datatype
+        self.readonly = readonly
+        self.memmap = memmap
+        self.table = None
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
                 raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
-
         '''
            Proxy for load_columns()
 
@@ -74,7 +74,6 @@ class columns(object):
         return self.load_columns()
 
     def load_columns(self):
-
         '''
            Load a list of columns (a table) from the given filename.  If there
            is no filename, table is set to None.
@@ -93,7 +92,6 @@ class columns(object):
                     setattr(self, name, name)
 
     def __getattribute__(self, name):
-
         '''
            x.__getattribute__('name') <==> x.name
 
@@ -107,7 +105,6 @@ class columns(object):
             return object.__getattribute__(self, name)
 
     def __getitem__(self, name):
-
         '''
            x.__getitem__(y) <==> x[y]
 
@@ -121,7 +118,6 @@ class columns(object):
                 return getattr(self, attrname)
 
     def __setattr__(self, name, value):
-
         '''
            x.__setattr__('name', value) <==> x.name = value
 
@@ -136,7 +132,6 @@ class columns(object):
             object.__setattr__(self, attrname, value)
 
     def __setitem__(self, name, value):
-
         '''
            x.__setitem__(y) <==> x[y]
 
@@ -152,7 +147,6 @@ class columns(object):
                 setattr(self, attrname, name)
 
     def __delattr__(self, name):
-
         '''
            x.__delattr__('name') <==> del x.name
 
@@ -165,7 +159,6 @@ class columns(object):
         object.__delattr__(self, name)
 
     def __delitem__(self, name):
-
         '''
            x.__delitem__(y) <==> x[y]
 
@@ -179,7 +172,6 @@ class columns(object):
                 delattr(self, name)
 
     def __del__(self):
-
         '''
            x.__del__() <==> del(x)
 
@@ -193,7 +185,6 @@ class columns(object):
         self.hdus.close()
 
     def _get_names(self):
-
         '''
            List of names of columns in the table.
 
@@ -209,7 +200,6 @@ class columns(object):
     names = property(_get_names, None, None, 'List of names of columns in the table.')
 
     def _get_name(self):
-
         '''
            Name of the table holding the columns.
 
@@ -223,7 +213,6 @@ class columns(object):
         return ''
 
     def _set_name(self, value):
-
         '''
            Name of the table holding the columns.
 
@@ -239,7 +228,6 @@ class columns(object):
     name = property(_get_name, _set_name, None, 'Name of the table holding the columns.')
 
     def info(self):
-
         '''
            Display helpful info about the columns.
         '''
@@ -247,12 +235,11 @@ class columns(object):
         print('Table "%s" holds the following columns:' % self.table.name)
         cols = self.table.columns
         print('%30s %10s %10s' % ('Name', 'Format', 'Unit'))
-        print('-'*52)
+        print('-' * 52)
         for name, format, unit in zip(cols.names, cols.formats, cols.units):
             print('%30s %10s %10s' % (name, format, unit))
 
     def __repr__(self):
-
         '''
            x.__repr__() <==> repr(x)
 
@@ -262,7 +249,6 @@ class columns(object):
         return '%s' % self.names
 
     def __str__(self):
-
         '''
            x.__str__() <==> str(x)
 
@@ -272,7 +258,6 @@ class columns(object):
         return '%s' % self.names
 
     def __contains__(self, name):
-
         '''
            x.__contains__(y) <==> y in x
 
@@ -282,7 +267,6 @@ class columns(object):
         return name in self.names
 
     def __iter__(self):
-
         '''
            x.__iter__() <==> iter(x)
 
@@ -291,6 +275,7 @@ class columns(object):
 
         return iter(self.table.columns.names)
 
+
 class tables(list):
 
     '''
@@ -298,7 +283,6 @@ class tables(list):
 
     def __init__(self, filename=None, table_ids=[], indexes=[],
                  datatype='binary', readonly=1, memmap=0):
-
         '''
              filename: The name of a FITS file
             table_ids: Optional list of table names to load
@@ -318,22 +302,21 @@ class tables(list):
         if not _HAS_NUMPY:
             raise DARMAError('DARMA table functionality not possible: cannot import module numpy')
 
-        self.filename  = filename
+        self.filename = filename
         self.table_ids = table_ids
-        self.indexes   = indexes
-        self.datatype  = datatype
-        self.readonly  = readonly
-        self.memmap    = memmap
-        self._tables   = []
-        self._names    = []
-        self._dict     = {}
+        self.indexes = indexes
+        self.datatype = datatype
+        self.readonly = readonly
+        self.memmap = memmap
+        self._tables = []
+        self._names = []
+        self._dict = {}
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
                 raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
-
         '''
            Proxy for load_tables()
 
@@ -343,7 +326,6 @@ class tables(list):
         return self.load_tables()
 
     def load_tables(self):
-
         '''
            Load a list of tables from the given filename.  If there
            is no filename, tables is set to None.
@@ -382,7 +364,6 @@ class tables(list):
                     setattr(self, attrname, cols)
 
     def _get_tables(self):
-
         '''
         '''
 
@@ -391,7 +372,6 @@ class tables(list):
         return self._tables
 
     def _set_tables(self, value):
-
         '''
         '''
 
@@ -404,7 +384,6 @@ class tables(list):
             raise DARMAError('Cannot set tables to object of type: %s' % type(value))
 
     def _del_tables(self):
-
         '''
         '''
 
@@ -413,7 +392,6 @@ class tables(list):
     tables = property(_get_tables, _set_tables, _del_tables)
 
     def _get_names(self):
-
         '''
         '''
 
@@ -422,14 +400,12 @@ class tables(list):
         return self._names
 
     def _set_names(self, value):
-
         '''
         '''
 
         self._names = value
 
     def _del_names(self):
-
         '''
         '''
 
@@ -438,7 +414,6 @@ class tables(list):
     names = property(_get_names, _set_names, _del_names)
 
     def __getitem__(self, name):
-
         '''
         '''
 
@@ -450,7 +425,6 @@ class tables(list):
             return None
 
     def __setitem__(self, name, value):
-
         '''
         '''
 
@@ -462,7 +436,6 @@ class tables(list):
             setattr(self, attrname, value)
 
     def __delitem__(self, name):
-
         '''
         '''
 
@@ -475,7 +448,6 @@ class tables(list):
             delattr(self, name)
 
     def __delattr__(self, name):
-
         '''
         '''
 
@@ -485,28 +457,24 @@ class tables(list):
         list.__delattr__(self, name)
 
     def __repr__(self):
-
         '''
         '''
 
         return '%s' % self.names
 
     def __str__(self):
-
         '''
         '''
 
         return '%s' % self.names
 
     def __contains__(self, name):
-
         '''
         '''
 
         return name in self.names
 
     def __iter__(self):
-
         '''
            x.__iter__() <==> iter(x)
 
@@ -516,7 +484,6 @@ class tables(list):
         return iter(self.names)
 
     def info(self):
-
         '''
         '''
 
@@ -527,11 +494,9 @@ class tables(list):
             n += 1
 
     def __del__(self):
-
         '''
            Make sure all the HDUs are closed properly.
         '''
 
         for name in self.names:
             delattr(self, name)
-

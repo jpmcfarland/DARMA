@@ -8,7 +8,9 @@ from ..common import DARMAError, unicode
 from ..cube import cube
 from .common_test import fits, Array
 
-import unittest, os, collections
+import unittest
+import os
+import collections
 
 SINGLE1 = 'SEF1.fits'
 SINGLE2 = 'SEF2.fits'
@@ -30,29 +32,31 @@ ONE1 = 'ONE1.fits'
 ONE2 = 'ONE2.fits'
 #ONES = [ONE1, ONE2]
 ONES = [ONE1]
-FILENAMES = SINGLES+MULTIS+EMPTYS+ZEROS+ONES
+FILENAMES = SINGLES + MULTIS + EMPTYS + ZEROS + ONES
+
 
 def build_test_data_sef():
     '''
        This function builds SEF files to be used in testing
     '''
     data = Array.asanyarray([
-        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
-        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
-        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
-        ])
+        Array.random.normal(1.0, 0.5, (32, 16)).astype('float32'),
+        Array.random.normal(1.0, 0.5, (32, 16)).astype('float32'),
+        Array.random.normal(1.0, 0.5, (32, 16)).astype('float32'),
+    ])
     for filename in SINGLES:
         fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
+
 
 def build_test_data_mef():
     '''
        This function builds MEF files to be used in testing
     '''
     data = Array.asanyarray([
-        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
-        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
-        Array.random.normal(1.0, 0.5, (32,16)).astype('float32'),
-        ])
+        Array.random.normal(1.0, 0.5, (32, 16)).astype('float32'),
+        Array.random.normal(1.0, 0.5, (32, 16)).astype('float32'),
+        Array.random.normal(1.0, 0.5, (32, 16)).astype('float32'),
+    ])
     for filename in MULTIS:
         hdu0 = fits.PrimaryHDU()
         hdu1 = fits.ImageHDU(data=data)
@@ -65,12 +69,14 @@ def build_test_data_mef():
         hdus.writeto(filename, output_verify='silentfix', clobber=True)
         hdus.close()
 
+
 def build_test_data_empty():
     '''
        This function builds dataless files to be used in testing
     '''
     for filename in EMPTYS:
         fits.PrimaryHDU().writeto(filename, output_verify='silentfix', clobber=True)
+
 
 def build_test_data_zero():
     '''
@@ -81,9 +87,10 @@ def build_test_data_zero():
         Array.zeros((32, 16), dtype='int32'),
         Array.zeros((32, 16), dtype='int32'),
         Array.zeros((32, 16), dtype='int32'),
-        ])
+    ])
     for filename in ZEROS:
         fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
+
 
 def build_test_data_one():
     '''
@@ -94,9 +101,10 @@ def build_test_data_one():
         Array.ones((32, 16), dtype='int32'),
         Array.ones((32, 16), dtype='int32'),
         Array.ones((32, 16), dtype='int32'),
-        ])
+    ])
     for filename in ONES:
         fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
+
 
 def delete_test_data():
     '''
@@ -111,6 +119,7 @@ def delete_test_data():
 #                           cube load tests                            #
 #                                                                      #
 ########################################################################
+
 
 class cube_load_error_test(unittest.TestCase):
 
@@ -130,6 +139,7 @@ class cube_load_error_test(unittest.TestCase):
         self.assertRaises(DARMAError, cube, filename='Unknown.fits')
         cub = cube(filename=ZERO1, extension=1)
         self.assertRaises(DARMAError, cub.load)
+
 
 class cube_load_empty_test(unittest.TestCase):
 
@@ -152,4 +162,3 @@ class cube_load_empty_test(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

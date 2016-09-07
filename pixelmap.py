@@ -8,6 +8,7 @@ import os
 from .common import fits, Array, fits_open
 from .common import DARMAError, DataStruct, get_tmpbase
 
+
 class pixelmap(DataStruct):
 
     '''
@@ -20,7 +21,6 @@ class pixelmap(DataStruct):
 
     def __init__(self, filename=None, data=None, extension=0, plane=0,
                  readonly=0, memmap=1, *args, **kwargs):
-
         '''
             filename: The name of a FITS file
                 data: A data array (Python sequence, Array, etc.)
@@ -35,19 +35,18 @@ class pixelmap(DataStruct):
 
         DataStruct.__init__(self, *args, **kwargs)
 
-        self.filename  = filename or None
-        self._data     = data
+        self.filename = filename or None
+        self._data = data
         self.extension = extension
-        self.plane     = plane
-        self.readonly  = readonly
-        self.memmap    = memmap
+        self.plane = plane
+        self.readonly = readonly
+        self.memmap = memmap
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
                 raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
-
         '''
            Proxy for load_pixelmap()
 
@@ -57,7 +56,6 @@ class pixelmap(DataStruct):
         self.load_pixelmap()
 
     def load_pixelmap(self):
-
         '''
            Load the pixelmap from a file or from the given data Array.
         '''
@@ -82,7 +80,6 @@ class pixelmap(DataStruct):
         self._data = _data
 
     def dump_pixelmap(self, filename):
-
         '''
            A basic save() to filename.
         '''
@@ -91,7 +88,6 @@ class pixelmap(DataStruct):
 
     def save(self, filename=None, hdr=None, datatype='uint8', clobber=True,
              update_datamd5=True):
-
         '''
            Save the data to a file.
 
@@ -109,7 +105,6 @@ class pixelmap(DataStruct):
                         clobber=clobber, update_datamd5=update_datamd5)
 
     def as_image(self):
-
         '''
            Return an image object constructed from this pixelmap object.
         '''
@@ -118,7 +113,6 @@ class pixelmap(DataStruct):
         return image(data=self.data)
 
     def as_eclipse_pixelmap(self):
-
         '''
            Return an Eclipse pixelmap object based on this pixelmap.
         '''
@@ -131,7 +125,6 @@ class pixelmap(DataStruct):
         return e_pmap
 
     def set_val(self, value=0):
-
         '''
            Set all elements of the data in this image to an arbitrary value.
 
@@ -141,9 +134,7 @@ class pixelmap(DataStruct):
 
         DataStruct.set_val(self, value=value, datatype='bool')
 
-
     def count(self):
-
         '''
            Return the number of good pixels (non-zero values) in the pixelmap.
         '''
@@ -151,7 +142,6 @@ class pixelmap(DataStruct):
         return self.data.nonzero()[0].shape[0]
 
     def bin_xor(self, other):
-
         '''
            Synonym for __ixor__
         '''
@@ -159,10 +149,8 @@ class pixelmap(DataStruct):
         return self.__ixor__(other)
 
     def bin_not(self):
-
         '''
            Synonym for __invert__().
         '''
 
         return self.__invert__()
-

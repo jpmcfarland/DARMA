@@ -6,5 +6,5 @@ __version__ = '@(#)$Revision$'
 
 from ..common import DARMAError
 
-import unittest, os
-
+import unittest
+import os

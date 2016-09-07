@@ -6,7 +6,10 @@ __version__ = '@(#)$Revision$'
 
 from ..common import DARMAError, unicode
 
-import unittest, os, collections, numpy as Array
+import unittest
+import os
+import collections
+import numpy as Array
 
 # AstroPy/PyFITS compatibility
 try:
@@ -26,6 +29,7 @@ except:
 #                                                                      #
 ########################################################################
 
+
 class common_version_test(unittest.TestCase):
 
     '''
@@ -43,12 +47,13 @@ class common_version_test(unittest.TestCase):
 
     def test_darma_version(self):
         print(self.__class__.__name__)
-        self.assertEqual(self.darma_fits_version, fits.__version__, msg='DARMA fits version does not match test fits version')
+        self.assertEqual(self.darma_fits_version, fits.__version__,
+                         msg='DARMA fits version does not match test fits version')
 
     def test_array_version(self):
         print(self.__class__.__name__)
-        self.assertEqual(self.darma_array_version, Array.__version__, msg='DARMA Array version does not match test Array version')
+        self.assertEqual(self.darma_array_version, Array.__version__,
+                         msg='DARMA Array version does not match test Array version')
 
 if __name__ == '__main__':
     unittest.main()
-

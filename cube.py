@@ -11,6 +11,7 @@ from .common import DARMAError, _HAS_NUMPY, _datamd5, _update_datamd5
 from .image import image
 from .pixelmap import pixelmap
 
+
 class cube(DataStruct):
 
     '''
@@ -33,7 +34,6 @@ class cube(DataStruct):
     def __init__(self, filename=None, extension=0, data=None, image_list=None,
                  index=0, readonly=0, memmap=1, datatype=FLOAT, *args,
                  **kwargs):
-
         '''
              filename: The name of a FITS file the cube can be loaded from
             extension: A FITS extension number
@@ -49,21 +49,20 @@ class cube(DataStruct):
         if not _HAS_NUMPY:
             raise DARMAError('DARMA pixel functionality not possible: cannot import module numpy')
 
-        self.filename   = filename or None
-        self.extension  = extension
-        self._data      = data
+        self.filename = filename or None
+        self.extension = extension
+        self._data = data
         self.image_list = image_list
-        self.index      = index
-        self.readonly   = readonly
-        self.memmap     = memmap
-        self._datatype  = datatype
+        self.index = index
+        self.readonly = readonly
+        self.memmap = memmap
+        self._datatype = datatype
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
                 raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
-
         '''
            Proxy for load_cube()
         '''
@@ -71,22 +70,21 @@ class cube(DataStruct):
         self.load_cube()
 
     def load_cube(self):
-
         '''
            Load the images from a file, data or from the given image_list.
         '''
 
-        #FIXME Add datatype conversion here.
+        # FIXME Add datatype conversion here.
 
         if self._data is None:
 
-            filename   = self.filename
-            extension  = self.extension
-            data       = self._data
+            filename = self.filename
+            extension = self.extension
+            data = self._data
             image_list = self.image_list
-            index      = self.index
-            readonly   = self.readonly
-            memmap     = self.memmap
+            index = self.index
+            readonly = self.readonly
+            memmap = self.memmap
             if filename is not None:
                 try:
                     #_data = fits.getdata(filename, extension)
@@ -97,15 +95,16 @@ class cube(DataStruct):
                 _data = data
                 del data
             elif image_list:
-                _data = Array.concatenate([ima.data for ima in image_list]).reshape(len(image_list), ima.data.shape[0], ima.data.shape[1])
+                _data = Array.concatenate([ima.data for ima in image_list]).reshape(
+                    len(image_list), ima.data.shape[0], ima.data.shape[1])
             else:
                 _data = None
             if _data is not None:
                 shape = _data.shape
                 if len(shape) == 1:
-                    _data = _data.reshape(1,1,shape[0])
+                    _data = _data.reshape(1, 1, shape[0])
                 elif len(shape) == 2:
-                    _data = _data.reshape(1,shape[0],shape[1])
+                    _data = _data.reshape(1, shape[0], shape[1])
                 elif len(shape) == 3:
                     pass
                 elif len(shape) == 4:
@@ -115,7 +114,6 @@ class cube(DataStruct):
             self._data = _data
 
     def as_image_list(self):
-
         '''
            Return a list of individual image objects, each corresponding to
            planes in the data cube.  This replicates the way Eclipse stored
@@ -125,7 +123,6 @@ class cube(DataStruct):
         return [image(data=plane) for plane in self.data]
 
     def as_pixelmap_list(self):
-
         '''
            Return a list of individual pixelmap objects, each corresponding
            to planes in the data cube.  This replicates the way Eclipse
@@ -135,7 +132,6 @@ class cube(DataStruct):
         return [pixelmap(data=plane.data) for plane in self.data]
 
     def copy(self):
-
         '''
            Copy the data to a new object.
         '''
@@ -144,7 +140,6 @@ class cube(DataStruct):
 
     def save(self, filename=None, hdr=None, extension=None,
              datatype='float32', clobber=True, update_datamd5=True):
-
         '''
            Save the data to a file.
 
@@ -162,7 +157,8 @@ class cube(DataStruct):
 
         if not filename:
             if not self.filename:
-                raise DARMAError('Neither filename (%s) nor self.filename (%s) contain a valid file name!' % (filename, self.filename))
+                raise DARMAError('Neither filename (%s) nor self.filename (%s) contain a valid file name!' %
+                                 (filename, self.filename))
             else:
                 filename = self.filename
         else:
@@ -183,13 +179,12 @@ class cube(DataStruct):
             self.data = Array.ascontiguousarray(self.data)
 
         fits.writeto(filename=filename, data=self.data, header=hdr,
-                           ext=extension, clobber=clobber)
+                     ext=extension, clobber=clobber)
 
         if update_datamd5:
             _update_datamd5(filename, _datamd5(filename))
 
     def __del__(self):
-
         '''
         '''
 
@@ -201,28 +196,25 @@ class cube(DataStruct):
     #
 
     def xsize(self):
-
         '''
            The length of the x-axis data of the cube members.
         '''
 
-        return self.data.shape[2] # PyFITS Array axes are reversed
+        return self.data.shape[2]  # PyFITS Array axes are reversed
 
     def ysize(self):
-
         '''
            The length of the y-axis data of the cube members.
         '''
 
-        return self.data.shape[1] # PyFITS Array axes are reversed
+        return self.data.shape[1]  # PyFITS Array axes are reversed
 
     def zsize(self):
-
         '''
            The length of the z-axis data of the cube members.
         '''
 
-        return self.data.shape[0] # PyFITS Array axes are reversed
+        return self.data.shape[0]  # PyFITS Array axes are reversed
 
     ##################################################################
     #
@@ -231,7 +223,6 @@ class cube(DataStruct):
 
     def normalize_mean(self, pixmap=None, pixrange=None, zone=None,
                        scale=1.0):
-
         '''
            Normalize each plane to a mean of 1.0.
 
@@ -252,7 +243,6 @@ class cube(DataStruct):
 
     def normalize_median(self, pixmap=None, pixrange=None, zone=None,
                          scale=1.0):
-
         '''
            Normalize each plane to a median of 1.0.
 
@@ -273,7 +263,6 @@ class cube(DataStruct):
 
     def normalize_flux(self, pixmap=None, pixrange=None, zone=None,
                        scale=1.0):
-
         '''
            Normalize each plane to a flux of 1.0.
 
@@ -294,7 +283,6 @@ class cube(DataStruct):
 
     def normalize_range(self, pixmap=None, pixrange=None, zone=None,
                         scale=1.0):
-
         '''
            Normalize the images to a range of values between 0.0 and 1.0.
 
@@ -315,7 +303,6 @@ class cube(DataStruct):
 
     def normalize_absolute_flux(self, pixmap=None, pixrange=None,
                                 zone=None, scale=1.0):
-
         '''
            Normalize the images to an absolute flux of 1.0.
 
@@ -340,7 +327,6 @@ class cube(DataStruct):
     #
 
     def sum(self):
-
         '''
            Sum all images in the cube to a single image.
         '''
@@ -348,7 +334,6 @@ class cube(DataStruct):
         return image(data=self.data.sum(axis=0))
 
     def average(self):
-
         '''
            Do a straight average of all images in the cube.
         '''
@@ -356,7 +341,6 @@ class cube(DataStruct):
         return image(data=self.data.mean(axis=0))
 
     def stdev(self, mean=None):
-
         '''
            Compute the standard deviation of each pixel in the z direction.
 
@@ -373,26 +357,25 @@ class cube(DataStruct):
         return image(data=self.data.std(axis=0))
 
         # XXX retain until performance is checked.
-        #if len(self) < 2:
+        # if len(self) < 2:
         #    raise DARMAError, 'stdev requires at least two images!'
 
-        #if mean is None:
+        # if mean is None:
         #    mean = self.average()
 
         #stdev = (self[0]-mean)
         #stdev *= stdev
-        #for ima in self[1:]:
+        # for ima in self[1:]:
         #    devima = ima-mean
         #    devima *= devima
         #    stdev += devima
         #    devima = None # force unload
 
         #stdev /= len(self)
-        #return stdev ** 0.5
+        # return stdev ** 0.5
 
-    #def median(self, buffer_size=256):
+    # def median(self, buffer_size=256):
     def median(self):
-
         '''
            Do a median average of all images in the cube.
 
@@ -411,12 +394,11 @@ class cube(DataStruct):
 
         return image(data=Array.median(self.data))
 
-
         #bsize = int(buffer_size)
 
-        #if bsize == 0:
+        # if bsize == 0:
         #    return image(data=Array.median(self.data))
-        #else:
+        # else:
         #    pcube = self.data
         #    result = Array.empty(shape=pcube[0].shape, dtype=pcube[0].dtype)
 
@@ -437,7 +419,6 @@ class cube(DataStruct):
         #    return self[0].__class__(data=result)
 
     def average_with_rejection(self, low_reject, high_reject):
-
         '''
            Unimplemented
         '''
@@ -459,8 +440,7 @@ class cube(DataStruct):
 #        result.pcheck('Error in average')
 #        return result
 
-    def average_with_sigma_clip(self, n_cycle, nmin, bias,scaling,thresh, badval, rn, gain):
-
+    def average_with_sigma_clip(self, n_cycle, nmin, bias, scaling, thresh, badval, rn, gain):
         '''
            Unimplemented
         '''
@@ -500,13 +480,13 @@ class cube(DataStruct):
 #        c_eclipse.cube_del_shallow(pcube_out)
 #        return average
 
+
 def average_with_sigma_clip(data_cube, errors, threshold, niter=1):
+    '''
+       Unimplemented
+    '''
 
-        '''
-           Unimplemented
-        '''
-
-        pass
+    pass
 
 #    """
 #       Iteratively compute the mean of images with given errors, rejecting
@@ -559,8 +539,8 @@ def average_with_sigma_clip(data_cube, errors, threshold, niter=1):
 # Functions generating cubes
 #
 
-def make_cube(xsize, ysize, zsize, datatype=FLOAT, value=None):
 
+def make_cube(xsize, ysize, zsize, datatype=FLOAT, value=None):
     """
        Generate a new cube.
 
@@ -585,4 +565,3 @@ def make_cube(xsize, ysize, zsize, datatype=FLOAT, value=None):
     if value is not None:
         c.data.fill(value)
     return c
-

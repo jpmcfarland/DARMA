@@ -3,7 +3,8 @@
 
 __version__ = '@(#)$Revision$'
 
-import math, os
+import math
+import os
 
 #from .common import Array, Arrayfft, Arrayfilters
 from .common import fits, Array, Arrayfft, fits_open
@@ -12,9 +13,10 @@ from .common import update_header
 from .pixelmap import pixelmap
 from .bitmask import bitmask
 try:
-    range = xrange # Python 2
+    range = xrange  # Python 2
 except NameError:
-    pass # Python 3
+    pass  # Python 3
+
 
 class image(DataStruct):
 
@@ -207,7 +209,6 @@ class image(DataStruct):
     def __init__(self, filename=None, extension=0, plane=0, readonly=0,
                  memmap=1, data=None, datatype=None, bmask=None, bit=0,
                  *args, **kwargs):
-
         '''
             filename: The name of a FITS file
            extension: The FITS extension number
@@ -231,24 +232,24 @@ class image(DataStruct):
 
         DataStruct.__init__(self, *args, **kwargs)
         self.log('image constructor', 'verbose')
-        self.log('image constructor: filename=%s, extension=%s, plane=%s, readonly=%s, memmap=%s, data=%s, datatype=%s, bmask=%s, bit=%s, args=%s, kwargs=%s' % (filename, extension, plane, readonly, memmap, data, datatype, bmask, bit, args, kwargs), 'debug')
+        self.log('image constructor: filename=%s, extension=%s, plane=%s, readonly=%s, memmap=%s, data=%s, datatype=%s, bmask=%s, bit=%s, args=%s, kwargs=%s' % (
+            filename, extension, plane, readonly, memmap, data, datatype, bmask, bit, args, kwargs), 'debug')
 
-        self.filename  = filename
+        self.filename = filename
         self.extension = extension
-        self.plane     = plane
-        self.readonly  = readonly
-        self.memmap    = memmap
-        self._data     = data
+        self.plane = plane
+        self.readonly = readonly
+        self.memmap = memmap
+        self._data = data
         self._datatype = datatype
-        self.bmask     = bmask
-        self.bit       = bit
+        self.bmask = bmask
+        self.bit = bit
 
         if self.filename is not None:
             if not os.path.exists(self.filename):
                 raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
-
         '''
            Proxy for load_image()
 
@@ -259,7 +260,6 @@ class image(DataStruct):
         return self.load_image()
 
     def load_image(self):
-
         '''
            Load the image from the given data Array or from filename.  If there
            is no data and no filename, the image data is set to None.
@@ -267,18 +267,19 @@ class image(DataStruct):
 
         log = self.log
         log('image load_image', 'verbose')
-        filename  = self.filename
+        filename = self.filename
         extension = self.extension
-        plane     = self.plane
-        readonly  = self.readonly
-        memmap    = self.memmap
-        datatype  = self._datatype
-        bit       = self.bit
+        plane = self.plane
+        readonly = self.readonly
+        memmap = self.memmap
+        datatype = self._datatype
+        bit = self.bit
 
         if self._data is None:
             if filename is not None:
                 try:
-                    log('image load_image from file: filename=%s, memmap=%s, extension=%s' % (filename, memmap, extension), 'debug')
+                    log('image load_image from file: filename=%s, memmap=%s, extension=%s' %
+                        (filename, memmap, extension), 'debug')
                     #self._data = fits.getdata(filename, extension)
                     self._data = fits_open(filename, memmap=memmap)[extension].data
                 except Exception as e:
@@ -302,7 +303,6 @@ class image(DataStruct):
             self.bmask = bitmask(conserve=True, datatype='bool')
 
     def as_pixelmap(self):
-
         '''
            Return a pixelmap object constructed from this image object.
            Values are converted to a boolean array (i.e.,  0 ? 0 : 1)
@@ -311,7 +311,6 @@ class image(DataStruct):
         return pixelmap(data=self.data)
 
     def has_nonnumbers(self):
-
         '''
            Determine if non-numbers (NaN, Inf, etc.) exist in the data.
         '''
@@ -325,17 +324,16 @@ class image(DataStruct):
         return self.bmask.has_bit(bit=bit)
 
     def count_nonnumbers(self):
-
         '''
            Return the number of nonnumbers in the image.
         '''
 
         self.log('image count_nonnumbers', 'verbose')
         bit = self.bit
-        #if not self.bmask.has_bit(bit=bit):
+        # if not self.bmask.has_bit(bit=bit):
         #    pmap = pixelmap(data=Array.isfinite(self.data))
         #    self.bmask.add_pixelmap(pmap=pmap, bit=bit)
-        #if not self.bmask.has_bit(bit=bit):
+        # if not self.bmask.has_bit(bit=bit):
         if not self.has_nonnumbers():
             return 0
         else:
@@ -344,7 +342,6 @@ class image(DataStruct):
             return self.size - pdata.nonzero()[0].shape[0]
 
     def map_nonnumbers(self):
-
         '''
            Return a pixelmap with nonnumbers in the image marked as bad.
         '''
@@ -355,7 +352,7 @@ class image(DataStruct):
             self.log('image map_nonnumbers constructing bmask', 'debug')
             pmap = pixelmap(data=Array.isfinite(self.data))
             self.bmask.add_pixelmap(pmap=pmap, bit=bit)
-        return self.bmask.as_pixelmap(mask=1<<bit)
+        return self.bmask.as_pixelmap(mask=1 << bit)
 
     ################################################################
     #
@@ -363,7 +360,6 @@ class image(DataStruct):
     #
 
     def stat(self, domedian=True, filter=False):
-
         '''
            Compute the statistics.
 
@@ -381,7 +377,6 @@ class image(DataStruct):
 
     def stat_opts(self, pixmap=None, pixrange=None, zone=None, domedian=True,
                   filter=False):
-
         '''
            Compute the statistics, using a pixmap and/or a pixrange and/or a
            zone to define included pixels.
@@ -404,7 +399,6 @@ class image(DataStruct):
 
     def iter_stat(self, max_iter=5, threshold=5.0, domedian=True,
                   filter=False):
-
         '''
            Compute the statistics iteratively.
 
@@ -432,7 +426,6 @@ class image(DataStruct):
 
     def iter_stat_opts(self, pixmap=None, pixrange=None, zone=None, max_iter=5,
                        threshold=5.0, domedian=True, filter=False):
-
         '''
            Compute the statistics iteratively, using a pixmap and/or a pixrange
            and/or a zone to define included pixels.
@@ -485,7 +478,7 @@ class image(DataStruct):
         if pixmap is not None:
             if zone is not None:
                 _pmap = pixmap.extract_region(zone[0], zone[1], zone[2],
-                                             zone[3]).data
+                                              zone[3]).data
             else:
                 _pmap = pixmap.data
             _pmap = _pmap.ravel()
@@ -508,12 +501,12 @@ class image(DataStruct):
         if _mask is not None and not _mask.all():
             _data = _data.compress(_mask)
         # Start the main statistics loop.
-        n = _data.size*1.0
+        n = _data.size * 1.0
         if n:
             # Compute base statistics.
-            sum_val   = _data.sum(dtype='float64')
-            mean_val  = sum_val/n
-            stdev_val =  math.sqrt(((_data**2).sum(dtype='float64')-((sum_val**2)/n))/(n-1.0))
+            sum_val = _data.sum(dtype='float64')
+            mean_val = sum_val / n
+            stdev_val = math.sqrt(((_data**2).sum(dtype='float64') - ((sum_val**2) / n)) / (n - 1.0))
             # Copy and sort only for the median.
             if domedian:
                 _data = _data.copy()
@@ -528,25 +521,25 @@ class image(DataStruct):
                 iter = 0
                 # Iteration loop
                 while not convergence and max_iter:
-                    _mask = Array.abs(_data-median_val) < threshold*stdev_val
+                    _mask = Array.abs(_data - median_val) < threshold * stdev_val
                     # Don't apply mask or recalculate statistics if there is
                     # nothing to be masked.
                     if not _mask.all():
-                        _data      = _data.compress(_mask)
-                        n          = _data.size*1.0
-                        sum_val    = _data.sum(dtype='float64')
-                        new_mean   = sum_val/n
-                        new_stdev  =  math.sqrt(((_data**2).sum(dtype='float64')-((sum_val**2)/n))/(n-1.0))
+                        _data = _data.compress(_mask)
+                        n = _data.size * 1.0
+                        sum_val = _data.sum(dtype='float64')
+                        new_mean = sum_val / n
+                        new_stdev = math.sqrt(((_data**2).sum(dtype='float64') - ((sum_val**2) / n)) / (n - 1.0))
                         median_val = median(_data, sorted=True)
-                        if ((abs(new_mean/mean_val   - 1)<0.01 and
-                             abs(new_stdev/stdev_val - 1)<0.01)):
+                        if ((abs(new_mean / mean_val - 1) < 0.01 and
+                             abs(new_stdev / stdev_val - 1) < 0.01)):
                             convergence = 1
-                        mean_val  = new_mean
+                        mean_val = new_mean
                         stdev_val = new_stdev
                     else:
                         convergence = 1
                     max_iter -= 1
-                    iter     += 1
+                    iter += 1
             mean_val = float(mean_val)
             median_val = float(median_val)
             # Find the min/max statistics.
@@ -562,11 +555,12 @@ class image(DataStruct):
             max_y += 1
             max_x += 1
             # Compute the energies.
-            energy_val  = float((_data**2).sum(dtype='float64'))
-            flux_val    = float(sum_val)
+            energy_val = float((_data**2).sum(dtype='float64'))
+            flux_val = float(sum_val)
             absflux_val = float(Array.absolute(_data).sum(dtype='float64'))
             # Create the StatStruct.
-            stat_tuple = (min_val, max_val, mean_val, median_val, stdev_val, energy_val, flux_val, absflux_val, min_x, min_y, max_x, max_y, int(n))
+            stat_tuple = (min_val, max_val, mean_val, median_val, stdev_val, energy_val,
+                          flux_val, absflux_val, min_x, min_y, max_x, max_y, int(n))
             stats = StatStruct(stat_tuple)
             if max_iter is not None and threshold is not None:
                 stats.iterations = iter
@@ -579,7 +573,6 @@ class image(DataStruct):
             raise DARMAError('Empty data array!')
 
     def get_mean(self, filter=False):
-
         '''
            Return the mean value of this image.
         '''
@@ -588,7 +581,6 @@ class image(DataStruct):
                     filter=filter)
 
     def get_median(self, sorted=False, filter=False):
-
         '''
            Return the median value of this image.
 
@@ -599,7 +591,6 @@ class image(DataStruct):
                       sorted=sorted, filter=filter)
 
     def get_stdev(self, filter=False):
-
         '''
            Return the sample standard deviation value of this image.
         '''
@@ -608,7 +599,6 @@ class image(DataStruct):
                      filter=filter)
 
     def get_rms(self, filter=False):
-
         '''
            Return the rms (root mean square) value of this image.
         '''
@@ -617,7 +607,6 @@ class image(DataStruct):
                    filter=filter)
 
     def get_min(self, filter=False):
-
         '''
            Return the minumum value of this image.
         '''
@@ -626,7 +615,6 @@ class image(DataStruct):
                    filter=filter)
 
     def get_max(self, filter=False):
-
         '''
            Return the maximum value of this image.
         '''
@@ -635,7 +623,6 @@ class image(DataStruct):
                    filter=filter)
 
     def thresh_to_pixmap(self, lo_cut=None, hi_cut=None):
-
         '''
            Produce a pixelmap mapping pixels with values between low_cut and
            hi_cut.
@@ -667,7 +654,6 @@ class image(DataStruct):
     #
 
     def clean_bad_pixels(self, pixmap, boxsize):
-
         '''
            Interpolate the bad pixels in an image.
 
@@ -677,7 +663,7 @@ class image(DataStruct):
            NOTE: THIS METHOD CURRENTLY DOES NOT WORK!
         '''
 
-        #XXX FIXME
+        # XXX FIXME
         newdata = self.data.copy()
         badpixlist = (~pixmap).data.nonzero()
 
@@ -692,7 +678,6 @@ class image(DataStruct):
         return image(data=newdata)
 
     def mirror_edges(self, xedge, yedge):
-
         '''
            Mirror the edges of the image to create a new image
 
@@ -704,22 +689,21 @@ class image(DataStruct):
         ysize = self.ysize()
 
         wide = self.__class__(data=Array.zeros(shape=(self.ysize(),
-                              self.xsize()+2*xedge), dtype=self.datatype))
-        tall = self.__class__(data=Array.zeros(shape=(self.ysize()+2*yedge,
-                              self.xsize()+2*xedge), dtype=self.datatype))
+                                                      self.xsize() + 2 * xedge), dtype=self.datatype))
+        tall = self.__class__(data=Array.zeros(shape=(self.ysize() + 2 * yedge,
+                                                      self.xsize() + 2 * xedge), dtype=self.datatype))
 
-        wide[:xedge,           :] = self[:xedge,  :][::-1, :]
-        wide[xedge+1:-xedge-1, :] = self[:,       :]
-        wide[-xedge:,          :] = self[-xedge:, :][::-1, :]
-        tall[:,           :yedge] = wide[:,  :yedge][:, ::-1]
-        tall[:, yedge+1:-yedge-1] = wide[:,       :]
+        wide[:xedge, :] = self[:xedge, :][::-1, :]
+        wide[xedge + 1:-xedge - 1, :] = self[:, :]
+        wide[-xedge:, :] = self[-xedge:, :][::-1, :]
+        tall[:, :yedge] = wide[:, :yedge][:, ::-1]
+        tall[:, yedge + 1:-yedge - 1] = wide[:, :]
         tall[:,          -yedge:] = wide[:, -yedge:][:, ::-1]
 
         del wide
         return tall
 
     def subtract_oscan_rows(self, x0, x1, zone=None, smooth=0):
-
         '''
            Subtract mean of overscan rows.
 
@@ -736,7 +720,7 @@ class image(DataStruct):
         else:
             oscan_image = self[x0:x1, :]
         # Average along the X-axis.
-        oscan_data = Array.add.reduce(oscan_image.data, 1) / (x1-x0+1)
+        oscan_data = Array.add.reduce(oscan_image.data, 1) / (x1 - x0 + 1)
         if smooth:
             oscan_data = uniform_filter1d(oscan_data, smooth)
         # Prepare 1-D overscan image for subtraction.
@@ -744,14 +728,13 @@ class image(DataStruct):
         oscan_image.reshape((1, oscan_image.size))
         if zone is not None:
             x0, y0, x1, y1 = zone
-            sub_image = self[x0:x1, y0:y1]-oscan_image
+            sub_image = self[x0:x1, y0:y1] - oscan_image
             self[x0:x1, y0:y1] = sub_image
             return self
         self -= oscan_image
         return self
 
     def subtract_oscan_columns(self, y0, y1, zone, smooth=0):
-
         '''
            Subtract mean of overscan columns.
 
@@ -766,9 +749,9 @@ class image(DataStruct):
             x0, x1 = zone[0], zone[2]
             oscan_image = self[x0:x1, y0:y1]
         else:
-            oscan_image = self[:,y0:y1]
+            oscan_image = self[:, y0:y1]
         # Average along the X-axis.
-        oscan_data = Array.add.reduce(oscan_image.data, 0) / (y1-y0+1)
+        oscan_data = Array.add.reduce(oscan_image.data, 0) / (y1 - y0 + 1)
         if smooth:
             oscan_data = uniform_filter1d(oscan_data, smooth)
         # Prepare 1-D overscan image for subtraction.
@@ -776,7 +759,7 @@ class image(DataStruct):
         oscan_image.reshape((oscan_image.size, 1))
         if zone is not None:
             x0, y0, x1, y1 = zone
-            sub_image = self[x0:x1, y0:y1]-oscan_image
+            sub_image = self[x0:x1, y0:y1] - oscan_image
             self[x0:x1, y0:y1] = sub_image
             return self
         self -= oscan_image
@@ -794,7 +777,6 @@ class image(DataStruct):
 #               'contrast1':[1.0]*4+[4.0]+[1.0]*4}
 
     def _apply_filter(self, filtername):
-
         '''
            Unimplemented
         '''
@@ -813,7 +795,6 @@ class image(DataStruct):
         return None
 
     def filter_mean(self, xsize=3, ysize=3):
-
         '''
            Unimplemented
         '''
@@ -839,7 +820,6 @@ class image(DataStruct):
         return None
 
     def filter_median(self, xsize=3, ysize=3):
-
         '''
            Unimplemented
         '''
@@ -864,7 +844,6 @@ class image(DataStruct):
         return None
 
     def filter_dx(self):
-
         '''
            Unimplemented
         '''
@@ -880,7 +859,6 @@ class image(DataStruct):
         return None
 
     def filter_dy(self):
-
         '''
            Unimplemented
         '''
@@ -896,7 +874,6 @@ class image(DataStruct):
         return None
 
     def filter_dx2(self):
-
         '''
            Unimplemented
         '''
@@ -912,7 +889,6 @@ class image(DataStruct):
         return None
 
     def filter_dy2(self):
-
         '''
            Unimplemented
         '''
@@ -928,7 +904,6 @@ class image(DataStruct):
         return None
 
     def filter_contour1(self):
-
         '''
            Unimplemented
         '''
@@ -944,7 +919,6 @@ class image(DataStruct):
         return None
 
     def filter_contour2(self):
-
         '''
            Unimplemented
         '''
@@ -960,7 +934,6 @@ class image(DataStruct):
         return None
 
     def filter_contour3(self):
-
         '''
            Unimplemented
         '''
@@ -976,7 +949,6 @@ class image(DataStruct):
         return None
 
     def filter_contrast1(self):
-
         '''
            Unimplemented
         '''
@@ -992,7 +964,6 @@ class image(DataStruct):
         return None
 
     def hough_transform(self, threshold):
-
         """
            Make a Hough transform of the image.
         """
@@ -1002,16 +973,18 @@ class image(DataStruct):
         sdata = self.data
         floor = math.floor
         # Get output array sizes and scales.
-        drho = 1.0/math.sqrt(2.0)
-        nrho = int(math.sqrt(xsize**2 + ysize**2)/drho) + 1
+        drho = 1.0 / math.sqrt(2.0)
+        nrho = int(math.sqrt(xsize**2 + ysize**2) / drho) + 1
         ntheta = 1800
         dtheta = math.pi / ntheta
         # Initialize Hough image.
         hough = make_image(nrho, ntheta)
         hdata = hough.data
         # Precompute sin(angle), cos(angle).
+
         def sin(theta):
             return Array.sin((theta + 0.5) * dtheta)
+
         def cos(theta):
             return Array.cos((theta + 0.5) * dtheta)
         #sins = apply(sin, tuple(Array.indices([ntheta], dtype=self.datatype)))
@@ -1022,16 +995,16 @@ class image(DataStruct):
         # Do the transform.
         for j in range(ysize):
             for i in range(xsize):
-                if (sdata[i,j] > threshold):
+                if (sdata[i, j] > threshold):
                     # Eclipse axes are swapped?
                     x = Array.array(float(j), dtype=self.datatype)
                     y = Array.array(float(i), dtype=self.datatype)
                     for k in range(ntheta):
                         l = int(floor((x * coss[k] + y * sins[k]) / drho))
-                        hdata[k,l] += 1.0
+                        hdata[k, l] += 1.0
 
         #import itertools
-        #def transform(x,y):
+        # def transform(x,y):
         #    if self.data[x, y] > threshold:
         #        x = Array.array(float(y), dtype=self.datatype)
         #        y = Array.array(float(x), dtype=self.datatype)
@@ -1044,7 +1017,7 @@ class image(DataStruct):
 
         #pmap = self.thresh_to_pixmap(threshold)
 
-        #def transform(nrho, ntheta):
+        # def transform(nrho, ntheta):
         #    result = 0
         #    # PyFITS Array axes are reversed.
         #    for x in range(self.ysize()):
@@ -1053,10 +1026,9 @@ class image(DataStruct):
         #                if x * coss[ntheta] + y * sins[ntheta] == nrho:
         #                    result += 1
         #    return result
-        #return Array.fromfunction(transform, [nrho, ntheta])
+        # return Array.fromfunction(transform, [nrho, ntheta])
 
     def inverse_hough_transform(self, threshold, lx, ly):
-
         '''
            Make an Inverse Hough transform of the image.
 
@@ -1064,12 +1036,12 @@ class image(DataStruct):
         '''
 
         #result = pixelmap()
-        #result.p_pmap = c_eclipse.hough_transform_to_pixelmap(self.p_ima,
+        # result.p_pmap = c_eclipse.hough_transform_to_pixelmap(self.p_ima,
         #                                                      threshold,
         #                                                      lx, ly)
-        #if result.p_pmap is None:
+        # if result.p_pmap is None:
         #    raise DARMAError, 'Error thresholding'
-        #return result
+        # return result
 
         print('WARNING - This method is not yet implemented!')
         return None
@@ -1080,7 +1052,6 @@ class image(DataStruct):
 
     def normalize_mean(self, pixmap=None, pixrange=None, zone=None,
                        scale=1.0):
-
         '''
            Normalize the image to a mean of 1.0.
 
@@ -1094,16 +1065,15 @@ class image(DataStruct):
         '''
 
         if (pixmap is None) and (pixrange is None) and (zone is None):
-            mean  = self.get_mean(filter=False)
+            mean = self.get_mean(filter=False)
         else:
             stats = self.stat_opts(pixmap, pixrange, zone, domedian=0)
-            mean  = stats.avg_pix
+            mean = stats.avg_pix
 
-        self *= scale/mean
+        self *= scale / mean
 
     def normalize_median(self, pixmap=None, pixrange=None, zone=None,
                          scale=1.0):
-
         '''
            Normalize the image to a median of 1.0.
 
@@ -1119,14 +1089,13 @@ class image(DataStruct):
         if (pixmap is None) and (pixrange is None) and (zone is None):
             median = self.get_median(filter=False)
         else:
-            stats  = self.stat_opts(pixmap, pixrange, zone, domedian=1)
+            stats = self.stat_opts(pixmap, pixrange, zone, domedian=1)
             median = stats.median
 
-        self *= scale/median
+        self *= scale / median
 
     def normalize_flux(self, pixmap=None, pixrange=None, zone=None,
                        scale=1.0):
-
         '''
            Normalize the image to a flux of 1.0.
 
@@ -1144,11 +1113,10 @@ class image(DataStruct):
         else:
             stats = self.stat_opts(pixmap, pixrange, zone, domedian=0)
 
-        self *= scale/stats.flux
+        self *= scale / stats.flux
 
     def normalize_range(self, pixmap=None, pixrange=None, zone=None,
                         scale=1.0):
-
         '''
            Normalize the image to a range of values between 0.0 and 1.0.
 
@@ -1166,13 +1134,12 @@ class image(DataStruct):
         else:
             stats = self.stat_opts(pixmap, pixrange, zone, domedian=0)
 
-        gain  = stats.max_pix - stats.min_pix
+        gain = stats.max_pix - stats.min_pix
         self -= stats.min_pix
-        self *= scale/gain
+        self *= scale / gain
 
     def normalize_absolute_flux(self, pixmap=None, pixrange=None,
                                 zone=None, scale=1.0):
-
         '''
            Normalize the image to an absolute flux of 1.0.
 
@@ -1190,9 +1157,9 @@ class image(DataStruct):
         else:
             stats = self.stat_opts(pixmap, pixrange, zone, domedian=0)
 
-        self *= scale/stats.absflux
+        self *= scale / stats.absflux
 
-    #QC tools and utilities
+    # QC tools and utilities
 
     def run_signtest(self, nwx, nwy, Threshold=5):
 
@@ -1223,15 +1190,14 @@ class image(DataStruct):
 
         #result   =  image()
         #result.p_ima = c_eclipse.image_new(nwx, nwy);
-        #qualityIndex = c_eclipse.image_signtest(self.p_ima, result.p_ima,
+        # qualityIndex = c_eclipse.image_signtest(self.p_ima, result.p_ima,
         #                                        nwx, nwy, Threshold)
-        #return result,qualityIndex
+        # return result,qualityIndex
 
         print('WARNING - This method is not yet implemented!')
         return None, None
 
     def run_flattest(self, nwx, nwy):
-
         '''
            Quality control tool for Dome.
 
@@ -1255,13 +1221,12 @@ class image(DataStruct):
         #result   =  image()
         #result.p_ima = c_eclipse.image_new(nwx,nwy);
         #qualityIndex = c_eclipse.image_flattest(self.p_ima,result.p_ima,nwx,nwy)
-        #return result,qualityIndex
+        # return result,qualityIndex
 
         print('WARNING - This method is not yet implemented!')
         return None, None
 
-    def run_flatfittingtest(self,nwx,nwy,nfwx,nfwy):
-
+    def run_flatfittingtest(self, nwx, nwy, nfwx, nfwy):
         '''
            Quality control tool for Twilight.
 
@@ -1287,15 +1252,14 @@ class image(DataStruct):
         #imsurfit.p_ima = c_eclipse.image_surfit(self.p_ima,nfwx,nfwy)
         #result   = image()
         #result.p_ima = c_eclipse.image_new(nwx,nwy);
-        #qualityIndex = c_eclipse.image_flattest(imsurfit.p_ima,
+        # qualityIndex = c_eclipse.image_flattest(imsurfit.p_ima,
         #                                        result.p_ima,nwx,nwy)
-        #return result,qualityIndex
+        # return result,qualityIndex
 
         print('WARNING - This method is not yet implemented!')
         return None, None
 
-    def run_counttest(self,Threshold):
-
+    def run_counttest(self, Threshold):
         '''
            Unimplemented
         '''
@@ -1322,8 +1286,7 @@ class image(DataStruct):
         print('WARNING - This method is not yet implemented!')
         return None
 
-    def run_imsurfit(self,nwx,nwy):
-
+    def run_imsurfit(self, nwx, nwy):
         '''
            Unimplemented
         '''
@@ -1363,7 +1326,6 @@ class image(DataStruct):
         return None
 
     def threshold(self, lv, hv, sl, sh):
-
         '''
            Unimplemented
         '''
@@ -1387,8 +1349,8 @@ class image(DataStruct):
         print('WARNING - This method is not yet implemented!')
         return None
 
-def convert(filename, bitpix=16):
 
+def convert(filename, bitpix=16):
     '''
        Convert data contained in filename to datatype bitpix.  The file
        can be a single- or multi-extension FITS image.
@@ -1400,12 +1362,12 @@ def convert(filename, bitpix=16):
     '''
 
     bpmap = {
-               8 :   'uint8',
-              16 :   'int16',
-              32 :   'int32',
-             -32 : 'float32',
-             -64 : 'float64',
-            }
+        8:   'uint8',
+        16:   'int16',
+        32:   'int32',
+        -32: 'float32',
+        -64: 'float64',
+    }
     # incorrect/unsupported bitpix value
     if bitpix not in bpmap:
         raise DARMAError('Unsupported bitpix value!  Must be one of %s' % list(bpmap.keys()))
@@ -1425,7 +1387,7 @@ def convert(filename, bitpix=16):
         if bitpix > 0:
             print('Converting data in %s' % hdu.name)
             # default values
-            bzero = 2.**(bitpix-1)
+            bzero = 2.**(bitpix - 1)
             bscale = 1.0
             # check the dynamic range (flat the shape temporarily to save memory)
             dims = hdu.data.shape
@@ -1437,10 +1399,10 @@ def convert(filename, bitpix=16):
             if min < 0:
                 bzero += min
             # scaling check
-            if max-min > 2**bitpix - 1:
+            if max - min > 2**bitpix - 1:
                 bscale = (max - min) / (2.**bitpix - 1)
             # shift and scale data and add values to header
-            hdu.data += -bzero # to avoid out of range error for BZERO = +32768a
+            hdu.data += -bzero  # to avoid out of range error for BZERO = +32768a
             if bscale != 1.0:
                 hdu.data /= bscale
             update_header(hdu.header, 'BZERO', bzero, comment='physical=stored*BSCALE+BZERO', after='NAXIS2')
@@ -1459,8 +1421,8 @@ def convert(filename, bitpix=16):
 # Functions generating images
 #
 
-def make_image(xsize, ysize, datatype=FLOAT, value=None):
 
+def make_image(xsize, ysize, datatype=FLOAT, value=None):
     """
        Generate a new image.
 
@@ -1485,8 +1447,8 @@ def make_image(xsize, ysize, datatype=FLOAT, value=None):
         ima.data.fill(value)
     return ima
 
-def fft(real, imaginary=None, direction=-1):
 
+def fft(real, imaginary=None, direction=-1):
     '''
        Do a Fast Fourier Transorm (not currently using FFTW)
 
@@ -1509,14 +1471,14 @@ def fft(real, imaginary=None, direction=-1):
 
     if direction == -1:
         new = Arrayfft.fft2(data)
-    if direction ==  1:
+    if direction == 1:
         new = Arrayfft.ifft2(data)
     data = None
 
     return image(data=new.real), image(data=new.imag)
 
-def mean(data, nanmask=None, filter=False):
 
+def mean(data, nanmask=None, filter=False):
     '''
        Return the mean of a sequence of the dataset data.  All members of the
        input array are considered regardless of array rank (number of
@@ -1534,8 +1496,8 @@ def mean(data, nanmask=None, filter=False):
     else:
         raise DARMAError('Empty data array!')
 
-def median(data, nanmask=None, sorted=False, filter=False):
 
+def median(data, nanmask=None, sorted=False, filter=False):
     '''
        Return the median of the dataset data.  All members of the input array
        are considered regardless of array rank (number of dimensions).
@@ -1556,14 +1518,14 @@ def median(data, nanmask=None, sorted=False, filter=False):
             _data = _data.copy()
             _data.sort()
         if n % 2:
-            return  _data[n/2]
+            return _data[n / 2]
         else:
-            return (_data[n/2]+_data[n/2-1])/2.0
+            return (_data[n / 2] + _data[n / 2 - 1]) / 2.0
     else:
         raise DARMAError('Empty data array!')
 
-def stdev(data, nanmask=None, filter=False):
 
+def stdev(data, nanmask=None, filter=False):
     '''
        Return the sample standard deviation of a the dataset data.  All members
        of the input array are considered regardless of array rank (number of
@@ -1576,15 +1538,15 @@ def stdev(data, nanmask=None, filter=False):
 
     # Return a ravel()ed array.
     _data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
-    n = _data.size*1.0
+    n = _data.size * 1.0
     if n:
         sum_val = _data.sum(dtype='float64')
-        return math.sqrt(((_data**2).sum(dtype='float64')-((sum_val**2)/n))/(n-1.0))
+        return math.sqrt(((_data**2).sum(dtype='float64') - ((sum_val**2) / n)) / (n - 1.0))
     else:
         raise DARMAError('Empty data array!')
 
-def rms(data, nanmask=None, filter=False):
 
+def rms(data, nanmask=None, filter=False):
     '''
        Return the root-mean-square (RMS) of the values of the dataset data.
        All members of the input array are considered regardless of array rank
@@ -1597,14 +1559,14 @@ def rms(data, nanmask=None, filter=False):
 
     # Return a ravel()ed array.
     _data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
-    n = _data.size*1.0
+    n = _data.size * 1.0
     if n:
-        return math.sqrt((_data**2).sum(dtype='float64')/n)
+        return math.sqrt((_data**2).sum(dtype='float64') / n)
     else:
         raise DARMAError('Empty data array!')
 
-def min(data, nanmask=None, filter=False):
 
+def min(data, nanmask=None, filter=False):
     '''
        Return the minimum value of teh dataset data.  All members of the input
        array are considered regardless of array rank (number of dimensions).
@@ -1622,8 +1584,8 @@ def min(data, nanmask=None, filter=False):
     else:
         raise DARMAError('Empty data array!')
 
-def max(data, nanmask=None, filter=False):
 
+def max(data, nanmask=None, filter=False):
     '''
        Return the maximum value of the dataset data.  All members of the input
        array are considered regardless of array rank (number of dimensions).
@@ -1641,8 +1603,8 @@ def max(data, nanmask=None, filter=False):
     else:
         raise DARMAError('Empty data array!')
 
-def filter_nonnumbers(data, nanmask=None, filter=False):
 
+def filter_nonnumbers(data, nanmask=None, filter=False):
     '''Returns a 1-dimensional array with non-numbers (NaN, Inf, etc.)
        filtered out.  All members of the input array are considered
        regardless of array rank (number of dimensions).
@@ -1665,8 +1627,8 @@ def filter_nonnumbers(data, nanmask=None, filter=False):
     else:
         return _data.compress(mask)
 
-def uniform_filter1d(array, filter_size, mode=None, copy=False):
 
+def uniform_filter1d(array, filter_size, mode=None, copy=False):
     '''
        Filter data in a one dimmensional array, in place, averaging over
        2*filtersize+1.
@@ -1693,17 +1655,17 @@ def uniform_filter1d(array, filter_size, mode=None, copy=False):
 
     if mode in modes:
 
-        buffer = Array.empty(shape=(copy.size+2*filter_size,), dtype=copy.dtype)
+        buffer = Array.empty(shape=(copy.size + 2 * filter_size,), dtype=copy.dtype)
 
         # Treat boundries by reflecting the endpoints.
         if mode == 'reflect':
-            buffer[:filter_size]             = copy[filter_size:0:-1]
+            buffer[:filter_size] = copy[filter_size:0:-1]
             buffer[filter_size:-filter_size] = copy
-            buffer[-filter_size:]            = copy[-2:-(filter_size+2):-1]
+            buffer[-filter_size:] = copy[-2:-(filter_size + 2):-1]
 
         for i in range(copy.size):
             # buffer.size = copy.size+2*filter_size
-            copy[i] = buffer[i:i+2*filter_size+1].mean(dtype='float64')
+            copy[i] = buffer[i:i + 2 * filter_size + 1].mean(dtype='float64')
 
     else:
 
@@ -1711,10 +1673,9 @@ def uniform_filter1d(array, filter_size, mode=None, copy=False):
 
         # Don't treat boundries at all.  Shrink smoothing box at ends.
         for i in range(copy.size):
-            minj = Array.max([0, i-filter_size])
-            maxj = Array.min([copy.size-1, i+filter_size])+1
+            minj = Array.max([0, i - filter_size])
+            maxj = Array.min([copy.size - 1, i + filter_size]) + 1
             buffer[i] = copy[[j for j in range(minj, maxj)]].mean(dtype='float64')
         copy = buffer
 
     return copy
-

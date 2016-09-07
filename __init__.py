@@ -70,4 +70,3 @@ In addition the package provides:
 __version__ = '@(#)$Revision$'
 
 from . import bitmask, common, cube, header, image, image_generator, pixelmap, tables
-

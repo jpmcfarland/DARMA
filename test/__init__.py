@@ -1,4 +1,3 @@
 '''
 Unittest module for DARMA
 '''
-
