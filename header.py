@@ -1326,7 +1326,10 @@ def update_header_in_file(filename, keywords=[], values=[], comments=[], ext=0, 
     hdr = hdu.header
     if empty:
         required = ['SIMPLE', 'BITPIX', 'NAXIS', 'XTENSION']
-        for key in hdr:
+        # Create a copy of hdr.keys() because the original hdr is updated
+        # in the loop itself.
+        existing = [a for a in hdr.keys()]
+        for key in existing:
             if key not in required and not key.startswith('NAXIS'):
                 del hdr[key]
     for keyword, value, comment in card_tuples:
