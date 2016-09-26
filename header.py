@@ -1331,7 +1331,8 @@ def update_header_in_file(filename, keywords=[], values=[], comments=[], ext=0, 
         existing = [a for a in hdr.keys()]
         for key in existing:
             if key not in required and not key.startswith('NAXIS'):
-                del hdr[key]
+                if key in hdr:
+                    del hdr[key]
     for keyword, value, comment in card_tuples:
         if keyword == '':
             hdr.add_blank(value)
