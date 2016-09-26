@@ -230,7 +230,7 @@ class DataStruct(object):
         '''
 
         self.log('DataStruct data deleter', 'debug')
-        del(self._data)
+        del self._data
         self._data = None
 
     data = property(_get_data, _set_data, _del_data,
@@ -243,7 +243,7 @@ class DataStruct(object):
         self.log('DataStruct shape getter', 'debug')
         if self.data is not None:
             return self.data.shape[::-1]
-        return(0,)
+        return (0,)
 
     shape = property(_get_shape)
 
@@ -302,7 +302,7 @@ class DataStruct(object):
         '''
 
         self.log('DataStruct data __del__', 'debug')
-        del(self.data)
+        del self.data
 
     def copy(self, datatype=None):
         '''
@@ -407,7 +407,7 @@ class DataStruct(object):
             else:
                 base_name = self.filename.split('/')[-1]
             filename = tempfile.gettempdir() + '/' + '%s' % base_name
-            del(tempfile)
+            del tempfile
         elif os.path.exists(filename):
             raise DARMAError('Cowardly refusing to overwrite existing file.  Use a differnt filename.')
 
@@ -480,7 +480,7 @@ class DataStruct(object):
                         fullbin[:, i] += halfbin[:, yindex]
                         yindex += 1
                 fullbin = data.__class__(data=fullbin.data, datatype=self.datatype)
-                del(halfbin)
+                del halfbin
             else:
                 # PyFITS Array axes are reversed.
                 # XXX bitmask support should probably be included here for
@@ -1729,6 +1729,14 @@ def new_table(columns=[], hdr=None, nrows=0, fill=False, tbtype='BinTableHDU'):
     else:
         return fits.new_table(input=columns, header=hdr, nrows=nrows, fill=fill, tbtype='BinTableHDU')
 
+def get_coldefs(hdu):
+    '''
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        return hdu.columns
+    else:
+        return hdu.get_coldefs()
 
 def _strip_keyword(keyword, fill=False):
     '''
@@ -1897,7 +1905,11 @@ def update_header(hdr, keyword, value, comment=None, before=None, after=None, sa
                 card = (key, value, comment)
             hdr.update([card])
     else:
-        hdr.update(key=keyword, value=value, comment=comment, before=before, after=after, savecomment=savecomment)
+        if ' ' in keyword or len(keyword) > 8:
+            key = 'HIERARCH %s' % keyword
+        else:
+            key = keyword
+        hdr.update(key=key, value=value, comment=comment, before=before, after=after, savecomment=savecomment)
 
 
 def get_cardimage(card):
