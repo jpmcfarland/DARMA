@@ -241,6 +241,57 @@ class header(object):
     cards = property(_get_cards, _set_cards, _del_cards,
                      'Attribute to store the list of cards for the header')
 
+    def _get_blank(self):
+        '''
+           blank 'getter' method
+        '''
+
+        return self.get_blank()
+
+    def _del_blank(self):
+        '''
+           blank 'deleter' method
+        '''
+
+        del self['']
+
+    BLANK = property(_get_blank, None, _del_blank,
+                     'Attribute to return the list of BLANK cards')
+
+    def _get_comment(self):
+        '''
+           comment 'getter' method
+        '''
+
+        return self.get_comment()
+
+    def _del_comment(self):
+        '''
+           comment 'deleter' method
+        '''
+
+        del self['COMMENT']
+
+    COMMENT = property(_get_comment, None, _del_comment,
+                     'Attribute to return the list of COMMENT cards')
+
+    def _get_history(self):
+        '''
+           history 'getter' method
+        '''
+
+        return self.get_history()
+
+    def _del_history(self):
+        '''
+           history 'deleter' method
+        '''
+
+        del self['HISTORY']
+
+    HISTORY = property(_get_history, None, _del_history,
+                     'Attribute to return the list of HISTORY cards')
+
     def __del__(self):
         '''
            Cleanup headers before destruction
@@ -818,8 +869,9 @@ class header(object):
         '''
 
         card = fromstring(cardstring, verify=self.option)
-        if get_keyword(card) in self:
-            del self[get_keyword(card)]
+        keyword = get_keyword(card)
+        if keyword in self._hdr and keyword not in ['', 'COMMENT', 'HISTORY']:
+            del self[keyword]
         self.append(get_keyword(card), card.value, comment=card.comment)
 
     def modify(self, keyword, value, comment=None):
@@ -977,10 +1029,8 @@ class header(object):
             self.add_history(value)
         elif keyword == '':
             self.add_blank(value)
-        elif keyword in self:
-            self.modify(keyword, value, comment)
         else:
-            self.add(keyword, value, comment)
+            self.update(keyword, value, comment)
         card = get_cards(self._hdr)[_strip_keyword(keyword)]
         # XXX explore setting COMMENT, HISTORY, and BLANK cards to the
         # XXX corresponding attribute
