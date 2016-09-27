@@ -1905,10 +1905,10 @@ def update_header(hdr, keyword, value, comment=None, before=None, after=None, sa
                 card = (key, value, comment)
             hdr.update([card])
     else:
-        if ' ' in keyword or len(keyword) > 8:
-            key = 'HIERARCH %s' % keyword
-        else:
-            key = keyword
+        key = keyword
+        if (' ' in keyword or len(keyword) > 8):
+            if not keyword.startswith('HIERARCH '):
+                key = 'HIERARCH %s' % keyword
         hdr.update(key=key, value=value, comment=comment, before=before, after=after, savecomment=savecomment)
 
 
