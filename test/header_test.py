@@ -165,10 +165,9 @@ def delete_test_data():
             os.remove(filename)
 
 ########################################################################
-#                                                                      #
-#                         header version tests                         #
-#                                                                      #
-########################################################################
+#
+# header version tests
+#
 
 
 class header_version_test(unittest.TestCase):
@@ -194,10 +193,9 @@ class header_version_test(unittest.TestCase):
                          msg='DARMA Array version does not match test Array version')
 
 ########################################################################
-#                                                                      #
-#                          header load tests                           #
-#                                                                      #
-########################################################################
+#
+# header load tests
+#
 
 
 class header_load_error_test(unittest.TestCase):
@@ -498,10 +496,9 @@ class header_load_headers_cardlist_file_test(unittest.TestCase):
         pass
 
 ########################################################################
-#                                                                      #
-#                          header save tests                           #
-#                                                                      #
-########################################################################
+#
+# header save tests
+#
 
 
 class header_save_raw_test(unittest.TestCase):
@@ -662,10 +659,9 @@ class header_save_dataless_test(unittest.TestCase):
         self.assertEqual(hdr['NAXIS2'], None, msg='')
 
 ########################################################################
-#                                                                      #
-#                        header creation tests                         #
-#                                                                      #
-########################################################################
+#
+# header creation tests
+#
 
 
 class header_creation_new_test(unittest.TestCase):
@@ -764,10 +760,9 @@ class header_creation_copy_test(unittest.TestCase):
             self.assertEqual(copy[keyword], hdr[keyword], msg='%s keywords not copied properly' % keyword)
 
 ########################################################################
-#                                                                      #
-#                       header properties tests                        #
-#                                                                      #
-########################################################################
+#
+# header properties tests
+#
 
 
 class header_properties_hdr_test(unittest.TestCase):
@@ -812,10 +807,9 @@ class header_properties_cards_test(unittest.TestCase):
         self.assertEqual(pri.cards, pri._cards, msg='cards property not getting _cards')
 
 ########################################################################
-#                                                                      #
-#                          header read tests                           #
-#                                                                      #
-########################################################################
+#
+# header read tests
+#
 
 
 class header_read_fits_keywords_dict_test(unittest.TestCase):
@@ -1516,10 +1510,9 @@ class header_read_getval_test(unittest.TestCase):
         self.assertEqual(xtension, 'IMAGE', msg='returned BITPIX value is incorrect')
 
 ########################################################################
-#                                                                      #
-#                          header write tests                          #
-#                                                                      #
-########################################################################
+#
+# header write tests
+#
 
 
 class header_write_fits_keywords_dict_test(unittest.TestCase):
@@ -2049,13 +2042,14 @@ class header_write_append_force_test(unittest.TestCase):
         self.assertEqual(get_keyword(crd.cards[-1]), 'KEYWORD2', msg='KEYWORD2 not appended to end of header')
         self.assertEqual(getattr(crd, 'KEYWORD2').value, 2, msg='KEYWORD2 attribute has wrong value')
         crd.append('HIERARCH Keyword 1', 1.0, 'HIERARCH keyword 1', force=True)
-        self.assertEqual(get_keyword(crd.cards[-1]), 'HIERARCH Keyword 1',
+        self.assertEqual(get_keyword(crd.cards[-1]), 'Keyword 1',
                          msg='HIERARCH Keyword 1 not appended to end of header')
-        self.assertEqual(getattr(crd, 'KEYWORD1').value, 1.0, msg='KEYWORD1 attribute has wrong value')
+
+        self.assertEqual(getattr(crd, 'HIERARCH_Keyword_1').value, 1.0, msg='HIERARCH Keyword 1 attribute has wrong value')
         crd.append('HIERARCH Keyword 2', 'two', 'HIERARCH keyword 2', force=True)
-        self.assertEqual(get_keyword(crd.cards[-1]), 'HIERARCH Keyword 2',
+        self.assertEqual(get_keyword(crd.cards[-1]), 'Keyword 2',
                          msg='HIERARCH Keyword 2 not appended to end of header')
-        self.assertEqual(getattr(crd, 'HIERARCH Keyword 2').value, 'two',
+        self.assertEqual(getattr(crd, 'HIERARCH_Keyword_2').value, 'two',
                          msg='HIERARCH Keyword 2 attribute has wrong value')
         crd.append('', 'Blank 1', force=True)
         self.assertEqual(crd[-1], 'Blank 1', msg='BLANK not appended to end of header')
@@ -2072,16 +2066,37 @@ class header_write_fromstring_test(unittest.TestCase):
     '''
 
     def setUp(self):
-        pass
+        self.new = header().new()
+        self.typ = header(cardlist=TYPES + HIERARCH + BLANK + COMMENT + HISTORY)
 
     def tearDown(self):
-        pass
+        del self.new, self.typ
 
     def test_write_fromstring(self):
         print(self.__class__.__name__)
-        pass
-
-    # include test to check all cards are written to attributes
+        new = self.new
+        typ = self.typ
+        for type_cardstring in TYPES + HIERARCH + BLANK + COMMENT + HISTORY:
+            new.fromstring(type_cardstring)
+        for keyword in typ:
+            val0 = typ[keyword]
+            val1 = new[keyword]
+            if 'Hierarch' in keyword:
+                crd0 = getattr(typ, 'HIERARCH_%s' % keyword.replace(' ', '_'))
+                crd1 = getattr(new, 'HIERARCH_%s' % keyword.replace(' ', '_'))
+            elif keyword == '':
+                crd0 = typ.BLANK
+                crd1 = new.BLANK
+            else:
+                crd0 = getattr(typ, keyword)
+                crd1 = getattr(new, keyword)
+            self.assertEqual(val1, val0, msg='written fromstring values do not match for keyword: %s val1=%s val0=%s' % (keyword, val1, val0))
+            if keyword in ['', 'COMMENT', 'HISTORY']:
+                self.assertEqual(crd1, crd0, msg='written fromstring attribute keywords do not match for keyword: %s' % keyword)
+            else:
+                self.assertEqual(get_keyword(crd1), get_keyword(crd0), msg='written fromstring attribute keywords do not match for keyword: %s' % keyword)
+                self.assertEqual(crd1.value, crd0.value, msg='written fromstring attribute values do not match for keyword: %s' % keyword)
+                self.assertEqual(crd1.comment, crd0.comment, msg='written fromstring attribute comments do not match for keyword: %s' % keyword)
 
 
 class header_write_modify_test(unittest.TestCase):
@@ -2099,6 +2114,8 @@ class header_write_modify_test(unittest.TestCase):
     def test_write_modify(self):
         print(self.__class__.__name__)
         pass
+
+    # include test to check all cards are written to attributes
 
 
 class header_write_update_test(unittest.TestCase):
@@ -2212,10 +2229,9 @@ class header_write_merge_into_file_test(unittest.TestCase):
         self.assertEqual(sef['HIERARCH Keyword 2'], 'two', msg='HIERARCH Keyword 2 not in merged header')
 
 ########################################################################
-#                                                                      #
-#                         header delete tests                          #
-#                                                                      #
-########################################################################
+#
+# header delete tests
+#
 
 
 class header_delete_dict_test(unittest.TestCase):
@@ -2235,10 +2251,9 @@ class header_delete_dict_test(unittest.TestCase):
         pass
 
 ########################################################################
-#                                                                      #
-#                         header verify tests                          #
-#                                                                      #
-########################################################################
+#
+# header verify tests
+#
 
 
 class header_verify_header_test(unittest.TestCase):
