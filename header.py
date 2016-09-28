@@ -255,8 +255,9 @@ class header(object):
 
         del self['']
 
-    BLANK = property(_get_blank, None, _del_blank,
-                     'Attribute to return the list of BLANK cards')
+    # Name the BLANK cards property to avoid clashes with a BLANK keyword.
+    BLANK__ = property(_get_blank, None, _del_blank,
+                       'Attribute to return the list of BLANK cards')
 
     def _get_comment(self):
         '''
@@ -273,7 +274,7 @@ class header(object):
         del self['COMMENT']
 
     COMMENT = property(_get_comment, None, _del_comment,
-                     'Attribute to return the list of COMMENT cards')
+                       'Attribute to return the list of COMMENT cards')
 
     def _get_history(self):
         '''
@@ -290,7 +291,7 @@ class header(object):
         del self['HISTORY']
 
     HISTORY = property(_get_history, None, _del_history,
-                     'Attribute to return the list of HISTORY cards')
+                       'Attribute to return the list of HISTORY cards')
 
     def __del__(self):
         '''
