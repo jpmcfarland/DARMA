@@ -2085,8 +2085,8 @@ class header_write_fromstring_test(unittest.TestCase):
                 crd0 = getattr(typ, 'HIERARCH_%s' % keyword.replace(' ', '_'))
                 crd1 = getattr(new, 'HIERARCH_%s' % keyword.replace(' ', '_'))
             elif keyword == '':
-                crd0 = typ.BLANK
-                crd1 = new.BLANK
+                crd0 = typ.BLANK__
+                crd1 = new.BLANK__
             else:
                 crd0 = getattr(typ, keyword)
                 crd1 = getattr(new, keyword)
