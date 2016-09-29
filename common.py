@@ -1701,6 +1701,170 @@ def fits_open(name, mode='readonly', memmap=None, save_backup=False, cache=True,
     return hdus
 
 
+def _is_int(val):
+    '''
+       SUPPORT FUNCTION FOR _getext() FUNCTION.  SOURCE PyFITS/Astropy
+    '''
+    return isinstance(val, (int, long, Array.integer))
+
+
+def _getext(filename, *args, **kwargs):
+    '''
+       SUPPORT FUNCTION FOR getdata() FUNCTION.  SOURCE PyFITS/Astropy
+
+    Open the input file, return the `HDUList` and the extension.
+
+    This supports several different styles of extension selection.  See the
+    :func:`getdata()` documentation for the different possibilities.
+    '''
+
+    ext = kwargs.pop('ext', None)
+    extname = kwargs.pop('extname', None)
+    extver = kwargs.pop('extver', None)
+
+    err_msg = ('Redundant/conflicting extension arguments(s): %s' %
+               ({'args': args, 'ext': ext,  'extname': extname,
+                 'extver': extver},))
+
+    # This code would be much simpler if just one way of specifying an
+    # extension were picked.  But now we need to support all possible ways for
+    # the time being.
+    if len(args) == 1:
+        # Must be either an extension number, an extension name, or an
+        # (extname, extver) tuple
+        if _is_int(args[0]) or (isinstance(ext, tuple) and len(ext) == 2):
+            if ext is not None or extname is not None or extver is not None:
+                raise TypeError(err_msg)
+            ext = args[0]
+        elif isinstance(args[0], (str, unicode)):
+            # The first arg is an extension name; it could still be valid
+            # to provide an extver kwarg
+            if ext is not None or extname is not None:
+                raise TypeError(err_msg)
+            extname = args[0]
+        else:
+            # Take whatever we have as the ext argument; we'll validate it
+            # below
+            ext = args[0]
+    elif len(args) == 2:
+        # Must be an extname and extver
+        if ext is not None or extname is not None or extver is not None:
+            raise TypeError(err_msg)
+        extname = args[0]
+        extver = args[1]
+    elif len(args) > 2:
+        raise TypeError('Too many positional arguments.')
+
+    if (ext is not None and
+            not (_is_int(ext) or
+                 (isinstance(ext, tuple) and len(ext) == 2 and
+                  isinstance(ext[0], (str, unicode)) and _is_int(ext[1])))):
+        raise ValueError(
+            'The ext keyword must be either an extension number '
+            '(zero-indexed) or a (extname, extver) tuple.')
+    if extname is not None and not isinstance(extname, (str, unicode)):
+        raise ValueError('The extname argument must be a string.')
+    if extver is not None and not _is_int(extver):
+        raise ValueError('The extver argument must be an integer.')
+
+    if ext is None and extname is None and extver is None:
+        ext = 0
+    elif ext is not None and (extname is not None or extver is not None):
+        raise TypeError(err_msg)
+    elif extname:
+        if extver:
+            ext = (extname, extver)
+        else:
+            ext = (extname, 1)
+    elif extver and extname is None:
+        raise TypeError('extver alone cannot specify an extension.')
+
+    hdulist = fits_open(filename, *args, **kwargs)
+
+    return hdulist, ext
+
+
+def getdata(filename, *args, **kwargs):
+    '''
+    Get the data from an extension of a FITS file (and optionally the
+    header).
+
+    Parameters
+    ----------
+    filename : file path, file object, or file like object
+        File to get data from.  If opened, mode must be one of the
+        following rb, rb+, or ab+.
+
+    ext, extname, extver
+        The rest of the arguments are for extension specification.
+        They are flexible and are best illustrated by examples.
+
+        No extra arguments implies the primary header::
+
+            getdata('in.fits')
+
+        By extension number::
+
+            getdata('in.fits', 0)      # the primary header
+            getdata('in.fits', 2)      # the second extension
+            getdata('in.fits', ext=2)  # the second extension
+
+        By name, i.e., ``EXTNAME`` value (if unique)::
+
+            getdata('in.fits', 'sci')
+            getdata('in.fits', extname='sci')  # equivalent
+
+        Note ``EXTNAME`` values are not case sensitive
+
+        By combination of ``EXTNAME`` and EXTVER`` as separate
+        arguments or as a tuple::
+
+            getdata('in.fits', 'sci', 2)  # EXTNAME='SCI' & EXTVER=2
+            getdata('in.fits', extname='sci', extver=2)  # equivalent
+            getdata('in.fits', ('sci', 2))  # equivalent
+
+        Ambiguous or conflicting specifications will raise an exception::
+
+            getdata('in.fits', ext=('sci',1), extname='err', extver=2)
+
+    header : bool, optional
+        If `True`, return the data and the header of the specified HDU as a
+        tuple.
+
+    lower, upper : bool, optional
+        If ``lower`` or ``upper`` are `True`, the field names in the
+        returned data object will be converted to lower or upper case,
+        respectively.
+
+    view : ndarray, optional
+        When given, the data will be returned wrapped in the given ndarray
+        subclass by calling::
+
+           data.view(view)
+
+    kwargs
+        Any additional keyword arguments to be passed to `fits.open`.
+
+    Returns
+    -------
+    array : array, record array or groups data object
+        Type depends on the type of the extension being referenced.
+
+        If the optional keyword ``header`` is set to `True`, this
+        function will return a (``data``, ``header``) tuple.
+    '''
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        return fits.getdata(filename, ignore_missing_end=True, *args, **kwargs)
+    else:
+        try:
+            data = fits.getdata(filename, *args, **kwargs)
+        except:
+            hdus, ext = _getext(filename, *args, **kwargs)
+            data = hdus[ext].data
+            hdus.close()
+        return data
+
 def new_table(columns=[], hdr=None, nrows=0, fill=False, tbtype='BinTableHDU'):
     '''
        In PyFITS >= 3.3 pyfits.new_table() is deprecated.  Use
