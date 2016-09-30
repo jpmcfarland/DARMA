@@ -971,7 +971,14 @@ class header(object):
         del self_hdr
         hdus[0].header = new_hdr.hdr
         hdus[0].update_header()
-        hdus.close(output_verify=self.option)
+        # XXX work-around for new PyFITS/Astropy/Python 3 bug where adding
+        # XXX (or subtracting?) blocks for a different sized header
+        # XXX results in corruption of the data segment
+        # FIXME NEEDS MORE TESTING!
+        if abs(len(orig_hdr) - len(new_hdr)) < 36:
+            hdus.close(output_verify=self.option)
+        else:
+            hdus.writeto(filename, output_verify=self.option, clobber=True)
         # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
         # Under certain circumstances the signal handler is redefined to
         # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
