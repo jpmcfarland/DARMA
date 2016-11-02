@@ -959,8 +959,7 @@ class header(object):
               clobber: overwrite existing keywords in file
         '''
 
-        hdus = fits_open(filename, mode='update', memmap=True)
-        orig_hdr = header(cardlist=list(get_cards(hdus[0].header)), option=self.option)
+        orig_hdr = header(cardlist=list(get_cards(fits.getheader(filename, 0))), option=self.option)
         self_hdr = self.copy()
         naxis_keywords = ['NAXIS%d' % val for val in range(1, self_hdr['NAXIS'] + 1)]
         ignored_keywords = ['SIMPLE', 'BITPIX', 'NAXIS'] + naxis_keywords
@@ -969,16 +968,21 @@ class header(object):
                 del self_hdr._hdr[keyword]
         new_hdr = orig_hdr.merge(self_hdr, clobber=clobber)
         del self_hdr
-        hdus[0].header = new_hdr.hdr
-        hdus[0].update_header()
-        # XXX work-around for new PyFITS/Astropy/Python 3 bug where adding
-        # XXX (or subtracting?) blocks for a different sized header
-        # XXX results in corruption of the data segment
-        # FIXME NEEDS MORE TESTING!
+        # XXX PyFITS/Astropy have a bug in Python 3 that corrupts larger FITS
+        # XXX files upon writing when opened in 'update' mode and the file
+        # XXX size changes.  Write a new file to work around this bug.
         if abs(len(orig_hdr) - len(new_hdr)) < 36:
+            hdus = fits_open(filename, mode='update', memmap=True)
+            hdus[0].header = new_hdr.hdr
+            hdus[0].update_header()
             hdus.close(output_verify=self.option)
         else:
-            hdus.writeto(filename, output_verify=self.option, clobber=True)
+            with fits_open(filename, mode='update', memmap=True) as hdus:
+                hdus[0].header = new_hdr.hdr
+                hdus[0].update_header()
+                hdus.writeto(filename+'.new', output_verify=self.option)
+            os.remove(filename)
+            os.rename(filename+'.new', filename)
         # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
         # Under certain circumstances the signal handler is redefined to
         # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
