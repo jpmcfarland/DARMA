@@ -1355,9 +1355,12 @@ def convert(filename, bitpix=16):
        Convert data contained in filename to datatype bitpix.  The file
        can be a single- or multi-extension FITS image.
 
+         filename: name of FITS file to convert
+           bitpix: BITPIX to convert data to (one of 8, 16, 32, -32, -64)
+
        WARNING: This function is not completely robust for data whose
-                range is greater than 2^16 ADU and is primarily intended
-                to overcome PyFITS insistance to use a float
+                range is greater than 2**|bitpix| ADU and is primarily
+                intended to overcome PyFITS insistance to use a float
                 representation for all data, even when saving.
     '''
 
@@ -1372,49 +1375,53 @@ def convert(filename, bitpix=16):
     if bitpix not in bpmap:
         raise DARMAError('Unsupported bitpix value!  Must be one of %s' % list(bpmap.keys()))
     # open HDUList
-    hdus = fits_open(filename, mode='update', memmap=True)
-    if len(hdus) == 1:
-        # SEF
-        hdulist = hdus
-    else:
-        # MEF
-        hdulist = hdus[1:]
-    for hdu in hdulist:
-        # nothing to do
-        if hdu.header['BITPIX'] == bitpix:
-            continue
-        # integer data must be scaled if dynamic range too great
-        if bitpix > 0:
-            print('Converting data in %s' % hdu.name)
-            # default values
-            bzero = 2.**(bitpix - 1)
-            bscale = 1.0
-            # check the dynamic range (flat the shape temporarily to save memory)
-            dims = hdu.data.shape
-            hdu.data.shape = hdu.data.size
-            min = Array.minimum.reduce(hdu.data)
-            max = Array.maximum.reduce(hdu.data)
-            hdu.data.shape = dims
-            # adjust for negative values
-            if min < 0:
-                bzero += min
-            # scaling check
-            if max - min > 2**bitpix - 1:
-                bscale = (max - min) / (2.**bitpix - 1)
-            # shift and scale data and add values to header
-            hdu.data += -bzero  # to avoid out of range error for BZERO = +32768a
-            if bscale != 1.0:
-                hdu.data /= bscale
-            update_header(hdu.header, 'BZERO', bzero, comment='physical=stored*BSCALE+BZERO', after='NAXIS2')
-            update_header(hdu.header, 'BSCALE', bscale, comment='physical=stored*BSCALE+BZERO', after='NAXIS2')
-            # convert to new datatype
-            hdu.data = Array.array(Array.around(hdu.data), dtype=bpmap[bitpix])
-            hdu.header['BITPIX'] = bitpix
-        # don't scale data for floats (ever?)
-        if bitpix < 0:
-            pass
-    # close the HDUList
-    hdus.close(output_verify='fix')
+    with fits_open(filename, mode='update', memmap=True) as hdus:
+        if len(hdus) == 1:
+            # SEF
+            hdulist = hdus
+        else:
+            # MEF
+            hdulist = hdus[1:]
+        for hdu in hdulist:
+            # nothing to do
+            if hdu.header['BITPIX'] == bitpix:
+                continue
+            # integer data must be scaled if dynamic range too great
+            if bitpix > 0:
+                print('Converting data in %s' % hdu.name)
+                # default values
+                bzero = 2.**(bitpix - 1)
+                bscale = 1.0
+                # check the dynamic range (flat the shape temporarily to save memory)
+                dims = hdu.data.shape
+                hdu.data.shape = hdu.data.size
+                min = Array.minimum.reduce(hdu.data)
+                max = Array.maximum.reduce(hdu.data)
+                hdu.data.shape = dims
+                # adjust for negative values
+                if min < 0:
+                    bzero += min
+                # scaling check
+                if max - min > 2**bitpix - 1:
+                    bscale = (max - min) / (2.**bitpix - 1)
+                # shift and scale data and add values to header
+                hdu.data += -bzero  # to avoid out of range error for BZERO = +32768a
+                if bscale != 1.0:
+                    hdu.data /= bscale
+                update_header(hdu.header, 'BZERO', bzero, comment='physical=stored*BSCALE+BZERO', after='NAXIS2')
+                update_header(hdu.header, 'BSCALE', bscale, comment='physical=stored*BSCALE+BZERO', after='NAXIS2')
+                # convert to new datatype
+                hdu.data = Array.array(Array.around(hdu.data), dtype=bpmap[bitpix])
+                hdu.header['BITPIX'] = bitpix
+            # don't scale data for floats (ever?)
+            if bitpix < 0:
+                pass
+    # XXX PyFITS/Astropy have a bug in Python 3 that corrupts larger FITS
+    # XXX files upon writing when opened in 'update' mode and the file
+    # XXX size changes.  Write a new file to work around this bug.
+    hdus.writeto(filename+'.new', output_verify='fix')
+    os.remove(filename)
+    os.rename(filename+'.new', filename)
 
 ##########################################################################
 #
