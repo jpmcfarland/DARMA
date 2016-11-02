@@ -1855,6 +1855,11 @@ def getdata(filename, *args, **kwargs):
     '''
 
     if _HAS_ASTROPY or _HAS_PYFITS33:
+        # New PyFITS has a bug that improperly detects a filename as a URL
+        # if it contains a colon.  Adding the local path to a filename with
+        # a colon works around this URL bug
+        if os.path.basename(filename) == filename:
+            filename = './%s' % filename
         return fits.getdata(filename, ignore_missing_end=True, *args, **kwargs)
     else:
         try:
