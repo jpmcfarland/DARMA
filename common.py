@@ -1870,6 +1870,37 @@ def getdata(filename, *args, **kwargs):
             hdus.close()
         return data
 
+
+def getheader(filename, *args, **kwargs):
+    '''
+    Get the header from an extension of a FITS file.
+
+    Parameters
+    ----------
+    filename : file path, file object, or file like object
+        File to get header from.  If an opened file object, its mode
+        must be one of the following rb, rb+, or ab+).
+
+    ext, extname, extver
+        The rest of the arguments are for extension specification.  See the
+        `getdata` documentation for explanations/examples.
+
+    kwargs
+        Any additional keyword arguments to be passed to `pyfits.open`.
+
+    Returns
+    -------
+    header : `Header` object
+    '''
+
+    # New PyFITS has a bug that improperly detects a filename as a URL
+    # if it contains a colon.  Adding the local path to a filename with
+    # a colon works around this URL bug
+    if os.path.basename(filename) == filename:
+        filename = './%s' % filename
+    return fits.getheader(filename, *args, **kwargs)
+
+
 def new_table(columns=[], hdr=None, nrows=0, fill=False, tbtype='BinTableHDU'):
     '''
        In PyFITS >= 3.3 pyfits.new_table() is deprecated.  Use

@@ -9,7 +9,7 @@ from .common import fits, DARMAError, range, unicode, fits_open, is_hierarch
 from .common import _strip_keyword, _get_index, get_history, get_value
 from .common import fold_string, add_blank, rename_keyword, update_header
 from .common import get_cards, get_keyword, get_cardimage, get_comment
-from .common import clear_header
+from .common import clear_header, getheader
 
 
 class header(object):
@@ -959,7 +959,7 @@ class header(object):
               clobber: overwrite existing keywords in file
         '''
 
-        orig_hdr = header(cardlist=list(get_cards(fits.getheader(filename, 0))), option=self.option)
+        orig_hdr = header(cardlist=list(get_cards(getheader(filename, 0))), option=self.option)
         self_hdr = self.copy()
         naxis_keywords = ['NAXIS%d' % val for val in range(1, self_hdr['NAXIS'] + 1)]
         ignored_keywords = ['SIMPLE', 'BITPIX', 'NAXIS'] + naxis_keywords
