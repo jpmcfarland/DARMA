@@ -2238,3 +2238,14 @@ def add_blank(hdr, value, before=None, after=None):
                 index = len(hdr.ascardlist()) - 1
             after = index
         hdr.add_blank(value=value, before=before, after=after)
+
+
+def get_number_of_extensions(name):
+    '''
+       Obtain the number of extensions in a Multi-Extension FITS file.
+    '''
+
+    fitsfile = fits_open(name)
+    number_of_extensions = len(fitsfile)
+    fitsfile.close()
+    return number_of_extensions
