@@ -1916,7 +1916,7 @@ def new_table(columns=[], hdr=None, nrows=0, fill=False, tbtype='BinTableHDU'):
                   table from
              hdr: a fits.Header instance to be used to populate the non-
                   required keywords
-           nrows: umber of rows in the new table
+           nrows: number of rows in the new table
             fill: fill all cells with zeros or blanks
           tbtype: table type to be created ("BinTableHDU" or "TableHDU")
     '''
