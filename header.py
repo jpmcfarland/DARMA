@@ -1383,29 +1383,34 @@ def update_header_in_file(filename, keywords=[], values=[], comments=[], ext=0, 
         for keyword, value, comment in zip(keywords, values, comments):
             card_tuples.append((keyword, value, comment))
     # Disable memmaping to avoid FS performance hit.
-    hdus = fits_open(filename, mode='update', memmap=False)
-    hdu = hdus[ext]
-    hdr = hdu.header
-    if empty:
-        required = ['SIMPLE', 'BITPIX', 'NAXIS', 'XTENSION']
-        # Create a copy of hdr.keys() because the original hdr is updated
-        # in the loop itself.
-        existing = [a for a in hdr.keys()]
-        for key in existing:
-            if key not in required and not key.startswith('NAXIS'):
-                if key in hdr:
-                    del hdr[key]
-    for keyword, value, comment in card_tuples:
-        if keyword == '':
-            hdr.add_blank(value)
-        if keyword == 'COMMENT':
-            hdr.add_comment(value)
-        if keyword == 'HISTORY':
-            hdr.add_history(value)
-        else:
-            update_header(hdr, keyword, value, comment)
-    hdu.update_header()
-    hdus.close(output_verify=option)
+    with fits_open(filename, mode='update', memmap=False) as hdus:
+        hdu = hdus[ext]
+        hdr = hdu.header
+        if empty:
+            required = ['SIMPLE', 'BITPIX', 'NAXIS', 'XTENSION']
+            # Create a copy of hdr.keys() because the original hdr is updated
+            # in the loop itself.
+            existing = [a for a in hdr.keys()]
+            for key in existing:
+                if key not in required and not key.startswith('NAXIS'):
+                    if key in hdr:
+                        del hdr[key]
+        for keyword, value, comment in card_tuples:
+            if keyword == '':
+                hdr.add_blank(value)
+            if keyword == 'COMMENT':
+                hdr.add_comment(value)
+            if keyword == 'HISTORY':
+                hdr.add_history(value)
+            else:
+                update_header(hdr, keyword, value, comment)
+        hdu.update_header()
+        # XXX PyFITS/Astropy have a bug in Python 3 that corrupts larger FITS
+        # XXX files upon writing when opened in 'update' mode and the file
+        # XXX size changes.  Write a new file to work around this bug.
+        hdus.writeto(filename+'.new', output_verify=option)
+    os.remove(filename)
+    os.rename(filename+'.new', filename)
     # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
     # Under certain circumstances the signal handler is redefined to
     # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
