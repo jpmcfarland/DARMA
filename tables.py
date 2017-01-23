@@ -58,6 +58,7 @@ class columns(object):
         self.datatype = datatype
         self.readonly = readonly
         self.memmap = memmap
+        self.hdus = fits.HDUList()
         self.table = None
 
         if self.filename is not None:
@@ -84,7 +85,8 @@ class columns(object):
                 try:
                     self.hdus = fits_open(self.filename, memmap=self.memmap)
                     self.table = self.hdus[self._name]
-                    self.header = header(cardlist=get_cards(self.table.header))
+                    cardlist = list(get_cards(self.table.header))
+                    self.header = header(cardlist=cardlist)
                 except Exception as e:
                     raise DARMAError('Error loading table from %s: %s' % (self.filename, e))
             for name in self.names:
