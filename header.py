@@ -1316,30 +1316,76 @@ def getval(filename, keyword, default=None, ext=0, use_fits=False):
 
 
 def get_headers(filename=None, cardlist=None):
-    '''
-       The sole purpose of this factory function is to create a list of
-       headers from the headers in the FITS file filename.  If the file is
-       single-extension, this is a list of one header.  If the file is
-       multi-extension, this is a list of one primary header and N
-       extension headers, where N is the number of extensions.
+    """The sole purpose of this factory function is to return a list of
+    headers from the headers in the FITS file specified in filename or
+    the ASCII file specified in cardlist.  If the FITS file is single-
+    extension, this is a list of one header.  If the FITS file is multi-
+    extension, this is a list of N+1 headers, where N is the number of
+    extensions.  For the cardlist, the list length is equal to the
+    number of END cards or 1, whichever is less.
 
-          filename: name of a valid FITS file, single- or multi-extension
-          cardlist: a list of header cards (80 character strings, NULL
-                    terminated), a list of fits.Card instances, or the name
-                    of a text file containing the header cards
-    '''
+    If both filename and cardlist are specified, the headers found in
+    filename preceed those found in cardlist.
+
+    N.B. If there are multiple headers in a cardlist, each MUST be
+         ended with an END card.  If there is no END card found, it
+         is assumed that there is only one header in the cardlist.
+
+    Parameters
+    ----------
+    filename : str
+        name of a valid FITS file, single- or multi-extension
+    cardlist : list, str
+        a list of header cards (80 character strings, NULL terminated),
+        a list of fits.Card instances, or the name of a text file
+        containing the header cards
+
+    Returns
+    -------
+    list
+        a list of DARMA header instances, one per header found in the
+        input
+
+    """
 
     headers = []
     if filename is not None:
         hdus = fits_open(filename, memmap=True)
         headers = [header(cardlist=[card for card in get_cards(hdu.header)]) for hdu in hdus]
         hdus.close()
-    elif cardlist is not None:
-        for ext in range(999):
+    if cardlist is not None:
+        lines = []
+        if isinstance(cardlist, (str, unicode)):
+            with open(cardlist) as fd:
+                lines.extend([line.strip('\n') for line in fd.readlines()])
+        elif isinstance(cardlist, list):
+            for card in cardlist:
+                if isinstance(card, (str, unicode)):
+                    lines.append(card)
+                elif isinstance(card, fits.Header):
+                    lines.append(str(card))
+                else:
+                    raise DARMAError('expecting card %s to be a string or a fits.Card instance, got %s' % type(card))
+        else:
+            raise DARMAError('expecting cardlist argument to be a list or str, got %s' % type(cardlist))
+        cardslists = []
+        count = 0
+        cards = []
+        for line in lines:
+            if not line.startswith('END'):
+                cards.append(line)
+            else:
+                cards.append(line)
+                cardslists.append(cards)
+                cards = []
+                count += 1
+        if count == 0:
+            cardslists.append(cards)
+        for cards in cardslists:
             try:
-                headers.append(header(cardlist=cardlist, extension=ext))
-            except DARMAError:
-                break
+                headers.append(header(cardlist=cards))
+            except DARMAError as e:
+                Message('failed to load header from constructed cardlist: %s' % e)
 
     return headers
 
