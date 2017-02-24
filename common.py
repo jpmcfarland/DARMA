@@ -1324,8 +1324,8 @@ def _datamd5(filename, regions=None, buffer_blocks=32):
         regions = list(range(len(fitsfile)))
     for index in regions:
         hdu = fitsfile[index]
-        start = hdu._datLoc
-        length = hdu._datSpan
+        start = datLoc(hdu)
+        length = datSpan(hdu)
         hdu._file.seek(start)
         while length > 0:
             if length < number * block:
@@ -1355,7 +1355,7 @@ def _update_datamd5(filename, datamd5):
         raise DARMAError('%s does not appear to be a valid MD5SUM.' % datamd5)
 
     fitsfile = fits_open(filename, mode='update', memmap=True)
-    fitsfile[0].header.update('DATAMD5', datamd5, comment='MD5 checksum of all data regions')
+    update_header(fitsfile[0].header, 'DATAMD5', datamd5, comment='MD5 checksum of all data regions')
     fitsfile.close()
     # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
     # Under certain circumstances the signal handler is redefined to
@@ -2238,6 +2238,26 @@ def add_blank(hdr, value, before=None, after=None):
                 index = len(hdr.ascardlist()) - 1
             after = index
         hdr.add_blank(value=value, before=before, after=after)
+
+
+def datLoc(hdu):
+    """
+    """
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        return hdu._data_offset
+    else:
+        return hdu._datLoc
+
+
+def datSpan(hdu):
+    """
+    """
+
+    if _HAS_ASTROPY or _HAS_PYFITS33:
+        return hdu._data_size
+    else:
+        return hdu._datSpan
 
 
 def get_number_of_extensions(name):
