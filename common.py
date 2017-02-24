@@ -1310,13 +1310,13 @@ def _datamd5(filename, regions=None, buffer_blocks=32):
     '''
 
     import os
-    import md5
+    from hashlib import md5
 
     if not os.path.exists(filename):
         raise DARMAError('No FITS file (%s) to calcualte MD5SUM from!' % filename)
 
     fitsfile = fits_open(filename, mode='readonly', memmap=True)
-    md5sum = md5.md5()
+    md5sum = md5()
 
     block = 2880
     number = buffer_blocks
