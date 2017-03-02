@@ -1701,6 +1701,44 @@ def fits_open(name, mode='readonly', memmap=None, save_backup=False, cache=True,
     return hdus
 
 
+def fits_close(hdulist, output_verify='exception', verbose=False, closed=True, filename=''):
+    """Close the associated FITS file and memmap object, if any.
+
+    Optionally write a copy to overwrite the original.  This is a work-
+    around for some newer versions of PyFITS/Astropy that have a file
+    corruption bug when updating the FIST file.
+
+    Parameters
+    ----------
+    output_verify : str
+        Output verification option.  Must be one of ``"fix"``,
+        ``"silentfix"``, ``"ignore"``, ``"warn"``, or
+        ``"exception"``.  May also be any combination of ``"fix"`` or
+        ``"silentfix"`` with ``"+ignore"``, ``+warn``, or ``+exception"
+        (e.g. ``"fix+warn"``).  See :ref:`verify` for more info.
+
+    verbose : bool
+        When `True`, print out verbose messages.
+
+    closed : bool
+        When `True`, close the underlying file object.
+
+    filename : str
+        Name of file to save HDUList to.  When provided, a copy is first
+        made, then this copy overwrites the original.
+    """
+
+    if filename:
+        hdulist.writeto(filename+'.copy', clobber=True)
+        hdulist.close(output_verify=output_verify, verbose=verbose,
+            closed=closed)
+        os.remove(filename)
+        os.rename(filename+'.copy', filename)
+    else:
+        hdulist.close(output_verify=output_verify, verbose=verbose,
+            closed=closed)
+
+
 def _is_int(val):
     '''
        SUPPORT FUNCTION FOR _getext() FUNCTION.  SOURCE PyFITS/Astropy
