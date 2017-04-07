@@ -97,6 +97,7 @@ class header(object):
         if self._hdr is None:
             cardlist = self.cardlist
             if cardlist is not None:
+                # XXX make cardlist files multi-extension aware?
                 if isinstance(cardlist, (str, unicode)):
                     try:
                         with open(cardlist, 'r') as fd:
@@ -105,7 +106,7 @@ class header(object):
                         raise DARMAError('ERROR -- could not load cardlist %s: %s' % (cardlist, e))
                     # ASCII file.
                     if '\n' in lines:
-                        header_card_strings = [line.strip('\n') for line in lines.split(
+                        header_card_strings = [line for line in lines.split(
                             '\n') if not line.startswith('END     ')]
                     # Raw FITS file.
                     else:

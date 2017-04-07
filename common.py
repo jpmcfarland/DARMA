@@ -1701,15 +1701,20 @@ def fits_open(name, mode='readonly', memmap=None, save_backup=False, cache=True,
     return hdus
 
 
-def fits_close(hdulist, output_verify='exception', verbose=False, closed=True, filename=''):
+def fits_close(hdulist, output_verify='exception', verbose=False, closed=True,
+        filename='', checksum=False):
     """Close the associated FITS file and memmap object, if any.
 
     Optionally write a copy to overwrite the original.  This is a work-
     around for some newer versions of PyFITS/Astropy that have a file
-    corruption bug when updating the FIST file.
+    corruption bug when updating the FITS file under certain
+    circumstances.
 
     Parameters
     ----------
+    hdulist : fits.HDUList
+        PyFITS/Astropy HDUList to close
+
     output_verify : str
         Output verification option.  Must be one of ``"fix"``,
         ``"silentfix"``, ``"ignore"``, ``"warn"``, or
@@ -1723,13 +1728,20 @@ def fits_close(hdulist, output_verify='exception', verbose=False, closed=True, f
     closed : bool
         When `True`, close the underlying file object.
 
-    filename : str
-        Name of file to save HDUList to.  When provided, a copy is first
-        made, then this copy overwrites the original.
+    filename : file path, file object or file-like object
+        File to write to.  If a file object, must be opened in a
+        writeable mode.  When provided, a copy is first made, then this
+        copy overwrites the original (implies clobber=True).
+
+    checksum : bool
+        When `True` adds both ``DATASUM`` and ``CHECKSUM`` cards
+        to the headers of all HDU's written to the file.
+
     """
 
     if filename:
-        hdulist.writeto(filename+'.copy', clobber=True)
+        hdulist.writeto(fileobj=filename+'.copy', output_verify=output_verify,
+            clobber=True, checksum=checksum)
         hdulist.close(output_verify=output_verify, verbose=verbose,
             closed=closed)
         os.remove(filename)
@@ -1822,8 +1834,39 @@ def _getext(filename, *args, **kwargs):
     return hdulist, ext
 
 
+def getheader(filename, *args, **kwargs):
+    """
+    Get the header from an extension of a FITS file.
+
+    Parameters
+    ----------
+    filename : file path, file object, or file like object
+        File to get header from.  If an opened file object, its mode
+        must be one of the following rb, rb+, or ab+).
+
+    ext, extname, extver
+        The rest of the arguments are for extension specification.  See the
+        `getdata` documentation for explanations/examples.
+
+    kwargs
+        Any additional keyword arguments to be passed to `pyfits.open`.
+
+    Returns
+    -------
+    header : `Header` object
+
+    """
+
+    # New PyFITS has a bug that improperly detects a filename as a URL
+    # if it contains a colon.  Adding the local path to a filename with
+    # a colon works around this URL bug
+    if os.path.basename(filename) == filename:
+        filename = './%s' % filename
+    return fits.getheader(filename, *args, **kwargs)
+
+
 def getdata(filename, *args, **kwargs):
-    '''
+    """
     Get the data from an extension of a FITS file (and optionally the
     header).
 
@@ -1890,7 +1933,8 @@ def getdata(filename, *args, **kwargs):
 
         If the optional keyword ``header`` is set to `True`, this
         function will return a (``data``, ``header``) tuple.
-    '''
+
+    """
 
     if _HAS_ASTROPY or _HAS_PYFITS33:
         # New PyFITS has a bug that improperly detects a filename as a URL
@@ -1906,37 +1950,10 @@ def getdata(filename, *args, **kwargs):
             hdus, ext = _getext(filename, *args, **kwargs)
             data = hdus[ext].data
             hdus.close()
+            if 'header' in kwargs and kwargs['header'] == True:
+                hdr = getheader(filename, *args, **kwargs)
+                data = (data, hdr)
         return data
-
-
-def getheader(filename, *args, **kwargs):
-    '''
-    Get the header from an extension of a FITS file.
-
-    Parameters
-    ----------
-    filename : file path, file object, or file like object
-        File to get header from.  If an opened file object, its mode
-        must be one of the following rb, rb+, or ab+).
-
-    ext, extname, extver
-        The rest of the arguments are for extension specification.  See the
-        `getdata` documentation for explanations/examples.
-
-    kwargs
-        Any additional keyword arguments to be passed to `pyfits.open`.
-
-    Returns
-    -------
-    header : `Header` object
-    '''
-
-    # New PyFITS has a bug that improperly detects a filename as a URL
-    # if it contains a colon.  Adding the local path to a filename with
-    # a colon works around this URL bug
-    if os.path.basename(filename) == filename:
-        filename = './%s' % filename
-    return fits.getheader(filename, *args, **kwargs)
 
 
 def new_table(columns=[], hdr=None, nrows=0, fill=False, tbtype='BinTableHDU'):
