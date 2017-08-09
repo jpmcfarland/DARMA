@@ -485,7 +485,7 @@ class DataStruct(object):
                 # PyFITS Array axes are reversed.
                 # XXX bitmask support should probably be included here for
                 #     completeness
-                shape = (self.ysize() / y_bin, self.xsize() / x_bin)
+                shape = (self.ysize() // y_bin, self.xsize() // x_bin)
                 if datatype:
                     data = self.data.astype(datatype)
                 else:
