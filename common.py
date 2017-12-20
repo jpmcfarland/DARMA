@@ -1357,12 +1357,6 @@ def _update_datamd5(filename, datamd5):
     fitsfile = fits_open(filename, mode='update', memmap=True)
     update_header(fitsfile[0].header, 'DATAMD5', datamd5, comment='MD5 checksum of all data regions')
     fitsfile.close()
-    # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
-    # Under certain circumstances the signal handler is redefined to
-    # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
-    # handler to its original state, which is omitted in PyFits.
-    import signal
-    signal.signal(signal.SIGINT, signal.default_int_handler)
 
 
 def _adjust_index(key):

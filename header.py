@@ -984,12 +984,6 @@ class header(object):
                 hdus.writeto(filename+'.new', output_verify=self.option)
             os.remove(filename)
             os.rename(filename+'.new', filename)
-        # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
-        # Under certain circumstances the signal handler is redefined to
-        # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
-        # handler to its original state, which is omitted in PyFits.
-        import signal
-        signal.signal(signal.SIGINT, signal.default_int_handler)
 
     def __len__(self):
         '''
@@ -1458,12 +1452,6 @@ def update_header_in_file(filename, keywords=[], values=[], comments=[], ext=0, 
         hdus.writeto(filename+'.new', output_verify=option)
     os.remove(filename)
     os.rename(filename+'.new', filename)
-    # XXX TODO EMH PyFits in the module NA_pyfits.py does something nasty.
-    # Under certain circumstances the signal handler is redefined to
-    # ignore Ctrl-C keystrokes, the next two lines mean to reset the signal
-    # handler to its original state, which is omitted in PyFits.
-    import signal
-    signal.signal(signal.SIGINT, signal.default_int_handler)
 
 
 def _is_card_length(card_string):
