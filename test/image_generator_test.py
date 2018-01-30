@@ -1,6 +1,6 @@
-'''
+"""
 Unit test for DARMA image_generator
-'''
+"""
 
 __version__ = '@(#)$Revision$'
 

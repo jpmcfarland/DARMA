@@ -1,5 +1,5 @@
-'''A FITS header object resembling a dictionary.
-'''
+"""A FITS header object resembling a dictionary.
+"""
 
 __version__ = '@(#)$Revision$'
 
@@ -14,7 +14,7 @@ from .common import clear_header, getheader
 
 class header(object):
 
-    '''
+    """
        A header object stores the information obtained from a FITS file
        header, a text file containing header cards one per line, a list of
        header card strings, or a list of fits.Card instances.
@@ -27,13 +27,13 @@ class header(object):
        http://archive.stsci.edu/fits/fits_standard/
 
        for FITS standard documentation.
-    '''
+    """
 
     _IS_VERIFIED = False
 
     def __init__(self, filename=None, extension=0, cardlist=None,
                  option='silentfix'):
-        '''
+        """
            Create a new header object.
 
            If filename is not None, the header will be read from the
@@ -53,7 +53,7 @@ class header(object):
            NOTE: Standard header cards are in the form:
 
                  keyword = value / comment
-        '''
+        """
 
         self.filename = filename or None
         self.extension = extension
@@ -66,16 +66,16 @@ class header(object):
         self.load_header()
 
     def load(self):
-        '''
+        """
            Synonym for load_header()
 
            THIS SHOULD ONLY BE CALLED BY THE 'getter' METHOD.
-        '''
+        """
 
         self.load_header()
 
     def load_header(self):
-        '''
+        """
            Load a header from a FITS file, or an ordinary text file or list.
            The attributes filename, extension, and cardlist must either be
            set during construction or set manually before this method is
@@ -92,7 +92,7 @@ class header(object):
            Cards less than 80 characters will be padded as needed.
 
            NOTE: Cards should not contain newlines.
-        '''
+        """
 
         if self._hdr is None:
             cardlist = self.cardlist
@@ -167,9 +167,9 @@ class header(object):
         self._cards = get_cards(self.hdr)
 
     def _set_attributes(self):
-        '''
+        """
            Set attribute values from cards in header
-        '''
+        """
 
         if self._hdr is not None:
             allowed_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
@@ -184,9 +184,9 @@ class header(object):
                     setattr(self, attr, card)
 
     def _get_hdr(self):
-        '''
+        """
            header 'getter' method
-        '''
+        """
         if self._hdr is None:
             self.load()
         self.verify(option=self.option)
@@ -194,17 +194,17 @@ class header(object):
         return self._hdr
 
     def _set_hdr(self, hdr):
-        '''
+        """
            header 'setter' method
-        '''
+        """
 
         self._hdr = hdr
         self._IS_VERIFIED = False
 
     def _del_hdr(self):
-        '''
+        """
            header 'deleter' method
-        '''
+        """
 
         del self._hdr, self.cards
         self._hdr = None
@@ -213,9 +213,9 @@ class header(object):
                    'Attribute to store the header')
 
     def _get_cards(self):
-        '''
+        """
            cards 'getter' method
-        '''
+        """
 
         if self._hdr is None:
             self._cards = get_cards(fits.Header())
@@ -224,17 +224,17 @@ class header(object):
         return self._cards
 
     def _set_cards(self, cards):
-        '''
+        """
            cards 'setter' method
-        '''
+        """
 
         # cards only ever set from header within _get_cards()
         pass
 
     def _del_cards(self):
-        '''
+        """
            cards 'deleter' method
-        '''
+        """
 
         del self._cards
         self._cards = get_cards(fits.Header())
@@ -243,16 +243,16 @@ class header(object):
                      'Attribute to store the list of cards for the header')
 
     def _get_blank(self):
-        '''
+        """
            blank 'getter' method
-        '''
+        """
 
         return self.get_blank()
 
     def _del_blank(self):
-        '''
+        """
            blank 'deleter' method
-        '''
+        """
 
         del self['']
 
@@ -261,16 +261,16 @@ class header(object):
                        'Attribute to return the list of BLANK cards')
 
     def _get_comment(self):
-        '''
+        """
            comment 'getter' method
-        '''
+        """
 
         return self.get_comment()
 
     def _del_comment(self):
-        '''
+        """
            comment 'deleter' method
-        '''
+        """
 
         del self['COMMENT']
 
@@ -278,16 +278,16 @@ class header(object):
                        'Attribute to return the list of COMMENT cards')
 
     def _get_history(self):
-        '''
+        """
            history 'getter' method
-        '''
+        """
 
         return self.get_history()
 
     def _del_history(self):
-        '''
+        """
            history 'deleter' method
-        '''
+        """
 
         del self['HISTORY']
 
@@ -295,14 +295,14 @@ class header(object):
                        'Attribute to return the list of HISTORY cards')
 
     def __del__(self):
-        '''
+        """
            Cleanup headers before destruction
-        '''
+        """
 
         del self.hdr  # also deletes self.cards
 
     def save(self, filename, raw=True, mode='clobber', dataless=False):
-        '''
+        """
            Save header to a text file.  The contents of filename will be
            overwritten if mode='clobber'.
 
@@ -315,7 +315,7 @@ class header(object):
            dataless: if true, remove NAXISn from output and set BITPIX
                      to 8 and NAXIS to 0 (prevents data size warnings
                      when loading this dataless header from file)
-        '''
+        """
 
         modes = ['clobber', 'append']
 
@@ -356,7 +356,7 @@ class header(object):
             fd.writelines(cardlist)
 
     def verify(self, option='silentfix'):
-        '''
+        """
            Verify the card order and validity of card values in the current
            header.
 
@@ -369,7 +369,7 @@ class header(object):
                  for informational purposes.  Once this header is paired with
                  data, these values will be overwritten with data-specific
                  values and may not match the original values.
-        '''
+        """
 
         if self.option == 'ignore':
             self._IS_VERIFIED = True
@@ -486,9 +486,9 @@ class header(object):
         self._set_attributes()
 
     def as_eclipse_header(self):
-        '''
+        """
            Return a proper Eclipse header from this header object.
-        '''
+        """
 
         from eclipse import header as e_header
         e_hdr = e_header.header().new()
@@ -507,18 +507,18 @@ class header(object):
         return e_hdr
 
     def index(self, keyword):
-        '''
+        """
            Return the integer index of the keyword in this header.
 
              keyword: a string keyword value
-        '''
+        """
 
         return _get_index(self.hdr, keyword)
 
     def info(self):
-        '''
+        """
            Show general information on this header.
-        '''
+        """
 
         # Acquire attributes.
         length = len(self)
@@ -540,33 +540,33 @@ class header(object):
         print('  size on disk: %s bytes' % disk_size)
 
     def item_size(self):
-        '''
+        """
            Length of a header item (hard-coded to 80 characters)
-        '''
+        """
 
         return 80
 
     def block_size(self):
-        '''
+        """
            Length of a header data block written to a file (hard-coded to 2880
            bytes or 36 80-byte header items)
-        '''
+        """
 
         return 2880
 
     def get_blank(self):
-        '''
+        """
            Get all blank cards as a list of string texts.
-        '''
+        """
 
         return [card.value for card in self.itercards() if get_keyword(card) == '']
 
     def get_blank_cards(self):
-        '''
+        """
            Get all blank card values as a list of header cards where
            applicable (i.e., if no proper header cards exist in the
            blank card values, the returned card list is empty).
-        '''
+        """
 
         blanks = self.get_blank()
         cards = []
@@ -579,18 +579,18 @@ class header(object):
         return cards
 
     def get_comment(self):
-        '''
+        """
            Get all comments as a list of string texts.
-        '''
+        """
 
         return get_comment(self.hdr)
 
     def get_comment_cards(self):
-        '''
+        """
            Get all comments as a list of header cards where applicable
            (i.e., if no proper header cards exist in the comments, the
            returned card list is empty).
-        '''
+        """
 
         comments = self.get_comment()
         cards = []
@@ -603,18 +603,18 @@ class header(object):
         return cards
 
     def get_history(self):
-        '''
+        """
            Get all histories as a list of string texts.
-        '''
+        """
 
         return get_history(self.hdr)
 
     def get_history_cards(self):
-        '''
+        """
            Get all histories as a list of header cards where applicable
            (i.e., if no proper header cards exist in the histories, the
            returned card list is empty).
-        '''
+        """
 
         historys = self.get_history()
         cards = []
@@ -627,13 +627,13 @@ class header(object):
         return cards
 
     def add_blank(self, value='', before=None, after=None):
-        '''
+        """
            Add a blank card.
 
             value: Text to be added (folds at 72 characters)
            before: keyword to place blank before
             after: keyword to place blank after
-        '''
+        """
 
         values = fold_string(value, num=72).split('\n')
         if after:
@@ -644,13 +644,13 @@ class header(object):
         self._IS_VERIFIED = False
 
     def add_comment(self, value, before=None, after=None):
-        '''
+        """
            Add a COMMENT card.
 
             value: comment text to be added (folds at 72 characters)
            before: keyword to place comment before
             after: keyword to place comment after
-        '''
+        """
 
         values = fold_string(value, num=72).split('\n')
         if after:
@@ -661,13 +661,13 @@ class header(object):
         self._IS_VERIFIED = False
 
     def add_history(self, value, before=None, after=None):
-        '''
+        """
            Add a HISTORY card.
 
             value: history text to be added (folds at 72 characters)
            before: keyword to place history before
             after: keyword to place history after
-        '''
+        """
 
         values = fold_string(value, num=72).split('\n')
         if after:
@@ -678,12 +678,12 @@ class header(object):
         self._IS_VERIFIED = False
 
     def rename_keyword(self, oldkeyword, newkeyword):
-        '''
+        """
            Rename a card's keyword in the header.
 
            oldkeyword: old keyword, can be a name or index.
            newkeyword: new keyword, must be a string.
-        '''
+        """
 
         if oldkeyword in ['COMMENT', 'HISTORY', '']:
             raise DARMAError('Cannot rename existing %s keyword!' % oldkeyword)
@@ -699,28 +699,28 @@ class header(object):
             raise DARMAError('Error renaming %s in header: %s' % (oldkeyword, e))
 
     def rename_key(self, oldkey, newkey):
-        '''
+        """
            Synonym for rename_keyowrd()
 
            Rename a card's keyword in the header.
 
            oldkey: old keyword, can be a name or index.
            newkey: new keyword, must be a string.
-        '''
+        """
 
         self.rename_keyword(oldkey, newkey)
 
     def dump(self):
-        '''
+        """
            Dump the contents of the header to the screen (less the END
            card and padding blank cards).
-        '''
+        """
 
         for card in self.cards:
             print(get_cardimage(card))
 
     def new(self):
-        '''
+        """
            Create a new empty header object.
 
            Make this header into a new empty header (no keywords).
@@ -744,7 +744,7 @@ class header(object):
                    SIMPLE  =                    T / conforms to FITS standard
                    BITPIX  =                    8 / array data type
                    NAXIS   =                    0 / number of array dimensions
-        '''
+        """
 
         # FIXME
         # FIXME look into returning a new header leaving this one intact
@@ -756,7 +756,7 @@ class header(object):
         return self
 
     def default(self, type='primary'):
-        '''
+        """
            Create a default header object.
 
            type: type of header (primary or image)
@@ -774,7 +774,7 @@ class header(object):
                  type of header in a FITS file.  image-type headers always
                  have a primary-type header at the begining of the FITS file
                  and cannot be the only header in the FITS file.
-        '''
+        """
 
         if type is 'primary':
             self.hdr = fits.PrimaryHDU().header
@@ -789,21 +789,21 @@ class header(object):
         return self
 
     def add(self, keyword, value, comment=None):
-        '''
+        """
            Synonym for append().
-        '''
+        """
 
         self.append(keyword, value, comment)
 
     def add_after(self, after, keyword, value, comment=None):
-        '''
+        """
            Add a new keyword-value-comment tuple after an existing keyword.
 
                after: existing keyword to add after
              keyword: keyword string
                value: value
              comment: comment string
-        '''
+        """
 
         try:
             if keyword == 'COMMENT':
@@ -818,7 +818,7 @@ class header(object):
             raise DARMAError('Error adding %s to header: %s' % (repr((keyword, value, comment)), e))
 
     def append(self, keyword, value, comment=None, force=False):
-        '''
+        """
            Append a new keyword-value-comment card to the end of the
            header.  If the keyword exists, it is overwritten.
 
@@ -833,7 +833,7 @@ class header(object):
 
                  Force overrides this behavior and appends any card to
                  the end of the header.
-        '''
+        """
 
         last_keyword = None
         if force:
@@ -853,7 +853,7 @@ class header(object):
             raise DARMAError('Error adding %s to header: %s' % (repr((keyword, value, comment)), e))
 
     def fromstring(self, cardstring):
-        '''
+        """
            Append a new standard card from a 80 character card string
            overwriting when the same named card.keyword exists:
 
@@ -868,7 +868,7 @@ class header(object):
            appropriately and truncating the comment when necessary.  No
            attempt is made to correct the keyword and value beyond
            capitalizing the keyword.
-        '''
+        """
 
         card = fromstring(cardstring, verify=self.option)
         keyword = get_keyword(card)
@@ -877,13 +877,13 @@ class header(object):
         self.append(get_keyword(card), card.value, comment=card.comment)
 
     def modify(self, keyword, value, comment=None):
-        '''
+        """
            Modify the value and/or comment of an existing keyword.  If
            the keyword does not exist, it is appended to the end of the
            header.
 
            Synonym for update without the before and after options.
-        '''
+        """
 
         try:
             self.update(keyword, value, comment=comment)
@@ -891,10 +891,10 @@ class header(object):
             raise DARMAError('Error updating %s in header: %s' % (repr((key, value, comment)), e))
 
     def update(self, keyword, value, comment=None, before=None, after=None):
-        '''
+        """
            Update a header keyword.  If the keyword doews not exists, it
            will be appended.
-        '''
+        """
 
         if keyword in ['COMMENT', 'HISTORY', '']:
             raise DARMAError('Cannot update %s keyword!' % keyword)
@@ -906,12 +906,12 @@ class header(object):
             raise DARMAError('Error updating %s in header: %s' % (repr((keyword, value, comment)), e))
 
     def copy(self):
-        '''
+        """
            Make a copy of the header.
 
            Returns a new header object containing the same values as this
            header object.
-        '''
+        """
 
         result = header()
         result.hdr = self.hdr.copy()
@@ -921,14 +921,14 @@ class header(object):
         return result
 
     def merge(self, other, clobber=True):
-        '''
+        """
            Merge this header with another header.  Returns a new header
            combining the values of this header with those of another
            header.  Header cards from other are added to a copy of self.
 
                other: header to merge into this one
              clobber: overwrite existing keywords in this header
-        '''
+        """
 
         result = self.copy()
         # Temporary keyword to act as a marker for the last keyword.  Do not
@@ -952,13 +952,13 @@ class header(object):
         return result
 
     def merge_into_file(self, filename, clobber=True):
-        '''
+        """
            Merge this header directly into the primary header of an existing
            file.
 
              filename: name of file in which to merge this header
               clobber: overwrite existing keywords in file
-        '''
+        """
 
         orig_hdr = header(cardlist=list(get_cards(getheader(filename, 0))), option=self.option)
         self_hdr = self.copy()
@@ -986,16 +986,16 @@ class header(object):
             os.rename(filename+'.new', filename)
 
     def __len__(self):
-        '''
+        """
            Number of header cards (excludes the END card).
-        '''
+        """
 
         return len(get_cards(self.hdr))
 
     def __getitem__(self, keyword):
-        '''
+        """
            Get a keyword value in its native datatype.
-        '''
+        """
 
         keyword = _strip_keyword(keyword)
         if self._hdr is not None:
@@ -1013,10 +1013,10 @@ class header(object):
             return value
 
     def __setitem__(self, keyword, value):
-        '''
+        """
            Add an item from value=value or value=(value, comment),
            overwriting if it exists.
-        '''
+        """
 
         # Check if incoming keyword is nonstandard (i.e., should be HIERARCH).
         allowed_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ '
@@ -1052,9 +1052,9 @@ class header(object):
         self._IS_VERIFIED = False
 
     def __delitem__(self, keyword):
-        '''
+        """
            Delete card(s) with the name keyword.
-        '''
+        """
 
         self._hdr.__delitem__(keyword)
         self._IS_VERIFIED = False
@@ -1094,17 +1094,17 @@ class header(object):
     #    self._IS_VERIFIED = False
 
     def __contains__(self, keyword):
-        '''
+        """
            Returns existence of keyword in header.
            x.__contains__(y) <==> y in x
-        '''
+        """
 
         return self.hdr.__contains__(_strip_keyword(keyword))
 
     def __repr__(self):
-        '''
+        """
            x.__repr__() <==> repr(x)
-        '''
+        """
 
         return_string = str(self.__class__) + '\n'
         if self._hdr is None:
@@ -1128,9 +1128,9 @@ class header(object):
         return return_string[:-1]
 
     def __str__(self):
-        '''
+        """
            x.__str__() <==> str(x)
-        '''
+        """
 
         return_string = ''
         if self._hdr is None:
@@ -1146,46 +1146,46 @@ class header(object):
         return return_string
 
     def __iter__(self):
-        '''
+        """
            x.__iter__() <==> iter(x)
 
            Iterate over the keywords in this header.
-        '''
+        """
 
         if self._hdr is not None:
             return self.hdr.__iter__()
         return iter([])
 
     def keys(self):
-        '''
+        """
            H.keys() -> a list of keywords of H
-        '''
+        """
 
         return list(self.hdr.keys())
 
     def keywords(self):
-        '''
+        """
            H.keywords() -> a list of keywords of H
 
            Synonym for keys()
-        '''
+        """
 
         return self.keys()
 
     def values(self):
-        '''
+        """
            H.values() -> a list of values of H
-        '''
+        """
 
         return [card.value for card in self.cards]
 
     def items(self, comments=True):
-        '''
+        """
            H.items() -> a list of (keyword, value, comment) or
            (keyword, value) items of H
 
              comments: include comments in item tuple
-        '''
+        """
 
         if comments:
             return [(get_keyword(card), card.value, card.comment) for card in self.cards]
@@ -1193,63 +1193,63 @@ class header(object):
             return list(self.hdr.items())
 
     def comments(self):
-        '''
+        """
            H.comments() -> a list of comments of H
-        '''
+        """
 
         return [card.comment for card in self.cards]
 
     def iterkeys(self):
-        '''
+        """
            H.iterkeys() -> an iterator over the keywords of H
 
            Synonym for __iter__()
-        '''
+        """
 
         return self.__iter__()
 
     def iterkeywords(self):
-        '''
+        """
            H.iterkeywords() -> an iterator over the keywords of H
 
            Synonym for __iter__()
-        '''
+        """
 
         return self.__iter__()
 
     def itervalues(self):
-        '''
+        """
            H.itervalues() -> an iterator over the values of H
-        '''
+        """
 
         return iter(self.values())
 
     def iteritems(self, comments=True):
-        '''
+        """
            H.iteritems() -> an iterator over the (keyword, value, comment)
            or (keyword, value) items of H
 
              comments: include comments in item tuple
-        '''
+        """
 
         return iter(self.items(comments=comments))
 
     def itercards(self):
-        '''
+        """
            H.itercards() -> an iterator over the cards in H
-        '''
+        """
 
         return iter(get_cards(self.hdr))
 
     def itercomments(self):
-        '''
+        """
            H.itercomments() -> an iterator over the comments of H
-        '''
+        """
 
         return iter(self.comments())
 
     def get_all_headers(self):
-        '''
+        """
            The sole purpose of this method is to call the factory function
            get_headers that creates a list of headers from the headers in
            the file that the current header is loaded from (self.filename).
@@ -1257,7 +1257,7 @@ class header(object):
            this is a list of one header, a copy of the current header.  If
            the file is multi-extension, this is a list of one primary header
            and N extension headers, where N is the number of extensions.
-        '''
+        """
 
         if self.filename is None:
             return [self.copy()]
@@ -1270,7 +1270,7 @@ class header(object):
 
 
 def getval(filename, keyword, default=None, ext=0, use_fits=False):
-    '''
+    """
        Get a keyword value from an extension of a FITS image, single- or
        multi-extension.
 
@@ -1283,7 +1283,7 @@ def getval(filename, keyword, default=None, ext=0, use_fits=False):
 
        NOTE: The FITS-handler's methods tend to be slower for extension
              0/1 access, but may be faster for extension > 1 access.
-    '''
+    """
 
     if use_fits:
         return fits.getval(filename, keyword, ext=ext) or default
@@ -1386,7 +1386,7 @@ def get_headers(filename=None, cardlist=None):
 
 
 def update_header_in_file(filename, keywords=[], values=[], comments=[], ext=0, cards=[], option='silentfix', empty=False):
-    '''
+    """
        This is a utility function to update a header of a file "in place".
 
        When the FITS file is very large, rewriting the whole thing to update
@@ -1408,7 +1408,7 @@ def update_header_in_file(filename, keywords=[], values=[], comments=[], ext=0, 
 
        NOTE: This function assumes that any existing keyword values will
              be overwritten.
-    '''
+    """
 
     card_tuples = []
     if cards:
@@ -1455,33 +1455,33 @@ def update_header_in_file(filename, keywords=[], values=[], comments=[], ext=0, 
 
 
 def _is_card_length(card_string):
-    '''
+    """
        str <= 80 characters
-    '''
+    """
 
     return isinstance(card_string, (str, unicode)) and len(card_string) <= 80
 
 
 def _has_equals(card_string):
-    '''
+    """
        '=' in str
-    '''
+    """
 
     return '=' in card_string
 
 
 def _has_spaces(keyword_string):
-    '''
+    """
        ' ' in str
-    '''
+    """
 
     return ' ' in keyword_string
 
 
 def _has_only_allowed_chars(keyword_string):
-    '''
+    """
        keyword contains only 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'
-    '''
+    """
     allowed_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_'
     for char in keyword_string:
         if char not in allowed_chars:
@@ -1490,12 +1490,12 @@ def _has_only_allowed_chars(keyword_string):
 
 
 def _is_standard_form(card_string):
-    '''
+    """
        AKEYWORD=                value / comment
        keyword is all caps, numeric, '-', or '_'
        '=' at index 8
        optional ' / ' after value followed by comment
-    '''
+    """
     msg = ''
     if not _is_card_length(card_string):
         msg += 'not a string of length <= 80 characters, '
@@ -1517,12 +1517,12 @@ def _is_standard_form(card_string):
 
 
 def _is_hierarch_form(card_string):
-    '''
+    """
        HIERARCH keyword with spaces = value
        begins with 'HIERARCH '
        contains '=' between keyword and value
        comment ignored
-    '''
+    """
     msg = ''
     if not _is_card_length(card_string):
         msg += 'not a string of length <= 80 characters, '
@@ -1547,9 +1547,9 @@ def _is_hierarch_form(card_string):
 
 
 def _is_blank_form(card_string):
-    '''
+    """
        begins with '        ' followed by anything
-    '''
+    """
     msg = ''
     if not _is_card_length(card_string):
         msg += 'not a string of length <= 80 characters, '
@@ -1562,9 +1562,9 @@ def _is_blank_form(card_string):
 
 
 def _is_comment_form(card_string):
-    '''
+    """
        begins with 'COMMENT ' followed by anything
-    '''
+    """
     msg = ''
     if not _is_card_length(card_string):
         msg += 'not a string of length <= 80 characters, '
@@ -1577,9 +1577,9 @@ def _is_comment_form(card_string):
 
 
 def _is_history_form(card_string):
-    '''
+    """
        begins with 'HISTORY ' followed by anything
-    '''
+    """
     msg = ''
     if not _is_card_length(card_string):
         msg += 'not a string of length <= 80 characters, '
@@ -1592,9 +1592,9 @@ def _is_history_form(card_string):
 
 
 def _is_continue_form(card_string):
-    '''
+    """
        begins with 'CONTINUE ' followed by anything
-    '''
+    """
     msg = ''
     if not _is_card_length(card_string):
         msg += 'not a string of length <= 80 characters, '
@@ -1607,7 +1607,7 @@ def _is_continue_form(card_string):
 
 
 def fromstring(cardstring, verify='silentfix'):
-    '''
+    """
        Return a new card from a <=80 character card string:
 
        "KEYWORD =           'value   ' / standard FITS card comment    "
@@ -1631,7 +1631,7 @@ def fromstring(cardstring, verify='silentfix'):
        attempts to determine poor formatting and raises an exception
        when the cardstring does not match the criteria for any known card
        format.
-    '''
+    """
 
     # valid cards have:
     # 1. '=' at index 8 or          # standard KEYWORD card

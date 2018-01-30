@@ -1,5 +1,5 @@
-'''Implements the image object with methods to process a 2D FITS image.
-'''
+"""Implements the image object with methods to process a 2D FITS image.
+"""
 
 __version__ = '@(#)$Revision$'
 
@@ -20,7 +20,7 @@ except NameError:
 
 class image(DataStruct):
 
-    '''
+    """
        A 2D FITS image
 
        This is the basic object used to manipulate FITS images.  This object
@@ -204,12 +204,12 @@ class image(DataStruct):
        (other scales are possible too).  It is possible to specify relevant
        regions the same way as in image.stat_opts()
 
-    '''
+    """
 
     def __init__(self, filename=None, extension=0, plane=0, readonly=0,
                  memmap=1, data=None, datatype=None, bmask=None, bit=0,
                  *args, **kwargs):
-        '''
+        """
             filename: The name of a FITS file
            extension: The FITS extension number
                plane: The plane in a 3D image stack
@@ -228,7 +228,7 @@ class image(DataStruct):
                  This guarantees that if no such method is called, no memory
                  is wasted, and if one is, that the mask stays up to date.
                  See the help for bitmask for more information.
-        '''
+        """
 
         DataStruct.__init__(self, *args, **kwargs)
         self.log('image constructor', 'verbose')
@@ -250,20 +250,20 @@ class image(DataStruct):
                 raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
-        '''
+        """
            Proxy for load_image()
 
            THIS SHOULD ONLY BE CALLED BY THE 'getter' METHOD.
-        '''
+        """
 
         self.log('image load', 'verbose')
         return self.load_image()
 
     def load_image(self):
-        '''
+        """
            Load the image from the given data Array or from filename.  If there
            is no data and no filename, the image data is set to None.
-        '''
+        """
 
         log = self.log
         log('image load_image', 'verbose')
@@ -303,17 +303,17 @@ class image(DataStruct):
             self.bmask = bitmask(conserve=True, datatype='bool')
 
     def as_pixelmap(self):
-        '''
+        """
            Return a pixelmap object constructed from this image object.
            Values are converted to a boolean array (i.e.,  0 ? 0 : 1)
-        '''
+        """
 
         return pixelmap(data=self.data)
 
     def has_nonnumbers(self):
-        '''
+        """
            Determine if non-numbers (NaN, Inf, etc.) exist in the data.
-        '''
+        """
 
         self.log('image has_nonnumbers', 'verbose')
         bit = self.bit
@@ -324,9 +324,9 @@ class image(DataStruct):
         return self.bmask.has_bit(bit=bit)
 
     def count_nonnumbers(self):
-        '''
+        """
            Return the number of nonnumbers in the image.
-        '''
+        """
 
         self.log('image count_nonnumbers', 'verbose')
         bit = self.bit
@@ -342,9 +342,9 @@ class image(DataStruct):
             return self.size - pdata.nonzero()[0].shape[0]
 
     def map_nonnumbers(self):
-        '''
+        """
            Return a pixelmap with nonnumbers in the image marked as bad.
-        '''
+        """
 
         self.log('image map_nonnumbers', 'verbose')
         bit = self.bit
@@ -360,7 +360,7 @@ class image(DataStruct):
     #
 
     def stat(self, domedian=True, filter=False):
-        '''
+        """
            Compute the statistics.
 
            domedian: compute median
@@ -370,14 +370,14 @@ class image(DataStruct):
            StatStruct object. The value of this attribute is 1 if the iteration
            converged, 0 otherwise.  The number of iterations is also added
            under the 'iterations' attribute.
-        '''
+        """
 
         return self.iter_stat_opts(max_iter=None, threshold=None,
                                    domedian=domedian, filter=filter)
 
     def stat_opts(self, pixmap=None, pixrange=None, zone=None, domedian=True,
                   filter=False):
-        '''
+        """
            Compute the statistics, using a pixmap and/or a pixrange and/or a
            zone to define included pixels.
 
@@ -391,7 +391,7 @@ class image(DataStruct):
            StatStruct object. The value of this attribute is 1 if the iteration
            converged, 0 otherwise.  The number of iterations is also added
            under the 'iterations' attribute.
-        '''
+        """
 
         return self.iter_stat_opts(pixmap=pixmap, pixrange=pixrange, zone=zone,
                                    max_iter=None, threshold=None,
@@ -399,7 +399,7 @@ class image(DataStruct):
 
     def iter_stat(self, max_iter=5, threshold=5.0, domedian=True,
                   filter=False):
-        '''
+        """
            Compute the statistics iteratively.
 
             max_iter: maximum number of iterations
@@ -419,14 +419,14 @@ class image(DataStruct):
            converged, 0 otherwise.  The number of iterations is also added
            under the 'iterations' attribute.
 
-        '''
+        """
 
         return self.iter_stat_opts(max_iter=max_iter, threshold=threshold,
                                    domedian=domedian, filter=filter)
 
     def iter_stat_opts(self, pixmap=None, pixrange=None, zone=None, max_iter=5,
                        threshold=5.0, domedian=True, filter=False):
-        '''
+        """
            Compute the statistics iteratively, using a pixmap and/or a pixrange
            and/or a zone to define included pixels.
 
@@ -450,7 +450,7 @@ class image(DataStruct):
            converged, 0 otherwise.  The number of iterations is also added
            under the 'iterations' attribute.
 
-        '''
+        """
 
         # self/img and pixmap/pmap are image and pixelmap objects, respectively
         # _data, _mask, and _pmap are Arrays
@@ -573,60 +573,60 @@ class image(DataStruct):
             raise DARMAError('Empty data array!')
 
     def get_mean(self, filter=False):
-        '''
+        """
            Return the mean value of this image.
-        '''
+        """
 
         return mean(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                     filter=filter)
 
     def get_median(self, sorted=False, filter=False):
-        '''
+        """
            Return the median value of this image.
 
            sorted: is the data already sorted
-        '''
+        """
 
         return median(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                       sorted=sorted, filter=filter)
 
     def get_stdev(self, filter=False):
-        '''
+        """
            Return the sample standard deviation value of this image.
-        '''
+        """
 
         return stdev(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                      filter=filter)
 
     def get_rms(self, filter=False):
-        '''
+        """
            Return the rms (root mean square) value of this image.
-        '''
+        """
 
         return rms(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                    filter=filter)
 
     def get_min(self, filter=False):
-        '''
+        """
            Return the minumum value of this image.
-        '''
+        """
 
         return min(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                    filter=filter)
 
     def get_max(self, filter=False):
-        '''
+        """
            Return the maximum value of this image.
-        '''
+        """
 
         return max(self.data, self.bmask.as_pixelmap(mask=2**self.bit).data,
                    filter=filter)
 
     def thresh_to_pixmap(self, lo_cut=None, hi_cut=None):
-        '''
+        """
            Produce a pixelmap mapping pixels with values between low_cut and
            hi_cut.
-        '''
+        """
 
         if lo_cut is not None:
             masklo = self.data > lo_cut
@@ -654,14 +654,14 @@ class image(DataStruct):
     #
 
     def clean_bad_pixels(self, pixmap, boxsize):
-        '''
+        """
            Interpolate the bad pixels in an image.
 
             pixmap: A pixelmap (good=1, bad=0)
            boxsize: width of interpolation region
 
            NOTE: THIS METHOD CURRENTLY DOES NOT WORK!
-        '''
+        """
 
         # XXX FIXME
         newdata = self.data.copy()
@@ -678,12 +678,12 @@ class image(DataStruct):
         return image(data=newdata)
 
     def mirror_edges(self, xedge, yedge):
-        '''
+        """
            Mirror the edges of the image to create a new image
 
            xedge: The size of the sides to be mirrored
            yedge: The size of the top/bottom to be mirrored
-        '''
+        """
 
         xsize = self.xsize()
         ysize = self.ysize()
@@ -704,14 +704,14 @@ class image(DataStruct):
         return tall
 
     def subtract_oscan_rows(self, x0, x1, zone=None, smooth=0):
-        '''
+        """
            Subtract mean of overscan rows.
 
            x0, x1: start and end column of overscan region
            zone: a tuple defining the zone to subtract mean from in
                  (x0, y0, x1, y1) form
            smooth: size of rectangular box smoothing function
-        '''
+        """
 
         # Take overscan region.
         if zone is not None:
@@ -735,14 +735,14 @@ class image(DataStruct):
         return self
 
     def subtract_oscan_columns(self, y0, y1, zone, smooth=0):
-        '''
+        """
            Subtract mean of overscan columns.
 
            y0, y1: start and end row of overscan region
            zone: a tuple defining the zone to subtract mean from in
                  (x0, y0, x1, y1) form
            smooth: size of rectangular box smoothing function
-        '''
+        """
 
         # Take overscan region.
         if zone is not None:
@@ -777,9 +777,9 @@ class image(DataStruct):
 #               'contrast1':[1.0]*4+[4.0]+[1.0]*4}
 
     def _apply_filter(self, filtername):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''Return a new image produced by applying a named filter'''
 #        result = image()
@@ -795,9 +795,9 @@ class image(DataStruct):
         return None
 
     def filter_mean(self, xsize=3, ysize=3):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''Return a mean filtered image over a rectangular kernel
 #
@@ -820,9 +820,9 @@ class image(DataStruct):
         return None
 
     def filter_median(self, xsize=3, ysize=3):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''Do a median filtering over a rectangular area
 #
@@ -844,9 +844,9 @@ class image(DataStruct):
         return None
 
     def filter_dx(self):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''First derivative in x, convolve with a kernel
 #        -1 0 1
@@ -859,9 +859,9 @@ class image(DataStruct):
         return None
 
     def filter_dy(self):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''First derivative in y, convolve with a kernel
 #        -1 -1 -1
@@ -874,9 +874,9 @@ class image(DataStruct):
         return None
 
     def filter_dx2(self):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''Second derivative in x, convolve with a kernel
 #        1 -2 1
@@ -889,9 +889,9 @@ class image(DataStruct):
         return None
 
     def filter_dy2(self):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''Second derivative in y, convolve with a kernel
 #         1  1  1
@@ -904,9 +904,9 @@ class image(DataStruct):
         return None
 
     def filter_contour1(self):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''Convolve with a kernel
 #         1  0 -1
@@ -919,9 +919,9 @@ class image(DataStruct):
         return None
 
     def filter_contour2(self):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''Convolve with a kernel
 #        -1  0  1
@@ -934,9 +934,9 @@ class image(DataStruct):
         return None
 
     def filter_contour3(self):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''Convolve with a kernel
 #        -1  2 -1
@@ -949,9 +949,9 @@ class image(DataStruct):
         return None
 
     def filter_contrast1(self):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''Convolve with a kernel
 #         1  1  1
@@ -1029,11 +1029,11 @@ class image(DataStruct):
         # return Array.fromfunction(transform, [nrho, ntheta])
 
     def inverse_hough_transform(self, threshold, lx, ly):
-        '''
+        """
            Make an Inverse Hough transform of the image.
 
            Unimplemented
-        '''
+        """
 
         #result = pixelmap()
         # result.p_pmap = c_eclipse.hough_transform_to_pixelmap(self.p_ima,
@@ -1052,7 +1052,7 @@ class image(DataStruct):
 
     def normalize_mean(self, pixmap=None, pixrange=None, zone=None,
                        scale=1.0):
-        '''
+        """
            Normalize the image to a mean of 1.0.
 
            The mean can be computed in a restricted area. This function
@@ -1062,7 +1062,7 @@ class image(DataStruct):
            pixrange: a range of valid values [low, high] (default=None)
                zone: a valid zone [xmin, ymin, xmax, ymax]
               scale: normalize to a different scale (default=1.0)
-        '''
+        """
 
         if (pixmap is None) and (pixrange is None) and (zone is None):
             mean = self.get_mean(filter=False)
@@ -1074,7 +1074,7 @@ class image(DataStruct):
 
     def normalize_median(self, pixmap=None, pixrange=None, zone=None,
                          scale=1.0):
-        '''
+        """
            Normalize the image to a median of 1.0.
 
            The median can be computed in a restricted area. This function
@@ -1084,7 +1084,7 @@ class image(DataStruct):
            pixrange: a range of valid values [low, high] (default=None)
                zone: a valid zone [xmin, ymin, xmax, ymax]
               scale: normalize to a different scale (default=1.0)
-        '''
+        """
 
         if (pixmap is None) and (pixrange is None) and (zone is None):
             median = self.get_median(filter=False)
@@ -1096,7 +1096,7 @@ class image(DataStruct):
 
     def normalize_flux(self, pixmap=None, pixrange=None, zone=None,
                        scale=1.0):
-        '''
+        """
            Normalize the image to a flux of 1.0.
 
            The flux can be computed in a restricted area. This function
@@ -1106,7 +1106,7 @@ class image(DataStruct):
            pixrange: a range of valid values [low, high] (default=None)
                zone: a valid zone [xmin, ymin, xmax, ymax]
               scale: normalize to a different scale (default=1.0)
-        '''
+        """
 
         if (pixmap is None) and (pixrange is None) and (zone is None):
             stats = self.stat(domedian=0)
@@ -1117,7 +1117,7 @@ class image(DataStruct):
 
     def normalize_range(self, pixmap=None, pixrange=None, zone=None,
                         scale=1.0):
-        '''
+        """
            Normalize the image to a range of values between 0.0 and 1.0.
 
            The range can be computed in a restricted area. This function
@@ -1127,7 +1127,7 @@ class image(DataStruct):
            pixrange: a range of valid values [low, high] (default=None)
                zone: a valid zone [xmin, ymin, xmax, ymax]
               scale: normalize to a different scale (default=1.0)
-        '''
+        """
 
         if (pixmap is None) and (pixrange is None) and (zone is None):
             stats = self.stat(domedian=0)
@@ -1140,7 +1140,7 @@ class image(DataStruct):
 
     def normalize_absolute_flux(self, pixmap=None, pixrange=None,
                                 zone=None, scale=1.0):
-        '''
+        """
            Normalize the image to an absolute flux of 1.0.
 
            The absolute flux can be computed in a restricted area. This
@@ -1150,7 +1150,7 @@ class image(DataStruct):
            pixrange: a range of valid values [low, high] (default=None)
                zone: a valid zone [xmin, ymin, xmax, ymax]
               scale: normalize to a different scale (default=1.0)
-        '''
+        """
 
         if (pixmap is None) and (pixrange is None) and (zone is None):
             stats = self.stat(domedian=0)
@@ -1198,7 +1198,7 @@ class image(DataStruct):
         return None, None
 
     def run_flattest(self, nwx, nwy):
-        '''
+        """
            Quality control tool for Dome.
 
            This test works an flat-fielded images.
@@ -1216,7 +1216,7 @@ class image(DataStruct):
            Returns a quality index.
 
            Unimplemented
-        '''
+        """
 
         #result   =  image()
         #result.p_ima = c_eclipse.image_new(nwx,nwy);
@@ -1227,7 +1227,7 @@ class image(DataStruct):
         return None, None
 
     def run_flatfittingtest(self, nwx, nwy, nfwx, nfwy):
-        '''
+        """
            Quality control tool for Twilight.
 
            It can be used on flat images to see if there is a gradient,
@@ -1246,7 +1246,7 @@ class image(DataStruct):
            Returns a quality index.
 
            Unimplemented
-        '''
+        """
 
         #imsurfit = image()
         #imsurfit.p_ima = c_eclipse.image_surfit(self.p_ima,nfwx,nfwy)
@@ -1260,9 +1260,9 @@ class image(DataStruct):
         return None, None
 
     def run_counttest(self, Threshold):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''Quality control tool
 #
@@ -1287,9 +1287,9 @@ class image(DataStruct):
         return None
 
     def run_imsurfit(self, nwx, nwy):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''Tool for fitting surface
 #
@@ -1326,9 +1326,9 @@ class image(DataStruct):
         return None
 
     def threshold(self, lv, hv, sl, sh):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
 #        '''
 #        This tool takes all pixels major than hl and assign them the value sh, then
@@ -1351,7 +1351,7 @@ class image(DataStruct):
 
 
 def convert(filename, bitpix=16):
-    '''
+    """
        Convert data contained in filename to datatype bitpix.  The file
        can be a single- or multi-extension FITS image.
 
@@ -1362,7 +1362,7 @@ def convert(filename, bitpix=16):
                 range is greater than 2**|bitpix| ADU and is primarily
                 intended to overcome PyFITS insistance to use a float
                 representation for all data, even when saving.
-    '''
+    """
 
     bpmap = {
         8:   'uint8',
@@ -1456,7 +1456,7 @@ def make_image(xsize, ysize, datatype=FLOAT, value=None):
 
 
 def fft(real, imaginary=None, direction=-1):
-    '''
+    """
        Do a Fast Fourier Transorm (not currently using FFTW)
 
             real: An image containing the real values
@@ -1465,7 +1465,7 @@ def fft(real, imaginary=None, direction=-1):
 
        Returns a tuple of images representing the real and imaginary part
        of the fourier transformed data.
-    '''
+    """
 
     # XXX optimize for precision
 
@@ -1486,7 +1486,7 @@ def fft(real, imaginary=None, direction=-1):
 
 
 def mean(data, nanmask=None, filter=False):
-    '''
+    """
        Return the mean of a sequence of the dataset data.  All members of the
        input array are considered regardless of array rank (number of
        dimensions).
@@ -1494,7 +1494,7 @@ def mean(data, nanmask=None, filter=False):
           data: input data array of arbitrary rank
        nanmask: a pixel mask where finite pixel values in data are 1
         filter: filter out non-numbers (NaN, Inf, etc.)
-    '''
+    """
 
     # Return a ravel()ed array.
     _data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
@@ -1505,7 +1505,7 @@ def mean(data, nanmask=None, filter=False):
 
 
 def median(data, nanmask=None, sorted=False, filter=False):
-    '''
+    """
        Return the median of the dataset data.  All members of the input array
        are considered regardless of array rank (number of dimensions).
 
@@ -1513,7 +1513,7 @@ def median(data, nanmask=None, sorted=False, filter=False):
        nanmask: a pixel mask where finite pixel values in data are 1
         sorted: the input data array is already sorted
         filter: filter out non-numbers (NaN, Inf, etc.)
-    '''
+    """
 
     # XXX use buitlin function?
 
@@ -1533,7 +1533,7 @@ def median(data, nanmask=None, sorted=False, filter=False):
 
 
 def stdev(data, nanmask=None, filter=False):
-    '''
+    """
        Return the sample standard deviation of a the dataset data.  All members
        of the input array are considered regardless of array rank (number of
        dimensions).
@@ -1541,7 +1541,7 @@ def stdev(data, nanmask=None, filter=False):
           data: input data array of arbitrary rank
        nanmask: a pixel mask where finite pixel values in data are 1
         filter: filter out non-numbers (NaN, Inf, etc.)
-    '''
+    """
 
     # Return a ravel()ed array.
     _data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
@@ -1554,7 +1554,7 @@ def stdev(data, nanmask=None, filter=False):
 
 
 def rms(data, nanmask=None, filter=False):
-    '''
+    """
        Return the root-mean-square (RMS) of the values of the dataset data.
        All members of the input array are considered regardless of array rank
        (number of dimensions).
@@ -1562,7 +1562,7 @@ def rms(data, nanmask=None, filter=False):
           data: input data array of arbitrary rank
        nanmask: a pixel mask where finite pixel values in data are 1
         filter: filter out non-numbers (NaN, Inf, etc.)
-    '''
+    """
 
     # Return a ravel()ed array.
     _data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
@@ -1574,14 +1574,14 @@ def rms(data, nanmask=None, filter=False):
 
 
 def min(data, nanmask=None, filter=False):
-    '''
+    """
        Return the minimum value of teh dataset data.  All members of the input
        array are considered regardless of array rank (number of dimensions).
 
           data: input data array of arbitrary rank
        nanmask: a pixel mask where finite pixel values in data are 1
         filter: filter out non-numbers (NaN, Inf, etc.)
-    '''
+    """
 
     # Return a ravel()ed array.
     data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
@@ -1593,14 +1593,14 @@ def min(data, nanmask=None, filter=False):
 
 
 def max(data, nanmask=None, filter=False):
-    '''
+    """
        Return the maximum value of the dataset data.  All members of the input
        array are considered regardless of array rank (number of dimensions).
 
           data: input data array of arbitrary rank
        nanmask: a pixel mask where finite pixel values in data are 1
         filter: filter out non-numbers (NaN, Inf, etc.)
-    '''
+    """
 
     # Return a ravel()ed array.
     data = filter_nonnumbers(data=data, nanmask=nanmask, filter=filter)
@@ -1612,14 +1612,14 @@ def max(data, nanmask=None, filter=False):
 
 
 def filter_nonnumbers(data, nanmask=None, filter=False):
-    '''Returns a 1-dimensional array with non-numbers (NaN, Inf, etc.)
+    """Returns a 1-dimensional array with non-numbers (NaN, Inf, etc.)
        filtered out.  All members of the input array are considered
        regardless of array rank (number of dimensions).
 
           data: input data array of arbitrary rank
        nanmask: a pixel mask where finite pixel values in data are 1
         filter: filter out non-numbers (NaN, Inf, etc.)
-    '''
+    """
 
     _data = data.ravel()
     if filter and nanmask is None:
@@ -1636,7 +1636,7 @@ def filter_nonnumbers(data, nanmask=None, filter=False):
 
 
 def uniform_filter1d(array, filter_size, mode=None, copy=False):
-    '''
+    """
        Filter data in a one dimmensional array, in place, averaging over
        2*filtersize+1.
 
@@ -1647,7 +1647,7 @@ def uniform_filter1d(array, filter_size, mode=None, copy=False):
 
        The only current endpoint treatment modes are "reflect" and None.
        Only one dimensional arrays are supported at this time.
-    '''
+    """
 
     #modes = ['nearest', 'wrap', 'reflect', 'constant']
     modes = ['reflect']

@@ -1,6 +1,6 @@
-'''
+"""
 Unit test for DARMA image
-'''
+"""
 
 __version__ = '@(#)$Revision$'
 
@@ -40,18 +40,18 @@ FILENAMES = SINGLES + MULTIS + CUBES + EMPTYS + ZEROS + ONES
 
 
 def build_test_data_sef():
-    '''
+    """
        This function builds SEF files to be used in testing
-    '''
+    """
     data = Array.random.normal(1.0, 0.5, (32, 16)).astype('float32')
     for filename in SINGLES:
         fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
 
 
 def build_test_data_mef():
-    '''
+    """
        This function builds MEF files to be used in testing
-    '''
+    """
     data = Array.random.normal(1.0, 0.5, (32, 16)).astype('float32')
     for filename in MULTIS:
         hdu0 = fits.PrimaryHDU()
@@ -67,9 +67,9 @@ def build_test_data_mef():
 
 
 def build_test_data_mef_cube():
-    '''
+    """
        This function builds MEF files to be used in testing
-    '''
+    """
     data = Array.asanyarray([
         Array.random.normal(1.0, 0.5, (32, 16)).astype('float32'),
         Array.random.normal(1.0, 0.5, (32, 16)).astype('float32'),
@@ -89,37 +89,37 @@ def build_test_data_mef_cube():
 
 
 def build_test_data_empty():
-    '''
+    """
        This function builds dataless files to be used in testing
-    '''
+    """
     for filename in EMPTYS:
         fits.PrimaryHDU().writeto(filename, output_verify='silentfix', clobber=True)
 
 
 def build_test_data_zero():
-    '''
+    """
        This function builds SEF files with all zero data array to be
        used in testing
-    '''
+    """
     data = Array.zeros((32, 16), dtype='float32')
     for filename in ZEROS:
         fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
 
 
 def build_test_data_one():
-    '''
+    """
        This function builds SEF files with all one data array to be
        used in testing
-    '''
+    """
     data = Array.ones((32, 16), dtype='float32')
     for filename in ONES:
         fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
 
 
 def delete_test_data():
-    '''
+    """
        This function deletes fits files used in testing
-    '''
+    """
     for filename in FILENAMES:
         if os.path.exists(filename):
             os.remove(filename)
@@ -133,9 +133,9 @@ def delete_test_data():
 
 class image_load_error_test(unittest.TestCase):
 
-    '''
+    """
        Do images loaded from bogus sources raise errors?
-    '''
+    """
 
     def setUp(self):
         build_test_data_sef()
@@ -152,9 +152,9 @@ class image_load_error_test(unittest.TestCase):
 
 class image_load_empty_test(unittest.TestCase):
 
-    '''
+    """
        Are images loaded without data empty?
-    '''
+    """
 
     def setUp(self):
         build_test_data_empty()

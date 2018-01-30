@@ -1,6 +1,6 @@
-'''
+"""
    A list of images or pixelmaps with methods that process stacks of them.
-'''
+"""
 
 __version__ = '@(#)$Revision$'
 
@@ -14,7 +14,7 @@ from .pixelmap import pixelmap
 
 class cube(DataStruct):
 
-    '''
+    """
        cubes are stacks of images or pixelmaps (3-dimensional arrays) that can
        be manipulated in similar fashions to images or pixelmaps.  Normal
        arithmetic (addition, subtraction, multiplication, division, etc.) is
@@ -29,12 +29,12 @@ class cube(DataStruct):
        pixelmap, except that the operations are typically broadcasted over all
        planes of the cube, while others condense the members of the cube to an
        image or a pixelmap.
-    '''
+    """
 
     def __init__(self, filename=None, extension=0, data=None, image_list=None,
                  index=0, readonly=0, memmap=1, datatype=FLOAT, *args,
                  **kwargs):
-        '''
+        """
              filename: The name of a FITS file the cube can be loaded from
             extension: A FITS extension number
                  data: A 3-dim numeric Python array (i.e., NumPy array)
@@ -43,7 +43,7 @@ class cube(DataStruct):
                        radio cube with polarization)
              readonly: Indicate that the FITS file is readonly
                memmap: Use memory mapping
-        '''
+        """
 
         # Allow DARMA to be imported even if NumPy is not available.
         if not _HAS_NUMPY:
@@ -63,16 +63,16 @@ class cube(DataStruct):
                 raise DARMAError('Filename: %s not found!' % self.filename)
 
     def load(self):
-        '''
+        """
            Proxy for load_cube()
-        '''
+        """
 
         self.load_cube()
 
     def load_cube(self):
-        '''
+        """
            Load the images from a file, data or from the given image_list.
-        '''
+        """
 
         # FIXME Add datatype conversion here.
 
@@ -114,33 +114,33 @@ class cube(DataStruct):
             self._data = _data
 
     def as_image_list(self):
-        '''
+        """
            Return a list of individual image objects, each corresponding to
            planes in the data cube.  This replicates the way Eclipse stored
            cube data.
-        '''
+        """
 
         return [image(data=plane) for plane in self.data]
 
     def as_pixelmap_list(self):
-        '''
+        """
            Return a list of individual pixelmap objects, each corresponding
            to planes in the data cube.  This replicates the way Eclipse
            stored cube data.
-        '''
+        """
 
         return [pixelmap(data=plane.data) for plane in self.data]
 
     def copy(self):
-        '''
+        """
            Copy the data to a new object.
-        '''
+        """
 
         return cube(data=self.data)
 
     def save(self, filename=None, hdr=None, extension=None,
              datatype='float32', clobber=True, update_datamd5=True):
-        '''
+        """
            Save the data to a file.
 
                  filename: name of the file
@@ -150,7 +150,7 @@ class cube(DataStruct):
                   clobber: overwrite an existing file
            update_datamd5: update (or add) the DATAMD5 header keyword
 
-        '''
+        """
 
         if self.readonly and (filename is None or filename == self.filename):
             raise DARMAError('Saving read-only data')
@@ -185,8 +185,8 @@ class cube(DataStruct):
             _update_datamd5(filename, _datamd5(filename))
 
     def __del__(self):
-        '''
-        '''
+        """
+        """
 
         del self
 
@@ -196,23 +196,23 @@ class cube(DataStruct):
     #
 
     def xsize(self):
-        '''
+        """
            The length of the x-axis data of the cube members.
-        '''
+        """
 
         return self.data.shape[2]  # PyFITS Array axes are reversed
 
     def ysize(self):
-        '''
+        """
            The length of the y-axis data of the cube members.
-        '''
+        """
 
         return self.data.shape[1]  # PyFITS Array axes are reversed
 
     def zsize(self):
-        '''
+        """
            The length of the z-axis data of the cube members.
-        '''
+        """
 
         return self.data.shape[0]  # PyFITS Array axes are reversed
 
@@ -223,7 +223,7 @@ class cube(DataStruct):
 
     def normalize_mean(self, pixmap=None, pixrange=None, zone=None,
                        scale=1.0):
-        '''
+        """
            Normalize each plane to a mean of 1.0.
 
            The mean can be computed in a restricted area.  This function
@@ -233,7 +233,7 @@ class cube(DataStruct):
            pixrange: a range of valid values [low, high] (default=None)
                zone: a valid zone [x0, y0, x1, y1]
               scale: normalize to a different scale (default=1.0)
-        '''
+        """
 
         images = self.as_image_list()
         for ima in images:
@@ -243,7 +243,7 @@ class cube(DataStruct):
 
     def normalize_median(self, pixmap=None, pixrange=None, zone=None,
                          scale=1.0):
-        '''
+        """
            Normalize each plane to a median of 1.0.
 
            The median can be computed in a restricted area.  This function
@@ -253,7 +253,7 @@ class cube(DataStruct):
            pixrange: a range of valid values [low, high] (default=None)
                zone: a valid zone [x0, y0, x1, y1]
               scale: normalize to a different scale (default=1.0)
-        '''
+        """
 
         images = self.as_image_list()
         for ima in images:
@@ -263,7 +263,7 @@ class cube(DataStruct):
 
     def normalize_flux(self, pixmap=None, pixrange=None, zone=None,
                        scale=1.0):
-        '''
+        """
            Normalize each plane to a flux of 1.0.
 
            The flux can be computed in a restricted area.  This function
@@ -273,7 +273,7 @@ class cube(DataStruct):
            pixrange: a range of valid values [low, high] (default=None)
                zone: a valid zone [x0, y0, x1, y1]
               scale: normalize to a different scale (default=1.0)
-        '''
+        """
 
         images = self.as_image_list()
         for ima in images:
@@ -283,7 +283,7 @@ class cube(DataStruct):
 
     def normalize_range(self, pixmap=None, pixrange=None, zone=None,
                         scale=1.0):
-        '''
+        """
            Normalize the images to a range of values between 0.0 and 1.0.
 
            The range can be computed in a restricted area.  This function
@@ -293,7 +293,7 @@ class cube(DataStruct):
            pixrange: a range of valid values [low, high] (default=None)
                zone: a valid zone [x0, y0, x1, y1]
               scale: normalize to a different maximum (default=1.0)
-        '''
+        """
 
         images = self.as_image_list()
         for ima in images:
@@ -303,7 +303,7 @@ class cube(DataStruct):
 
     def normalize_absolute_flux(self, pixmap=None, pixrange=None,
                                 zone=None, scale=1.0):
-        '''
+        """
            Normalize the images to an absolute flux of 1.0.
 
            The absolute flux can be computed in a restricted area.  This
@@ -313,7 +313,7 @@ class cube(DataStruct):
            pixrange: a range of valid values [low, high] (default=None)
                zone: a valid zone [x0, y0, x1, y1]
               scale: normalize to a different scale (default=1.0)
-        '''
+        """
 
         images = self.as_image_list()
         for ima in images:
@@ -327,21 +327,21 @@ class cube(DataStruct):
     #
 
     def sum(self):
-        '''
+        """
            Sum all images in the cube to a single image.
-        '''
+        """
 
         return image(data=self.data.sum(axis=0))
 
     def average(self):
-        '''
+        """
            Do a straight average of all images in the cube.
-        '''
+        """
 
         return image(data=self.data.mean(axis=0))
 
     def stdev(self, mean=None):
-        '''
+        """
            Compute the standard deviation of each pixel in the z direction.
 
            Arguments:
@@ -352,7 +352,7 @@ class cube(DataStruct):
            is passed, the mean is computed first.
 
            Try buffering to improve performance.
-        '''
+        """
 
         return image(data=self.data.std(axis=0))
 
@@ -376,7 +376,7 @@ class cube(DataStruct):
 
     # def median(self, buffer_size=256):
     def median(self):
-        '''
+        """
            Do a median average of all images in the cube.
 
            buffer_size: number of rows to median at a time (no buffering if
@@ -384,7 +384,7 @@ class cube(DataStruct):
 
            This method is buffered to reduce memory usage and increase
            performance.
-        '''
+        """
 
         # XXX check performance/memory usage
 
@@ -419,9 +419,9 @@ class cube(DataStruct):
         #    return self[0].__class__(data=result)
 
     def average_with_rejection(self, low_reject, high_reject):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
         pass
 
@@ -441,9 +441,9 @@ class cube(DataStruct):
 #        return result
 
     def average_with_sigma_clip(self, n_cycle, nmin, bias, scaling, thresh, badval, rn, gain):
-        '''
+        """
            Unimplemented
-        '''
+        """
 
         pass
 
@@ -482,9 +482,9 @@ class cube(DataStruct):
 
 
 def average_with_sigma_clip(data_cube, errors, threshold, niter=1):
-    '''
+    """
        Unimplemented
-    '''
+    """
 
     pass
 

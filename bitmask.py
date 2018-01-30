@@ -1,6 +1,6 @@
-'''
+"""
    A bitmask to store flagged pixel information.
-'''
+"""
 
 __version__ = '@(#)$Revision$'
 
@@ -22,14 +22,14 @@ EXPORT_TYPES = ['uint8', 'int16', 'int32']
 
 class bitmask(DataStruct):
 
-    '''
+    """
        A bit mask in which to store up to 32 types of pixelmaps.
-    '''
+    """
 
     def __init__(self, filename=None, extension=0, datatype=None, pmap=None,
                  bit=None, data=None, conserve=False, readonly=0, memmap=1,
                  *args, **kwargs):
-        '''
+        """
            Construct a bit mask object that can store up to 8 bad pixel maps.
 
             filename: FITS filename to load bitmask from
@@ -47,7 +47,7 @@ class bitmask(DataStruct):
            If there is no filename and no pmap, bitmask.data is set to None.
            If both self.filename and self.pmap are set, the bitmask is created
            from self.pmap.
-        '''
+        """
 
         DataStruct.__init__(self, *args, **kwargs)
         self.log('bitmask constructor', 'verbose')
@@ -73,19 +73,19 @@ class bitmask(DataStruct):
             raise DARMAError('Error -- datatype MUST be of boolean type or of integer type not more than 32-bits!')
 
     def load(self):
-        '''
+        """
            Proxy for load_bitmask()
 
            THIS SHOULD ONLY BE CALLED BY THE 'getter' METHOD.
-        '''
+        """
 
         self.log('bitmask load', 'verbose')
         self.load_bitmask()
 
     def load_bitmask(self):
-        '''
+        """
            Load the bitmask from a file or a Pixelmask.
-        '''
+        """
 
         log = self.log
         log('bitmask load_bitmask', 'verbose')
@@ -130,10 +130,10 @@ class bitmask(DataStruct):
         self.pmap = None
 
     def _clean_bitmask(self):
-        '''
+        """
            If the bitmask is masking nothing (i.e. no bits set), eliminate its
            data by setting self.data to None.
-        '''
+        """
 
         self.log('bitmask _clean_bitmask', 'debug')
         # PERFORMANCE ISSUE
@@ -142,20 +142,20 @@ class bitmask(DataStruct):
             self._del_bitmask()
 
     def _del_bitmask(self):
-        '''
+        """
            Eliminate the bitmask data by setting self.data to None.
 
            NOTE: All masked information will be lost!
-        '''
+        """
 
         self.log('bitmask _del_bitmask', 'debug')
         del(self.data)
         self.data = None
 
     def _get_dtype(self):
-        '''
+        """
            dtype getter
-        '''
+        """
 
         self.log('bitmask dtype getter', 'debug')
         return Array.dtype(self.datatype)
@@ -163,9 +163,9 @@ class bitmask(DataStruct):
     dtype = property(_get_dtype, None, None, 'a representation of datatype')
 
     def _get_bits(self):
-        '''
+        """
            bits getter
-        '''
+        """
 
         self.log('bitmask bits getter', 'debug')
         return self.dtype.itemsize * 8
@@ -173,14 +173,14 @@ class bitmask(DataStruct):
     bits = property(_get_bits, None, None, 'number of bits per pixel of the current datatype')
 
     def as_pixelmap(self, mask=None):
-        '''
+        """
            Export this bitmask as a pixelmap.
 
            If mask is None, a logical-OR of all masks is returned, else
            a pixelmap of the specified mask is returned.
 
            mask: mask of bits to collapse to pixelmap
-        '''
+        """
 
         self.log('bitmask as_pixelmap', 'verbose')
         if self.data is None:
@@ -193,24 +193,24 @@ class bitmask(DataStruct):
             return pixelmap(data=data)
 
     def as_eclipse_pixelmap(self, mask=None):
-        '''
+        """
            Export this bitmask as a proper Eclipse pixelmap.
 
            If mask is None, a logical-OR of all masks is returned, else
            a pixelmap of the specified mask is returned.
 
            mask: mask of bits to collapse to pixelmap
-        '''
+        """
 
         self.log('bitmask as_eclipse_pixelmap', 'verbose')
         return self.as_pixelmap(mask=mask).as_eclipse_pixelmap()
 
     def add_bitmask(self, bmask):
-        '''
+        """
            Merge a bitmask into this bitmask.
 
            bmask: a bitmask object
-        '''
+        """
 
         self.log('bitmask add_bitmask', 'verbose')
         if self.data is not None:
@@ -219,11 +219,11 @@ class bitmask(DataStruct):
             self.data = bmask.data.astype(self.datatype)
 
     def del_bitmask(self, bmask):
-        '''
+        """
            Remove a bitmask from this bitmask.
 
            bmask: a bitmask object
-        '''
+        """
 
         self.log('bitmask del_bitmask', 'verbose')
         if self.data is not None:
@@ -232,12 +232,12 @@ class bitmask(DataStruct):
             self._clean_bitmask()
 
     def add_pixelmap(self, pmap, bit):
-        '''
+        """
            Merge a pixelmap into this bitmask.
 
            pmap: a pixelmap object to create bitmask from
             bit: the bit to set for this pixelmap
-        '''
+        """
 
         self.log('bitmask add_pixelmap', 'verbose')
         if self.data is not None:
@@ -246,12 +246,12 @@ class bitmask(DataStruct):
             self.data = ((~pmap.data) << bit).astype(self.datatype)
 
     def del_pixelmap(self, pmap, bit):
-        '''
+        """
            Remove a pixelmap from this bitmask.
 
            pmap: a pixelmap object to create bitmask from
             bit: the bit of the pixelmap to remove
-        '''
+        """
 
         self.log('bitmask del_pixelmap', 'verbose')
         if self.data is not None:
@@ -260,7 +260,7 @@ class bitmask(DataStruct):
             self._clean_bitmask()
 
     def has_bit(self, bit=None):
-        '''
+        """
            Check this bitmask for a specific bit.
 
            If bit is None, the result of a logical-OR of all masks is
@@ -268,7 +268,7 @@ class bitmask(DataStruct):
            mask is returned.
 
            bit: the bit to test for
-        '''
+        """
 
         self.log('bitmask has_bit', 'verbose')
         if self.data is None:
@@ -279,9 +279,9 @@ class bitmask(DataStruct):
             return (self.data & 1 << bit).astype('bool').any()
 
     def which_bits(self):
-        '''
+        """
            Return a list of the bits set in this bitmask.
-        '''
+        """
 
         self.log('bitmask which_bits', 'verbose')
         bits = []
@@ -291,17 +291,17 @@ class bitmask(DataStruct):
         return bits
 
     def count(self):
-        '''
+        """
            Return the number of flagged pixels (non-zero values) in the
            bitmask.
-        '''
+        """
 
         self.log('bitmask count', 'verbose')
         return self.data.nonzero()[0].shape[0]
 
     def save(self, filename=None, hdr=None, datatype='int32', clobber=True,
              update_datamd5=True, option='silentfix'):
-        '''
+        """
            Save the data to a file.
 
                  filename: name of the file (str)
@@ -312,7 +312,7 @@ class bitmask(DataStruct):
                            should be one of fix, silentfix, ignore, warn, or
                            exception
 
-        '''
+        """
 
         self.log('bitmask save', 'verbose')
         if datatype not in EXPORT_TYPES:

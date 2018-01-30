@@ -1,6 +1,6 @@
-'''
+"""
 Unit test for DARMA common
-'''
+"""
 
 __version__ = '@(#)$Revision$'
 
@@ -31,9 +31,9 @@ except:
 
 class common_version_test(unittest.TestCase):
 
-    '''
+    """
        Is the underlying FITS handling library version consistent?
-    '''
+    """
 
     def setUp(self):
         from ..common import fits as darma_fits, Array as darma_array
@@ -61,9 +61,9 @@ class common_version_test(unittest.TestCase):
 
 class common_statstruct_load_test(unittest.TestCase):
 
-    '''
+    """
        Is the loaded statistics structure consistent?
-    '''
+    """
 
     def setUp(self):
         self.stat_tuple = (
@@ -104,9 +104,9 @@ class common_statstruct_load_test(unittest.TestCase):
 
 class common_statstruct_show_test(unittest.TestCase):
 
-    '''
+    """
        Show the StatStruct.
-    '''
+    """
 
     def setUp(self):
         self.stat_tuple = (0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,1,2,3,4,5)
@@ -121,9 +121,9 @@ class common_statstruct_show_test(unittest.TestCase):
 
 class common_statstruct_dump_test(unittest.TestCase):
 
-    '''
+    """
        Dump the StatStruct (alias for show).
-    '''
+    """
 
     def setUp(self):
         self.stat_tuple = (0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,1,2,3,4,5)

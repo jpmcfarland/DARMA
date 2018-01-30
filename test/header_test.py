@@ -1,6 +1,6 @@
-'''
+"""
 Unit test for DARMA header
-'''
+"""
 
 __version__ = '@(#)$Revision$'
 
@@ -110,18 +110,18 @@ CARDS = [fits.Card().fromstring(string) for string in STRINGS]
 
 
 def build_test_data_sef():
-    '''
+    """
        This function builds SEF files to be used in testing
-    '''
+    """
     data = Array.random.normal(1.0, 0.5, (32, 32)).astype('float32')
     for filename in SINGLES:
         fits.PrimaryHDU(data=data).writeto(filename, output_verify='silentfix', clobber=True)
 
 
 def build_test_data_mef():
-    '''
+    """
        This function builds MEF files to be used in testing
-    '''
+    """
     data = Array.random.normal(1.0, 0.5, (32, 32)).astype('float32')
     for filename in MULTIS:
         hdu0 = fits.PrimaryHDU()
@@ -137,17 +137,17 @@ def build_test_data_mef():
 
 
 def build_test_data_raw():
-    '''
+    """
        This function builds RAW header files to be used in testing
-    '''
+    """
     for filename in RAWS:
         fits.PrimaryHDU().writeto(filename, output_verify='silentfix', clobber=True)
 
 
 def build_test_data_ascii():
-    '''
+    """
        This function builds ASCII header files to be used in testing
-    '''
+    """
     for filename in ASCIIS:
         hdu = fits.PrimaryHDU()
         with open(filename, 'w') as fd:
@@ -157,9 +157,9 @@ def build_test_data_ascii():
 
 
 def delete_test_data():
-    '''
+    """
        This function deletes fits files used in testing
-    '''
+    """
     for filename in FILENAMES:
         if os.path.exists(filename):
             os.remove(filename)
@@ -172,9 +172,9 @@ def delete_test_data():
 
 class header_version_test(unittest.TestCase):
 
-    '''
+    """
        Is the underlying FITS handling library version consistent?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -200,9 +200,9 @@ class header_version_test(unittest.TestCase):
 
 class header_load_error_test(unittest.TestCase):
 
-    '''
+    """
        Do headers loaded from bogus sources raise errors?
-    '''
+    """
 
     def setUp(self):
         build_test_data_sef()
@@ -222,9 +222,9 @@ class header_load_error_test(unittest.TestCase):
 
 class header_load_empty_test(unittest.TestCase):
 
-    '''
+    """
        Are headers loaded without data empty?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -256,9 +256,9 @@ class header_load_empty_test(unittest.TestCase):
 
 class header_load_filename_test(unittest.TestCase):
 
-    '''
+    """
        Are headers able to be loaded properly from SEFs?
-    '''
+    """
 
     def setUp(self):
         build_test_data_sef()
@@ -273,9 +273,9 @@ class header_load_filename_test(unittest.TestCase):
 
 class header_load_filename_extensions_test(unittest.TestCase):
 
-    '''
+    """
        Are headers able to be loaded properly from MEFs?
-    '''
+    """
 
     def setUp(self):
         build_test_data_mef()
@@ -301,9 +301,9 @@ class header_load_filename_extensions_test(unittest.TestCase):
 
 class header_load_cardlist_strings_test(unittest.TestCase):
 
-    '''
+    """
        Are headers able to be loaded from a list string cards?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -320,9 +320,9 @@ class header_load_cardlist_strings_test(unittest.TestCase):
 
 class header_load_cardlist_unicode_test(unittest.TestCase):
 
-    '''
+    """
        Are headers able to be loaded from a list of unicode cards?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -339,9 +339,9 @@ class header_load_cardlist_unicode_test(unittest.TestCase):
 
 class header_load_cardlist_cards_test(unittest.TestCase):
 
-    '''
+    """
        Are headers able to be loaded from a list of fits.Card instances?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -358,9 +358,9 @@ class header_load_cardlist_cards_test(unittest.TestCase):
 
 class header_load_cardlist_file_test(unittest.TestCase):
 
-    '''
+    """
        Are headers able to be loaded from ASCII files?
-    '''
+    """
 
     def setUp(self):
         build_test_data_raw()
@@ -381,9 +381,9 @@ class header_load_cardlist_file_test(unittest.TestCase):
 
 class header_load_all_headers_test(unittest.TestCase):
 
-    '''
+    """
        Are all headers able to be loaded from FITS files?
-    '''
+    """
 
     def setUp(self):
         build_test_data_sef()
@@ -414,9 +414,9 @@ class header_load_all_headers_test(unittest.TestCase):
 
 class header_load_headers_filename_test(unittest.TestCase):
 
-    '''
+    """
        Are all headers able to be loaded from FITS files via function?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -434,9 +434,9 @@ class header_load_headers_filename_test(unittest.TestCase):
 
 class header_load_headers_cardlist_strings_test(unittest.TestCase):
 
-    '''
+    """
        Are all headers able to be loaded from ASCII strings via function?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -457,10 +457,10 @@ class header_load_headers_cardlist_strings_test(unittest.TestCase):
 
 class header_load_headers_cardlist_cards_test(unittest.TestCase):
 
-    '''
+    """
        Are all headers able to be loaded from fits.Cards instances via
        function?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -478,9 +478,9 @@ class header_load_headers_cardlist_cards_test(unittest.TestCase):
 
 class header_load_headers_cardlist_file_test(unittest.TestCase):
 
-    '''
+    """
        Are all headers able to be loaded from ASCII files via function?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -503,9 +503,9 @@ class header_load_headers_cardlist_file_test(unittest.TestCase):
 
 class header_save_raw_test(unittest.TestCase):
 
-    '''
+    """
        Are headers able to be saved in raw format without data?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -532,9 +532,9 @@ class header_save_raw_test(unittest.TestCase):
 
 class header_save_ascii_test(unittest.TestCase):
 
-    '''
+    """
        Are headers able to be saved in ASCII format?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -561,9 +561,9 @@ class header_save_ascii_test(unittest.TestCase):
 
 class header_save_clobber_test(unittest.TestCase):
 
-    '''
+    """
        Are headers able to be saved overwriting existing files?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -591,9 +591,9 @@ class header_save_clobber_test(unittest.TestCase):
 
 class header_save_append_test(unittest.TestCase):
 
-    '''
+    """
        Are headers able to be saved appending to an existing file?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -629,9 +629,9 @@ class header_save_append_test(unittest.TestCase):
 
 class header_save_dataless_test(unittest.TestCase):
 
-    '''
+    """
        Are headers able to be saved in dataless format?
-    '''
+    """
 
     def setUp(self):
         build_test_data_sef()
@@ -666,9 +666,9 @@ class header_save_dataless_test(unittest.TestCase):
 
 class header_creation_new_test(unittest.TestCase):
 
-    '''
+    """
        Are new headers created correctly?
-    '''
+    """
 
     def setUp(self):
         self.new = header().new()
@@ -685,9 +685,9 @@ class header_creation_new_test(unittest.TestCase):
 
 class header_creation_default_primary_test(unittest.TestCase):
 
-    '''
+    """
        Are default primary headers created correctly?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -712,9 +712,9 @@ class header_creation_default_primary_test(unittest.TestCase):
 
 class header_creation_default_image_test(unittest.TestCase):
 
-    '''
+    """
        Are default extension headers created correctly?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -741,9 +741,9 @@ class header_creation_default_image_test(unittest.TestCase):
 
 class header_creation_copy_test(unittest.TestCase):
 
-    '''
+    """
        Are headers copied correctly?
-    '''
+    """
 
     def setUp(self):
         self.hdr = header()
@@ -767,9 +767,9 @@ class header_creation_copy_test(unittest.TestCase):
 
 class header_properties_hdr_test(unittest.TestCase):
 
-    '''
+    """
        Is the "hdr" property behaving properly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -791,9 +791,9 @@ class header_properties_hdr_test(unittest.TestCase):
 
 class header_properties_cards_test(unittest.TestCase):
 
-    '''
+    """
        Is the "cards" property behaving properly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -814,9 +814,9 @@ class header_properties_cards_test(unittest.TestCase):
 
 class header_read_fits_keywords_dict_test(unittest.TestCase):
 
-    '''
+    """
        Are values in the header read from the dict correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -839,9 +839,9 @@ class header_read_fits_keywords_dict_test(unittest.TestCase):
 
 class header_read_fits_indexes_dict_test(unittest.TestCase):
 
-    '''
+    """
        Are values in the header read from the dict correctly via index?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -865,9 +865,9 @@ class header_read_fits_indexes_dict_test(unittest.TestCase):
 
 class header_read_fits_keywords_attr_test(unittest.TestCase):
 
-    '''
+    """
        Are values in the header read from attributes correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -891,9 +891,9 @@ class header_read_fits_keywords_attr_test(unittest.TestCase):
 
 class header_read_hierarch_keywords_dict_test(unittest.TestCase):
 
-    '''
+    """
        Are HIERARCH values in the header read from the dict correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -920,9 +920,9 @@ class header_read_hierarch_keywords_dict_test(unittest.TestCase):
 
 class header_read_hierarch_keywords_attr_test(unittest.TestCase):
 
-    '''
+    """
        Are HIERARCH values in the header read from attributes correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -946,9 +946,9 @@ class header_read_hierarch_keywords_attr_test(unittest.TestCase):
 
 class header_read_blanks_test(unittest.TestCase):
 
-    '''
+    """
        Are BLANK values in the header read correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -972,9 +972,9 @@ class header_read_blanks_test(unittest.TestCase):
 
 class header_read_blank_cards_test(unittest.TestCase):
 
-    '''
+    """
        Are all BLANKs in the header read correctly?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -1004,9 +1004,9 @@ class header_read_blank_cards_test(unittest.TestCase):
 
 class header_read_comments_test(unittest.TestCase):
 
-    '''
+    """
        Are all COMMENTs in the header read correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -1030,9 +1030,9 @@ class header_read_comments_test(unittest.TestCase):
 
 class header_read_comment_cards_test(unittest.TestCase):
 
-    '''
+    """
        Are cards stored in COMMENTs constructed correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -1056,9 +1056,9 @@ class header_read_comment_cards_test(unittest.TestCase):
 
 class header_read_history_test(unittest.TestCase):
 
-    '''
+    """
        Are all HISTORYs in the header read correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -1081,9 +1081,9 @@ class header_read_history_test(unittest.TestCase):
 
 class header_read_history_cards_test(unittest.TestCase):
 
-    '''
+    """
        Are cards stored in HISTORYs read correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -1106,9 +1106,9 @@ class header_read_history_cards_test(unittest.TestCase):
 
 class header_read_info_test(unittest.TestCase):
 
-    '''
+    """
        Is the header information conveyed correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1124,9 +1124,9 @@ class header_read_info_test(unittest.TestCase):
 
 class header_read_dump_test(unittest.TestCase):
 
-    '''
+    """
        Are values in the header dumped correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1142,9 +1142,9 @@ class header_read_dump_test(unittest.TestCase):
 
 class header_read_comment_test(unittest.TestCase):
 
-    '''
+    """
        Are keyword comments in the header read correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1168,9 +1168,9 @@ class header_read_comment_test(unittest.TestCase):
 
 class header_read_value_test(unittest.TestCase):
 
-    '''
+    """
        Are keyword values in the header read correctly?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -1186,9 +1186,9 @@ class header_read_value_test(unittest.TestCase):
 
 class header_read_length_test(unittest.TestCase):
 
-    '''
+    """
        Is the length of the header read correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1207,9 +1207,9 @@ class header_read_length_test(unittest.TestCase):
 
 class header_read_contents_test(unittest.TestCase):
 
-    '''
+    """
        Is what the header contains read correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -1229,9 +1229,9 @@ class header_read_contents_test(unittest.TestCase):
 
 class header_read_representation_test(unittest.TestCase):
 
-    '''
+    """
        Is the representation of the header conveyed correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1260,9 +1260,9 @@ class header_read_representation_test(unittest.TestCase):
 
 class header_read_string_test(unittest.TestCase):
 
-    '''
+    """
        Is the string casting of the header done correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1283,9 +1283,9 @@ class header_read_string_test(unittest.TestCase):
 
 class header_read_keywords_test(unittest.TestCase):
 
-    '''
+    """
        Is the list of keywords in the header read correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1306,9 +1306,9 @@ class header_read_keywords_test(unittest.TestCase):
 
 class header_read_values_test(unittest.TestCase):
 
-    '''
+    """
        Is the list of values in the header read correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1326,9 +1326,9 @@ class header_read_values_test(unittest.TestCase):
 
 class header_read_comment_values_test(unittest.TestCase):
 
-    '''
+    """
        is the list of comments in the header read correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1347,9 +1347,9 @@ class header_read_comment_values_test(unittest.TestCase):
 
 class header_read_items_test(unittest.TestCase):
 
-    '''
+    """
        Is the list of items in the header read correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1374,9 +1374,9 @@ class header_read_items_test(unittest.TestCase):
 
 class header_read_cards_test(unittest.TestCase):
 
-    '''
+    """
        Is the set of cards in the header read correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1395,9 +1395,9 @@ class header_read_cards_test(unittest.TestCase):
 
 class header_read_iterators_test(unittest.TestCase):
 
-    '''
+    """
        Are the iterators in the header formed correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1452,9 +1452,9 @@ class header_read_iterators_test(unittest.TestCase):
 
 class header_read_getval_test(unittest.TestCase):
 
-    '''
+    """
        Are values in a FITS file header read correctly?
-    '''
+    """
 
     def setUp(self):
         build_test_data_sef()
@@ -1517,9 +1517,9 @@ class header_read_getval_test(unittest.TestCase):
 
 class header_write_fits_keywords_dict_test(unittest.TestCase):
 
-    '''
+    """
        Are cards written to the header dict correctly?
-    '''
+    """
 
     def setUp(self):
         self.new = header().new()
@@ -1565,9 +1565,9 @@ class header_write_fits_keywords_dict_test(unittest.TestCase):
 
 class header_write_fits_keywords_attr_test(unittest.TestCase):
 
-    '''
+    """
        Are cards written to the header attribute correctly?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -1583,9 +1583,9 @@ class header_write_fits_keywords_attr_test(unittest.TestCase):
 
 class header_write_hierarch_keywords_dict_test(unittest.TestCase):
 
-    '''
+    """
        Are HIERARCH cards written to the header dict correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1632,9 +1632,9 @@ class header_write_hierarch_keywords_dict_test(unittest.TestCase):
 
 class header_write_hierarch_keywords_attr_test(unittest.TestCase):
 
-    '''
+    """
        Are HIERARCH cards written to the header attribute correctly?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -1650,9 +1650,9 @@ class header_write_hierarch_keywords_attr_test(unittest.TestCase):
 
 class header_write_blanks_test(unittest.TestCase):
 
-    '''
+    """
        Are BLANK cards written to the header correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1675,9 +1675,9 @@ class header_write_blanks_test(unittest.TestCase):
 
 class header_write_comments_test(unittest.TestCase):
 
-    '''
+    """
        Are COMMENT cards written to the header correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1700,9 +1700,9 @@ class header_write_comments_test(unittest.TestCase):
 
 class header_write_history_test(unittest.TestCase):
 
-    '''
+    """
        Are HISTORY cards written to the header correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -1725,9 +1725,9 @@ class header_write_history_test(unittest.TestCase):
 
 class header_write_rename_keyword_test(unittest.TestCase):
 
-    '''
+    """
        Are keywords renamed in the header correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -1806,9 +1806,9 @@ class header_write_rename_keyword_test(unittest.TestCase):
 
 class header_write_rename_key_test(unittest.TestCase):
 
-    '''
+    """
        Are keys renamed in the header correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -1887,9 +1887,9 @@ class header_write_rename_key_test(unittest.TestCase):
 
 class header_write_add_test(unittest.TestCase):
 
-    '''
+    """
        Are cards added to the header correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -1960,9 +1960,9 @@ class header_write_add_test(unittest.TestCase):
 
 class header_write_append_test(unittest.TestCase):
 
-    '''
+    """
        Are cards appended to the header correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -2022,9 +2022,9 @@ class header_write_append_test(unittest.TestCase):
 
 class header_write_append_force_test(unittest.TestCase):
 
-    '''
+    """
        Are cards appended to the end of the header correctly?
-    '''
+    """
 
     def setUp(self):
         self.crd = header(cardlist=CARDS)
@@ -2061,9 +2061,9 @@ class header_write_append_force_test(unittest.TestCase):
 
 class header_write_fromstring_test(unittest.TestCase):
 
-    '''
+    """
        Are cards appended from string to the header correctly?
-    '''
+    """
 
     def setUp(self):
         self.new = header().new()
@@ -2101,9 +2101,9 @@ class header_write_fromstring_test(unittest.TestCase):
 
 class header_write_modify_test(unittest.TestCase):
 
-    '''
+    """
        Are cards modified in the header correctly?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -2120,9 +2120,9 @@ class header_write_modify_test(unittest.TestCase):
 
 class header_write_update_test(unittest.TestCase):
 
-    '''
+    """
        Are cards updated in the header correctly?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -2137,9 +2137,9 @@ class header_write_update_test(unittest.TestCase):
 
 class header_write_merge_test(unittest.TestCase):
 
-    '''
+    """
        Are two headers merged correctly?
-    '''
+    """
 
     def setUp(self):
         self.pri = header().default()
@@ -2186,9 +2186,9 @@ class header_write_merge_test(unittest.TestCase):
 
 class header_write_merge_into_file_test(unittest.TestCase):
 
-    '''
+    """
        Is one header merged correctly into another in a file?
-    '''
+    """
 
     def setUp(self):
         build_test_data_mef()
@@ -2236,9 +2236,9 @@ class header_write_merge_into_file_test(unittest.TestCase):
 
 class header_delete_dict_test(unittest.TestCase):
 
-    '''
+    """
        Are headers contents deleted properly?
-    '''
+    """
 
     def setUp(self):
         pass
@@ -2258,9 +2258,9 @@ class header_delete_dict_test(unittest.TestCase):
 
 class header_verify_header_test(unittest.TestCase):
 
-    '''
+    """
        Are header contents verified properly?
-    '''
+    """
 
     def setUp(self):
         pass

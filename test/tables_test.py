@@ -1,6 +1,6 @@
-'''
+"""
 Unit test for DARMA tables
-'''
+"""
 
 __version__ = '@(#)$Revision$'
 
