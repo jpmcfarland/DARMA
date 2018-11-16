@@ -4,8 +4,8 @@ Unit test for DARMA cube
 
 __version__ = '@(#)$Revision$'
 
-from ..common import DARMAError, unicode
-from ..cube import cube
+from darma.common import DARMAError, unicode
+from darma.cube import cube
 from .common_test import fits, Array
 
 import unittest

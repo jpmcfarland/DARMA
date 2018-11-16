@@ -1,3 +1,3 @@
 """
-Unittest module for DARMA
+Unittests for DARMA
 """

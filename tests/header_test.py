@@ -4,9 +4,9 @@ Unit test for DARMA header
 
 __version__ = '@(#)$Revision$'
 
-from ..common import DARMAError, unicode
-from ..header import header, getval, get_headers, get_keyword
-from ..header import update_header_in_file
+from darma.common import DARMAError, unicode
+from darma.header import header, getval, get_headers, get_keyword
+from darma.header import update_header_in_file
 from .common_test import fits, Array
 
 import unittest

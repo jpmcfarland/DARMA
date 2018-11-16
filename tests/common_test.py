@@ -4,7 +4,7 @@ Unit test for DARMA common
 
 __version__ = '@(#)$Revision$'
 
-from ..common import DARMAError, unicode, StatStruct, DataStruct
+from darma.common import DARMAError, unicode, StatStruct, DataStruct
 
 import unittest
 import os
@@ -36,7 +36,7 @@ class common_version_test(unittest.TestCase):
     """
 
     def setUp(self):
-        from ..common import fits as darma_fits, Array as darma_array
+        from darma.common import fits as darma_fits, Array as darma_array
         self.darma_fits_version = darma_fits.__version__
         self.darma_array_version = darma_array.__version__
         del darma_fits, darma_array

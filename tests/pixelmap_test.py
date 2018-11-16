@@ -4,8 +4,8 @@ Unit test for DARMA pixelmap
 
 __version__ = '@(#)$Revision$'
 
-from ..common import DARMAError, unicode
-from ..pixelmap import pixelmap
+from darma.common import DARMAError, unicode
+from darma.pixelmap import pixelmap
 from .common_test import fits, Array
 
 import unittest

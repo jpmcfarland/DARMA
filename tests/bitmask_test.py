@@ -4,8 +4,8 @@ Unit test for DARMA bitmask
 
 __version__ = '@(#)$Revision$'
 
-from ..common import DARMAError, unicode
-from ..bitmask import bitmask
+from darma.common import DARMAError, unicode
+from darma.bitmask import bitmask
 from .common_test import fits, Array
 
 import unittest
