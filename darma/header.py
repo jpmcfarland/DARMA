@@ -485,27 +485,6 @@ class header(object):
         # FIXME
         self._set_attributes()
 
-    def as_eclipse_header(self):
-        """
-           Return a proper Eclipse header from this header object.
-        """
-
-        from eclipse import header as e_header
-        e_hdr = e_header.header().new()
-        del e_header
-        for card in self:
-            if card.value is True:
-                value = 'T'
-            elif card.value is False:
-                value = 'F'
-            elif isinstance(card.value, (str, unicode)) and len(card.value) > 69:
-                value = card.value[:69]
-            else:
-                value = card.value
-            e_hdr.append(get_keyword(card), value, card.comment)
-        e_hdr.append('END', '', '')
-        return e_hdr
-
     def index(self, keyword):
         """
            Return the integer index of the keyword in this header.
@@ -888,7 +867,7 @@ class header(object):
         try:
             self.update(keyword, value, comment=comment)
         except Exception as e:
-            raise DARMAError('Error updating %s in header: %s' % (repr((key, value, comment)), e))
+            raise DARMAError('Error updating %s in header: %s' % (repr((keyword, value, comment)), e))
 
     def update(self, keyword, value, comment=None, before=None, after=None):
         """
@@ -1380,7 +1359,7 @@ def get_headers(filename=None, cardlist=None):
             try:
                 headers.append(header(cardlist=cards))
             except DARMAError as e:
-                Message('failed to load header from constructed cardlist: %s' % e)
+                print('failed to load header from constructed cardlist: %s' % e)
 
     return headers
 

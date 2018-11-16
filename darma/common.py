@@ -4,7 +4,6 @@
 
 __version__ = '@(#)$Revision$'
 
-import math
 import os
 import sys
 # Python 2 and 3 compatibility
